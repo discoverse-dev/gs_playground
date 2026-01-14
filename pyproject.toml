@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gs_playground"
+dynamic = ["version"]
+description = "Robotics batch environments powered by 3D Gaussian Splatting."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "GS_Playground contributors" }]
+keywords = ["mujoco", "robotics", "3dgs", "simulation", "motrixsim"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "numpy>=1.23",
+    "torch",
+    "mujoco",
+    "mink",
+    "etils[epath]",
+    "plyfile",
+    "motrixsim >= 0.5.0" ,
+    "gaussian_renderer>=0.1.7",
+    "gymnasium",
+    "scipy",
+]
+
+[project.optional-dependencies]
+mjx = [
+    "jax>=0.4.27",
+    "jaxlib>=0.4.27",
+    "flax>=0.8.0",
+    "ml-collections>=0.1.1",
+    "brax>=0.9.0",
+]
+torch-interop = [
+    "tensordict>=0.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/TATP-233/gs_playground"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "gs_playground.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gs_playground*"]
