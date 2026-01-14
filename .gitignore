@@ -32,8 +32,8 @@ logs/
 data/
 *.ply
 *.xml
-!models/**/*.ply
-!models/**/*.xml
+!gs_playground/models/**/*.ply
+!gs_playground/models/**/*.xml
 .DS_Store
 
 output/
