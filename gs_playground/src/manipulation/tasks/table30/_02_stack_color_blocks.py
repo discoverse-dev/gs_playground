@@ -20,20 +20,24 @@ from gs_playground.src.manipulation.tasks.table30.gaussian_assets import (
     build_task_gaussians,
 )
 
-ASSETS_UR5E_DIR = ROOT_PATH.parent / "models" / "robots" / "manipulation" / "universal_robots_ur5e_robotiq"
-ASSETS_TASK_DIR = ROOT_PATH.parent / "models" / "tasks" / "table30" / "02_stack_color_blocks"
+ASSETS_UR5E_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "universal_robots_ur5e_robotiq"
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_02_stack_color_blocks"
 TASK_GAUSSIANS = {
-    "cube_blue": "cube/3dgs/cube_blue.ply",
-    "cube_yellow": "cube/3dgs/cube_yellow.ply",
-    "cube_orange": "cube/3dgs/cube_orange.ply",
+    "cube_blue": "3dgs/cube_blue.ply",
+    "cube_yellow": "3dgs/cube_yellow.ply",
+    "cube_orange": "3dgs/cube_orange.ply",
 }
+print("[StackColorBlocksEnv] TASK_GAUSSIANS paths:")
+for name, rel in TASK_GAUSSIANS.items():
+    path = ASSETS_TASK_DIR / rel
+    print("  ", name, "->", path, "exists?" , path.exists())
 
 
 @envcfg("table30/stack_color_blocks")
 @dataclass
 class StackColorBlocksEnvCfg(RenderEnvCfg):
     # model / sim
-    model_file: str = str((ASSETS_UR5E_DIR / "xmls" / "02_stack_color_blocks.xml").as_posix())
+    model_file: str = str((ASSETS_UR5E_DIR / "xmls" / "table30_02_stack_color_blocks.xml").as_posix())
     sim_dt: float = 0.005
     ctrl_dt: float = 0.02
 
