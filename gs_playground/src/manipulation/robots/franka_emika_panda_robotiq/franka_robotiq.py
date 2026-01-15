@@ -10,7 +10,7 @@ from gs_playground.src.utils.path_utils import as_posix_if_exists
 
 from ..base_robot import BaseRobot
 
-ASSETS_FRANKA_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "franka_robotiq"
+ASSETS_FRANKA_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "franka_emika_panda_robotiq"
 
 class FrankaRobotiq(BaseRobot):
     """

@@ -1,0 +1,104 @@
+<mujoco model="panda_press_buttons">
+  <!-- Robot -->
+  <include file="panda_robotiq.xml"/>
+
+  <!-- <statistic center="0.3 0 0.4" extent="1"/> -->
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="12" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <!-- Environment -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <!-- Buttons -->
+    <mesh name="blue_button_mesh"  file="../../../../../tasks/table30/_01_press_three_buttons/meshes/blue_button/blue_button_mesh.obj"/>
+    <mesh name="green_button_mesh" file="../../../../../tasks/table30/_01_press_three_buttons/meshes/green_button/green_button_mesh.obj"/>
+    <mesh name="pink_button_mesh"  file="../../../../../tasks/table30/_01_press_three_buttons/meshes/pink_button/pink_button_mesh.obj"/>
+
+    <material name="blue_button_mat"  rgba="0.10 0.35 0.95 1" reflectance="0.2"/>
+    <material name="green_button_mat" rgba="0.10 0.80 0.25 1" reflectance="0.2"/>
+    <material name="pink_button_mat"  rgba="0.95 0.25 0.65 1" reflectance="0.2"/>
+    <material name="button_base_mat"  rgba="0.20 0.20 0.20 1" reflectance="0.1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+
+    <camera fovy="43.365" name="front" pos="1.05139524 0.00603114 0.6419337" quat="0.6090352  0.29501705 0.31961847 0.66323834"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+
+    <!-- BLUE -->
+    <body name="button_blue" pos="0.443 0.0197 0.0812" euler="0.959931089 0.052359878 0">
+      <joint type="free" frictionloss="0.0001"/>
+      <body name="button_blue_cap" pos="0 0 0.012" euler="-0.959931089 -0.052359878 0">
+        <!-- collision: match your GREEN style -->
+        <site name="button_blue_touch_site" pos="0 0 0.02" type="cylinder" size="0.040 0.002" rgba="0 0 1 0.5" group="4"/>
+        <geom name="button_blue_cap_col" type="cylinder" size="0.040 0.02" group="3" contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+        <!-- visual: mesh + same euler as GREEN -->
+        <geom name="button_blue_cap_vis" type="mesh" mesh="blue_button_mesh" material="blue_button_mat" euler="0.959931089 0.052359878 0" contype="0" conaffinity="0"/>
+      </body>
+    </body>
+
+    <!-- GREEN (kept as-is) -->
+    <body name="button_green" pos="0.5485 -0.0512 0.0812" euler="0.959931089 0.052359878 0">
+      <joint type="free" frictionloss="0.0001"/>
+      <body name="button_green_cap" pos="0 0 0.012" euler="-0.959931089 -0.052359878 0">
+        <site name="button_green_touch_site" pos="0 0 0.02" type="cylinder" size="0.040 0.002" rgba="0 1 0 0.5" group="4"/>
+        <geom name="button_green_cap_col" type="cylinder" size="0.040 0.02" group="3" contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+        <geom name="button_green_cap_vis" type="mesh" mesh="green_button_mesh" material="green_button_mat" euler="0.959931089 0.052359878 0" contype="0" conaffinity="0"/>
+      </body>
+    </body>
+
+    <!-- PINK -->
+    <body name="button_pink" pos="0.532 0.127 0.0812" euler="0.959931089 0.052359878 0">
+      <joint type="free" frictionloss="0.0001"/>
+      <body name="button_pink_cap" pos="0 0 0.012" euler="-0.959931089 -0.052359878 0">
+        <site name="button_pink_touch_site" pos="0 0 0.02" type="cylinder" size="0.040 0.002" rgba="1 0 1 0.5" group="4"/>
+        <geom name="button_pink_cap_col" type="cylinder" size="0.040 0.02" group="3" contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+        <geom name="button_pink_cap_vis" type="mesh" mesh="pink_button_mesh" material="pink_button_mat" euler="0.959931089 0.052359878 0" contype="0" conaffinity="0"/>
+      </body>
+    </body>
+
+    <!-- Keep mocap_target -->
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size="0.001" type="sphere"/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+      <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
+      <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
+      <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <touch name="button_blue_touch" site="button_blue_touch_site"/>
+    <touch name="button_green_touch" site="button_green_touch_site"/>
+    <touch name="button_pink_touch" site="button_pink_touch_site"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home"
+        qpos="0.08691 -0.40549 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 
+        0.837821 0.838066 0.837766 0.838002 0.83824 0.837942 
+        0.443   0.0197 0.0812  0.886707 0.46159 0.0232192 0.0120872 
+        0.5485 -0.0512 0.0812  0.886707 0.46159 0.0232192 0.0120872 
+        0.532   0.127  0.0812  0.886707 0.46159 0.0232192 0.0120872"
+        ctrl="0.08691 -0.40549 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0.82"/>
+  </keyframe>
+</mujoco>

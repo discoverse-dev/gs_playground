@@ -33,7 +33,7 @@
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     
-    <geom name="table" pos="-0.73 0.045 0.096" quat="1 0 0 -0.05" size="0.375 0.55 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="table" pos="-0.73 0.045 0.096" quat="0.99875 0 0 -0.04994" size="0.375 0.55 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
 
     <body name="cube_blue" pos="-0.6933 -0.1015 0.1526" quat="0.933601 -0.294398 -0.0913976 0.182661 ">
       <joint type="free" frictionloss="0.0001"/>

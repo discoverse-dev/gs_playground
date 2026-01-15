@@ -64,7 +64,7 @@ def run_test(
     num_envs: int,
     steps: int,
     save_video: bool,
-    video_path: str,
+    output: str,
     smooth_steps: int = 20,
 ):
     env = registry.make(
@@ -82,6 +82,7 @@ def run_test(
         raise RuntimeError(f"Unexpected reset return type: {type(reset_ret)}")
     print(f"[reset] env={env_name}, action_mode={action_mode}, num_envs={num_envs}")
 
+    video_path = Path(output) / env_name / f"{action_mode}_mode.mp4"
     writer = None
     grid_n = int(math.ceil(math.sqrt(num_envs)))
     if save_video:
@@ -227,7 +228,7 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, default=50)
     parser.add_argument("--smooth_steps", type=int, default=20, help="steps to reach target pose")
     parser.add_argument("--no_video", action="store_true", help="disable video saving")
-    parser.add_argument("--video_path", type=str, default="output/test_registry/test_registry.mp4")
+    parser.add_argument("--output", type=str, default="output/test_registry")
     args = parser.parse_args()
 
     run_test(
@@ -236,6 +237,6 @@ if __name__ == "__main__":
         num_envs=args.num_envs,
         steps=args.steps,
         save_video=not args.no_video,
-        video_path=args.video_path,
+        output=args.output,
         smooth_steps=args.smooth_steps,
     )
