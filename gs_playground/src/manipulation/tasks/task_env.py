@@ -35,6 +35,8 @@ class TaskEnvCfg(RenderEnvCfg):
 class TaskEnv(NpRenderEnv):
     def __init__(self, cfg: TaskEnvCfg, num_envs: int = 32):
         super().__init__(cfg, num_envs=num_envs)
+        # Shared RNG for task-specific randomization
+        self._rng = np.random.default_rng()
 
         # 1. Initialize Robot Helper
         if cfg.robot_name == "ur5e_robotiq":
@@ -58,6 +60,17 @@ class TaskEnv(NpRenderEnv):
     def task_gaussians(self) -> Dict[str, str]:
         """Optional: tasks can override to supply extra gaussian assets."""
         return {}
+
+    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
+        """
+        Optional per-task randomization hook.
+
+        Args:
+            data: SceneData view corresponding to the environments being reset.
+            done_mask: boolean array over ALL envs indicating which envs are being reset.
+            phase: string hint ("reset", "auto_reset") for subclass logic.
+        """
+        return
 
     # ---- ABEnv props ----
     @property
@@ -113,8 +126,9 @@ class TaskEnv(NpRenderEnv):
         self._state.validate()
         return self._state
 
-    def update_state(self, state, obs_required: bool = True) -> mtx.SceneData:
-        reward, info = self._compute_reward(state.data)
+    def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
+        # Compute reward and write info in-place to avoid extra dict copies
+        reward = self._compute_reward(state)
         terminated = state.terminated.copy()
         # Tasks can latch success flags inside _compute_reward; prefer that over recomputation here
         if hasattr(self, "success_latched"):
@@ -126,7 +140,6 @@ class TaskEnv(NpRenderEnv):
 
         state.reward = reward.astype(np.float32)
         state.terminated = terminated
-        state.info.update(info)
         return state
 
     def apply_action(self, actions: np.ndarray, state) -> mtx.SceneData:
@@ -153,6 +166,9 @@ class TaskEnv(NpRenderEnv):
         # 2. Physics Reset (apply keyframe)
         self._apply_keyframe(self._state.data[done])
         forward_kinematic(self.model, self._state.data[done])
+
+        # 2b. Task/domain randomization hook (after keyframe, before robot reset)
+        self._randomize(self._state.data[done], done_mask=done, phase="auto_reset")
 
         # 2b. Update BG cache for done envs if renderer has background
         if self._bg_renderer is not None:
@@ -222,6 +238,9 @@ class TaskEnv(NpRenderEnv):
         self._apply_keyframe(self._state.data[done_mask])
         forward_kinematic(self.model, self._state.data[done_mask])
 
+        # Task/domain randomization hook (after keyframe, before robot reset)
+        self._randomize(self._state.data[done_mask], done_mask=done_mask, phase="reset")
+
         # Reset Robot Internal State
         self.robot.reset_envs(self._state.data, done_mask)
         
@@ -241,8 +260,8 @@ class TaskEnv(NpRenderEnv):
 
     # ---- helpers ----
     @abc.abstractmethod
-    def _compute_reward(self, data: SceneData) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-        """Compute reward and info dict based on current SceneData."""
+    def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
+        """Compute reward given full state; write aux metrics into state.info in-place."""
 
     def _build_obs(self, data: SceneData) -> Dict[str, np.ndarray]:
         obs_pix = self._render_pixels(data)

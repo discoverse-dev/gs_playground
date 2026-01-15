@@ -11,6 +11,7 @@ from motrixsim import SceneData
 from gs_playground import ROOT_PATH
 from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
+from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
 ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_02_stack_color_blocks" / "3dgs"
 TASK_GAUSSIANS = {
@@ -72,6 +73,38 @@ class StackColorBlocksEnv(TaskEnv):
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
 
+    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
+        """
+        Example randomization: jitter cube xy positions for the envs being reset.
+
+        Args:
+            data: SceneData view for the subset of envs being reset (len == sum(done_mask)).
+            done_mask: boolean mask over all envs (not used directly here).
+            phase: "reset" or "auto_reset" for potential differentiated logic.
+        """
+        if data.shape[0] == 0:
+            return
+
+        # Get current poses for the subset: (B_subset, num_cubes, 7)
+        cube_pose = np.stack(
+            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+            axis=1,
+        )
+
+        # Sample small XY jitters per cube/per env
+        xy_jitter = self._rng.uniform(-0.08, 0.08, size=cube_pose[..., :2].shape).astype(np.float32)
+        new_pose = cube_pose.copy()
+        new_pose[..., :2] = cube_pose[..., :2] + xy_jitter  # keep z/orientation unchanged
+
+        # Write back poses using set_dof_pos (include floating base)
+        for env_idx in range(data.shape[0]):
+            for cube_idx, body in enumerate(self.cube_bodies):
+                body.set_dof_pos(
+                    data[env_idx],
+                    new_pose[env_idx, cube_idx],
+                    include_floatingbase=True,
+                )
+
     def _reset_task_state(self, done: np.ndarray):
         """Reset internal task state variables for done environments."""
         rng = np.random.default_rng()
@@ -87,7 +120,9 @@ class StackColorBlocksEnv(TaskEnv):
             self.success_latched[done] = False
 
     # ---- helpers ----
-    def _compute_reward(self, data: SceneData) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+    def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
+        data: SceneData = state.data
+        info: Dict[str, np.ndarray] = state.info
         cube_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
             axis=1,
@@ -121,10 +156,12 @@ class StackColorBlocksEnv(TaskEnv):
         success_r = 5.0 * self.success_latched.astype(np.float32)
 
         reward = reach_r + stack_r + grasp_r + success_r
-        return reward.astype(np.float32), {
-            "is_success": self.success_latched.copy(),
-            "is_grasped": self.grasp_latched.copy(),
-            "reach_dist": dist_ee_obj,
-            "stack_xy": dist_xy,
-            "dz": dz,
-        }
+
+        # Write metrics into info in-place
+        info["is_success"] = self.success_latched.copy()
+        info["is_grasped"] = self.grasp_latched.copy()
+        info["reach_dist"] = dist_ee_obj
+        info["stack_xy"] = dist_xy
+        info["dz"] = dz
+
+        return reward.astype(np.float32)

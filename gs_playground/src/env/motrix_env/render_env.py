@@ -170,7 +170,6 @@ class NpRenderEnv(NpEnv):
         self._state = RenderEnvState(data, obs, reward, terminated, truncated, info)
         self._reset_done_envs()
         self._state.validate()
-        return self._state
 
     def step(self, actions: np.ndarray) -> RenderEnvState:
         return super().step(actions)
