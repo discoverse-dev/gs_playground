@@ -24,6 +24,10 @@ class RenderEnvCfg(EnvCfg):
     img_height: int = 240
     cam_id: Sequence[int] = field(default_factory=lambda: [0])
 
+    # assets
+    # Optional rendering assets (provide defaults for compatibility)
+    gs_background_ply: str = ""
+    gs_robot_gaussians: Dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class RenderEnvState(NpEnvState):
@@ -55,8 +59,12 @@ class NpRenderEnv(NpEnv):
             self._cam_ids = [int(c) for c in cam_ids_raw]
         if len(self._cam_ids) == 0:
             raise ValueError("cam_id must contain at least one camera index")
-    
 
+    @property
+    def cam_ids(self) -> Sequence[int]:
+        """Get configured camera IDs for rendering."""
+        return self._cam_ids
+    
     # -------------------- Renderer helpers --------------------
     def init_renderer(self, body_gaussians: Dict[str, str], background_ply: Optional[str] = None, minibatch: int = 32):
         """Initialize separate FG/BG renderers for batch rendering with BG cache."""
@@ -86,7 +94,7 @@ class NpRenderEnv(NpEnv):
         poses = []
         rmats = []
         fovys = []
-        for cid in self._cam_ids:
+        for cid in self.cam_ids:
             cam = self._model.cameras[cid]
             cam_pose = cam.get_pose(data)  # (B,7) xyzw
             poses.append(cam_pose[..., :3])
@@ -136,19 +144,23 @@ class NpRenderEnv(NpEnv):
         rgb_np_u8 = (255 * torch.clamp(rgb_t, 0.0, 1.0)).to(torch.uint8).cpu().numpy()
 
         obs_pix: Dict[str, torch.Tensor] = {}
-        for i, _ in enumerate(self._cam_ids):
+        for i, _ in enumerate(self.cam_ids):
             obs_pix[f"pixels/view_{i}"] = rgb_np_u8[:, i]
         return obs_pix
 
     def _init_obs_dict(self, n: int, obs_dim: int) -> Dict[str, torch.Tensor]:
-        obs = {"state": torch.zeros((n, obs_dim), dtype=torch.float32)}
-        for i, _ in enumerate(self._cam_ids):
-            obs[f"pixels/view_{i}"] = torch.zeros((n, self._img_h, self._img_w, 3), dtype=torch.float32)
+        obs = {"state": torch.zeros((n, max(1, obs_dim)), dtype=torch.float32)}
+        for i, _ in enumerate(self.cam_ids):
+            # Use uint8 for pixel placeholders to match rendered uint8 output
+            obs[f"pixels/view_{i}"] = torch.zeros((n, self._img_h, self._img_w, 3), dtype=torch.uint8)
         return obs
 
-    # -------------------- Override: state/init/reset/step with pixel obs --------------------
+    # -------------------- Override: state/init/step with pixel obs --------------------
     def init_state(self) -> RenderEnvState:
-        obs_dim = self.observation_space.shape[0]
+        # `observation_space` may be a Dict (pixel envs). Don't assume a single
+        # shape attribute; `_init_obs_dict` builds a dict-based obs, so pass
+        # a placeholder obs_dim (0) which is handled above.
+        obs_dim = 0
         obs = self._init_obs_dict(self._num_envs, obs_dim)
         reward = np.zeros((self._num_envs,), dtype=np.float32)
         terminated = np.ones((self._num_envs,), dtype=bool)
