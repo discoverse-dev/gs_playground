@@ -62,11 +62,11 @@ class StackColorBlocksEnv(TaskEnv):
 
         self.cube_bodies = [self.model.get_body(self.model.get_body_index(n)) for n in cfg.cube_names]
 
-        B = self._num_envs
-        self.top_idx = np.zeros((B,), dtype=np.int32)
-        self.base_idx = np.zeros((B,), dtype=np.int32)
-        self.grasp_latched = np.zeros((B,), dtype=bool)
-        self.success_latched = np.zeros((B,), dtype=bool)
+
+        self.top_idx = np.zeros((self.num_envs,), dtype=np.int32)
+        self.base_idx = np.zeros((self.num_envs,), dtype=np.int32)
+        self.grasp_latched = np.zeros((self.num_envs,), dtype=bool)
+        self.success_latched = np.zeros((self.num_envs,), dtype=bool)
 
     # ---- Task hooks ----
     def task_gaussians(self) -> Dict[str, str]:
@@ -88,7 +88,6 @@ class StackColorBlocksEnv(TaskEnv):
 
     # ---- helpers ----
     def _compute_reward(self, data: SceneData) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-        B = self._num_envs
         cube_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
             axis=1,
@@ -96,7 +95,7 @@ class StackColorBlocksEnv(TaskEnv):
         
         ee_pos = self.robot.get_ee_pose(data)[:, :3]
 
-        idx = np.arange(B)
+        idx = np.arange(self.num_envs)
         top_pos = cube_pose[idx, self.top_idx, :3]
         base_pos = cube_pose[idx, self.base_idx, :3]
 
