@@ -1,0 +1,264 @@
+<mujoco model="panda_hang_toothbrush_cup">
+  <!-- Robot -->
+  <include file="panda_robotiq.xml"/>
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="16" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <!-- Environment -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <!-- Task4: Bottle + rack/hook meshes 0-63-->
+    <mesh name="toothbrush_cup_mesh_0" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_000.obj"/>
+    <mesh name="toothbrush_cup_mesh_1" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_001.obj"/>
+    <mesh name="toothbrush_cup_mesh_2" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_002.obj"/>
+    <mesh name="toothbrush_cup_mesh_3" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_003.obj"/>
+    <mesh name="toothbrush_cup_mesh_4" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_004.obj"/>
+    <mesh name="toothbrush_cup_mesh_5" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_005.obj"/>
+    <mesh name="toothbrush_cup_mesh_6" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_006.obj"/>
+    <mesh name="toothbrush_cup_mesh_7" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_007.obj"/>
+    <mesh name="toothbrush_cup_mesh_8" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_008.obj"/>
+    <mesh name="toothbrush_cup_mesh_9" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_009.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_10" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_010.obj"/>
+    <mesh name="toothbrush_cup_mesh_11" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_011.obj"/>
+    <mesh name="toothbrush_cup_mesh_12" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_012.obj"/>
+    <mesh name="toothbrush_cup_mesh_13" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_013.obj"/>
+    <mesh name="toothbrush_cup_mesh_14" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_014.obj"/>
+    <mesh name="toothbrush_cup_mesh_15" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_015.obj"/>
+    <mesh name="toothbrush_cup_mesh_16" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_016.obj"/>
+    <mesh name="toothbrush_cup_mesh_17" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_017.obj"/>
+    <mesh name="toothbrush_cup_mesh_18" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_018.obj"/>
+    <mesh name="toothbrush_cup_mesh_19" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_019.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_20" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_020.obj"/>
+    <mesh name="toothbrush_cup_mesh_21" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_021.obj"/>
+    <mesh name="toothbrush_cup_mesh_22" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_022.obj"/>
+    <mesh name="toothbrush_cup_mesh_23" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_023.obj"/>
+    <mesh name="toothbrush_cup_mesh_24" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_024.obj"/>
+    <mesh name="toothbrush_cup_mesh_25" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_025.obj"/>
+    <mesh name="toothbrush_cup_mesh_26" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_026.obj"/>
+    <mesh name="toothbrush_cup_mesh_27" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_027.obj"/>
+    <mesh name="toothbrush_cup_mesh_28" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_028.obj"/>
+    <mesh name="toothbrush_cup_mesh_29" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_029.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_30" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_030.obj"/>
+    <mesh name="toothbrush_cup_mesh_31" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_031.obj"/>
+    <mesh name="toothbrush_cup_mesh_32" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_032.obj"/>
+    <mesh name="toothbrush_cup_mesh_33" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_033.obj"/>
+    <mesh name="toothbrush_cup_mesh_34" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_034.obj"/>
+    <mesh name="toothbrush_cup_mesh_35" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_035.obj"/>
+    <mesh name="toothbrush_cup_mesh_36" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_036.obj"/>
+    <mesh name="toothbrush_cup_mesh_37" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_037.obj"/>
+    <mesh name="toothbrush_cup_mesh_38" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_038.obj"/>
+    <mesh name="toothbrush_cup_mesh_39" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_039.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_40" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_040.obj"/>
+    <mesh name="toothbrush_cup_mesh_41" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_041.obj"/>
+    <mesh name="toothbrush_cup_mesh_42" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_042.obj"/>
+    <mesh name="toothbrush_cup_mesh_43" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_043.obj"/>
+    <mesh name="toothbrush_cup_mesh_44" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_044.obj"/>
+    <mesh name="toothbrush_cup_mesh_45" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_045.obj"/>
+    <mesh name="toothbrush_cup_mesh_46" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_046.obj"/>
+    <mesh name="toothbrush_cup_mesh_47" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_047.obj"/>
+    <mesh name="toothbrush_cup_mesh_48" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_048.obj"/>
+    <mesh name="toothbrush_cup_mesh_49" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_049.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_50" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_050.obj"/>
+    <mesh name="toothbrush_cup_mesh_51" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_051.obj"/>
+    <mesh name="toothbrush_cup_mesh_52" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_052.obj"/>
+    <mesh name="toothbrush_cup_mesh_53" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_053.obj"/>
+    <mesh name="toothbrush_cup_mesh_54" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_054.obj"/>
+    <mesh name="toothbrush_cup_mesh_55" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_055.obj"/>
+    <mesh name="toothbrush_cup_mesh_56" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_056.obj"/>
+    <mesh name="toothbrush_cup_mesh_57" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_057.obj"/>
+    <mesh name="toothbrush_cup_mesh_58" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_058.obj"/>
+    <mesh name="toothbrush_cup_mesh_59" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_059.obj"/>
+
+    <mesh name="toothbrush_cup_mesh_60" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_060.obj"/>
+    <mesh name="toothbrush_cup_mesh_61" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_061.obj"/>
+    <mesh name="toothbrush_cup_mesh_62" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_062.obj"/>
+    <mesh name="toothbrush_cup_mesh_63" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_063.obj"/>
+
+
+
+
+    <mesh name="rack_mesh_0"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_000.obj"/>
+    <mesh name="rack_mesh_1"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_001.obj"/>
+    <mesh name="rack_mesh_2"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_002.obj"/>
+    <mesh name="rack_mesh_3"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_003.obj"/>
+    <mesh name="rack_mesh_4"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_004.obj"/>
+    <mesh name="rack_mesh_5"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_005.obj"/>
+    <mesh name="rack_mesh_6"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_006.obj"/>
+    <mesh name="rack_mesh_7"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_007.obj"/>
+
+    <material name="toothbrush_cup_mat" rgba="0.85 0.10 0.10 1" reflectance="0.2"/>
+    <material name="rack_mat"       rgba="0.20 0.20 0.20 1" reflectance="0.1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+
+    <camera fovy="43.365" name="front" pos="1.05139524 0.00603114 0.6419337" quat="0.6090352  0.29501705 0.31961847 0.66323834"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+
+    <!-- Rack/Hooks: static body -->
+    <body name="rack" pos="0.539524 0.323790 0.174200" quat="0.721105 0 0 -0.692826">
+      <joint type="free" frictionloss="0.0001"/>
+
+      <!-- collision + visual. If your rack mesh is non-convex, prefer primitive colliders in code. -->
+      <geom name="rack_geom_0" type="mesh" mesh="rack_mesh_0" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_1" type="mesh" mesh="rack_mesh_1" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_2" type="mesh" mesh="rack_mesh_2" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_3" type="mesh" mesh="rack_mesh_3" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_4" type="mesh" mesh="rack_mesh_4" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_5" type ="mesh" mesh="rack_mesh_5" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_6" type ="mesh" mesh="rack_mesh_6" material="rack_mat" contype="1" conaffinity="1"/>
+      <geom name="rack_geom_7" type ="mesh" mesh="rack_mesh_7" material="rack_mat" contype="1" conaffinity="1"/>
+      <!-- define a hook target site for reward/IK guidance -->
+      <!-- <geom name="rack_hook_geom" pos="0.00 -0.06 0.115" type="cylinder" size="0.01 0.05" rgba="0.8 0.1 0.1 1 " contype="0" conaffinity="0" euler="1.307 0 0"/> -->
+      <site name="rack_hook_site" pos="0.05 0.0 0.2" type="cylinder" size="0.01 0.05" rgba="0.8 0.1 0.1 1 " euler="0 1.407 0" />
+    </body>
+
+    <!-- Red bottle: dynamic free body -->
+    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="-0.849358 0.215527 0.422472 -0.231636">    
+      <joint type="free" frictionloss="0.0001"/>
+      <!-- approximate bottle collision (tune to match mesh) -->
+      <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" />
+      <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_2" type="mesh" mesh="toothbrush_cup_mesh_2" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_3" type="mesh" mesh="toothbrush_cup_mesh_3" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_4" type="mesh" mesh="toothbrush_cup_mesh_4" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_5" type="mesh" mesh="toothbrush_cup_mesh_5" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_6" type="mesh" mesh="toothbrush_cup_mesh_6" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_7" type="mesh" mesh="toothbrush_cup_mesh_7" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_8" type="mesh" mesh="toothbrush_cup_mesh_8" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_9" type="mesh" mesh="toothbrush_cup_mesh_9" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_10" type="mesh" mesh="toothbrush_cup_mesh_10" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_11" type="mesh" mesh="toothbrush_cup_mesh_11" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_12" type="mesh" mesh="toothbrush_cup_mesh_12" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_13" type="mesh" mesh="toothbrush_cup_mesh_13" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_14" type="mesh" mesh="toothbrush_cup_mesh_14" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_15" type="mesh" mesh="toothbrush_cup_mesh_15" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_16" type="mesh" mesh="toothbrush_cup_mesh_16" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_17" type="mesh" mesh="toothbrush_cup_mesh_17" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_18" type="mesh" mesh="toothbrush_cup_mesh_18" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_19" type="mesh" mesh="toothbrush_cup_mesh_19" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_20" type="mesh" mesh="toothbrush_cup_mesh_20" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_21" type="mesh" mesh="toothbrush_cup_mesh_21" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_22" type="mesh" mesh="toothbrush_cup_mesh_22" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_23" type="mesh" mesh="toothbrush_cup_mesh_23" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_24" type="mesh" mesh="toothbrush_cup_mesh_24" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_25" type="mesh" mesh="toothbrush_cup_mesh_25" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_26" type="mesh" mesh="toothbrush_cup_mesh_26" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_27" type="mesh" mesh="toothbrush_cup_mesh_27" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_28" type="mesh" mesh="toothbrush_cup_mesh_28" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_29" type="mesh" mesh="toothbrush_cup_mesh_29" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_30" type="mesh" mesh="toothbrush_cup_mesh_30" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_31" type="mesh" mesh="toothbrush_cup_mesh_31" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_32" type="mesh" mesh="toothbrush_cup_mesh_32" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_33" type="mesh" mesh="toothbrush_cup_mesh_33" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_34" type="mesh" mesh="toothbrush_cup_mesh_34" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_35" type="mesh" mesh="toothbrush_cup_mesh_35" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_36" type="mesh" mesh="toothbrush_cup_mesh_36" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_37" type="mesh" mesh="toothbrush_cup_mesh_37" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_38" type="mesh" mesh="toothbrush_cup_mesh_38" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_39" type="mesh" mesh="toothbrush_cup_mesh_39" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_40" type="mesh" mesh="toothbrush_cup_mesh_40" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_41" type="mesh" mesh="toothbrush_cup_mesh_41" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_42" type="mesh" mesh="toothbrush_cup_mesh_42" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_43" type="mesh" mesh="toothbrush_cup_mesh_43" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_44" type="mesh" mesh="toothbrush_cup_mesh_44" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_45" type="mesh" mesh="toothbrush_cup_mesh_45" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_46" type="mesh" mesh="toothbrush_cup_mesh_46" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_47" type="mesh" mesh="toothbrush_cup_mesh_47" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_48" type="mesh" mesh="toothbrush_cup_mesh_48" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_49" type="mesh" mesh="toothbrush_cup_mesh_49" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_50" type="mesh" mesh="toothbrush_cup_mesh_50" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_51" type="mesh" mesh="toothbrush_cup_mesh_51" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_52" type="mesh" mesh="toothbrush_cup_mesh_52" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_53" type="mesh" mesh="toothbrush_cup_mesh_53" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_54" type="mesh" mesh="toothbrush_cup_mesh_54" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_55" type="mesh" mesh="toothbrush_cup_mesh_55" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_56" type="mesh" mesh="toothbrush_cup_mesh_56" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_57" type="mesh" mesh="toothbrush_cup_mesh_57" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_58" type="mesh" mesh="toothbrush_cup_mesh_58" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_59" type="mesh" mesh="toothbrush_cup_mesh_59" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+
+      <geom name="toothbrush_cup_geom_60" type="mesh" mesh="toothbrush_cup_mesh_60" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_61" type="mesh" mesh="toothbrush_cup_mesh_61" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <!-- site for detecting bottle grasping -->
+      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.04 0.02" quat="-0.849358 -0.215527 -0.422472 0.231636" rgba="0.1 0.1 0.8 0.3" />
+    </body>
+
+    <!-- Mocap target -->
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size="0.001" type="sphere"/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+      <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
+      <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
+      <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <!-- Optional: contact signal near hook -->
+    <touch name="rack_hook_touch" site="rack_hook_site"/>
+    <touch name="bottle_grasp_touch" site="bottle_grasp_site"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home"
+      qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
+      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
+        0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
+      ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
+    />
+    <key name ="pick"
+      qpos="0.144298 -0.0181929 -0.0260173 -2.69614 -0.00500998 2.73329 -0.0455701 
+      0.753394 0.752039 0.757078 0.75296 0.75216 0.753854 
+      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
+      0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
+      ctrl="0.14485 -0.01763 -0.0252932 -2.69673 -0.00471172 2.7329 -0.0455642 0.82"
+    />
+    <key name ="hang"
+        qpos="-0.0445106 -0.36456 -0.169781 -2.28542 -0.0480373 1.9759 -0.355341
+         0.756043 0.755244 0.75823 0.755676 0.754789 0.758494
+        0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
+        0.496940 0.203481 0.383664 -0.884311 0.334280 0.325413 -0.018881"
+
+        ctrl="-0.0445136 -0.364917 -0.169742 -2.28489 -0.0481067 1.97619 -0.355346 0.8"
+    />
+    <key
+      qpos="-0.0289854 -0.407101 -0.157445 -2.32209 -0.0516258 1.97132 -0.324822 
+      0.025934 0.026237 0.0265545 0.0261839 0.0264856 0.0268017 
+      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
+      0.544401 0.274831 0.334977 -0.405661 0.141917 0.902931 -0.003535"
+      ctrl="-0.0289854 -0.407101 -0.157445 -2.32209 -0.0516258 1.97132 -0.324822 0"
+    />
+  </keyframe>
+</mujoco>

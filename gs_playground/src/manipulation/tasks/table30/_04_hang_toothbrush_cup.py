@@ -1,297 +1,245 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Tuple, Optional, Any
+from typing import Dict, Tuple
 
-import gymnasium as gym
-import motrixsim as mtx
 import numpy as np
-from motrixsim import SceneData, forward_kinematic
+from motrixsim import SceneData
+from scipy.spatial.transform import Rotation
 
 from gs_playground import ROOT_PATH
-from gs_playground.src.env.motrix_env.render_env import RenderEnvCfg, NpRenderEnv, RenderEnvState
 from gs_playground.src.env.registry import envcfg, env
+from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
+from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
-# [Robot] UR5e
-from gs_playground.src.manipulation.robots.universal_robots_ur5e_robotiq.ur5e_robotiq import UR5eRobotiq
-
-# [Assets]
-from gs_playground.src.manipulation.tasks.table30.gaussian_assets import (
-    build_task_gaussians,
-)
-from gs_playground.src.manipulation._tasks.common.safe_access import read_touch_scalar_safe
-
-# -----------------------------------------------------------------------------
-# Paths
-# -----------------------------------------------------------------------------
-ASSETS_UR5E_DIR = ROOT_PATH.parent / "models" / "robots" / "manipulation" / "universal_robots_ur5e_robotiq"
-ASSETS_TASK_DIR = ROOT_PATH.parent / "models" / "tasks" / "table30" / "04_hang_toothbrush_cup"
-
-# [映射修正] Key 必须与 XML 中的 body name 一致
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "04_hang_toothbrush_cup" / "3dgs"
 TASK_GAUSSIANS = {
-    "red_bottle": "3dgs/red_bottle.ply",
-    "rack": "3dgs/rack.ply",
+    "toothbrush_cup": ASSETS_TASK_DIR / "toothbrush_cup.ply",
+    "rack": ASSETS_TASK_DIR / "rack.ply",
 }
 
 
-@envcfg("table30/hang_bottle")
+@envcfg("table30/hang_toothbrush_cup")
 @dataclass
-class HangBottleEnvCfg(RenderEnvCfg):
+class HangToothbrushCupEnvCfg(TaskEnvCfg):
     # model / sim
-    model_file: str = str((ASSETS_UR5E_DIR / "xmls" / "04_hang_toothbrush_cup.xml").as_posix())
-    sim_dt: float = 0.002
-    ctrl_dt: float = 0.02
+    robot_name: str = "franka_robotiq"
+    model_file: str = str((ROOT_PATH / "models" / "robots" / 
+                           "manipulation" / "franka_emika_panda_robotiq" / 
+                           "xmls" / "table30_04_hang_toothbrush_cup.xml").as_posix())
 
     # control
-    max_episode_steps: int = 800
-    action_mode: str = "eef"
-
-    # observation / prompt
-    prompt_template: str = "What action should the robot take to {task_description}?"
-    instruction: str = "Pick up the red bottle and hang it on the rack."
+    action_mode: str = "eef_relative"  # "joint" or "eef"
 
     # rendering
     img_width: int = 320
     img_height: int = 240
-    cam_id: Tuple[int, ...] = (0,)
+ 
+    # instruction
+    instruction: str = "Hang the orange toothbrush cup on the cup holder"
 
-    # assets
-    gs_background_ply: str = ""
-    gs_robot_gaussians: Optional[Dict[str, str]] = None
-
-    # [Entities from XML]
-    # 对应 XML 中的 <body name="red_bottle"> 和 <body name="rack">
-    bottle_name: str = "red_bottle"
+    # entities (XML names)
+    cup_name: str = "toothbrush_cup"
     rack_name: str = "rack"
-    
-    # [Sensors from XML]
-    # 对应 XML 中的 <touch name="...">
+
+    # sites (XML names)
+    grasp_site_name: str = "bottle_grasp_site"
+    hook_site_name: str = "rack_hook_site"
+
+    # sensors (XML names)
     sensor_grasp: str = "bottle_grasp_touch"
     sensor_hook: str = "rack_hook_touch"
 
     # reward params
-    touch_threshold: float = 0.1
-    grasp_reward_bonus: float = 2.0
-    hang_reward_bonus: float = 5.0
+    touch_threshold: float = 1e-3
+    grasp_dist_threshold: float = 0.05
+
+    reach_scale: float = 5.0
+    move_scale: float = 2.0
+
+    grasp_reward_bonus: float = 2.0          # latch 后固化
+    hang_reward_bonus: float = 5.0           # 稀疏奖励（仅首次成功给）
+
+    hang_height_margin: float = 0.05         # cup_z > hook_z - margin
+
+    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.07, 0.02)
+    hang_offset: Tuple[float, float, float] = (0, 0, -0.035)
     
-    # reset
+    pre_hang_dist_threshold: float = 0.03
+    hang_dist_threshold: float = 0.02
+
+    # randomization
+    xy_jitter: float = 0.03                # uniform[-xy_jitter, xy_jitter] (meters)
+
     reset_enabled: bool = True
-    reset_keyframe: int | str = "home"
+    reset_keyframe: int | str = "home"  
 
 
-@env("table30/hang_bottle", "np")
-class HangBottleEnv(NpRenderEnv):
+@env("table30/hang_toothbrush_cup", "np")
+class HangToothbrushCupEnv(TaskEnv):
     """
-    Task: Hang a bottle on a rack using UR5e.
+    Task: Hang the toothbrush cup on the rack.
+    Robot: Franka + Robotiq.
+    Backend: MotrixSim (np).
     """
 
-    def __init__(self, cfg: HangBottleEnvCfg, num_envs: int = 32):
-        cfg.cam_id = tuple(cfg.cam_id) if not isinstance(cfg.cam_id, tuple) else cfg.cam_id
+    def __init__(self, cfg: HangToothbrushCupEnvCfg, num_envs: int = 32):
         super().__init__(cfg, num_envs=num_envs)
-        self._cfg: HangBottleEnvCfg = cfg
+        self._cfg: HangToothbrushCupEnvCfg = cfg
 
-        # 1. Initialize Robot (UR5e)
-        self.robot = UR5eRobotiq(self.model)
-
-        # 2. Initialize Task Handles
-        self.bottle_body = self.model.get_body(self.model.get_body_index(cfg.bottle_name))
+        # bodies
+        self.cup_body = self.model.get_body(self.model.get_body_index(cfg.cup_name))
         self.rack_body = self.model.get_body(self.model.get_body_index(cfg.rack_name))
-        
-        # Sites for logic (Defined in XML)
-        self.hook_site = self.model.get_site("rack_hook_site")
-        self.grasp_site = self.model.get_site("bottle_grasp_site")
 
-        # [State Tracking]
-        B = self._num_envs
-        self.is_grasped = np.zeros(B, dtype=bool)
-        self.is_hung = np.zeros(B, dtype=bool)
+        # sites
+        self.grasp_site = self.model.get_site(cfg.grasp_site_name)
+        self.hook_site = self.model.get_site(cfg.hook_site_name)
 
-        # 3. Init Renderer
-        gauss = UR5eRobotiq.robot_gaussians()
-        # [映射修正] 加载 task 相关的 ply
-        gauss.update(build_task_gaussians(ASSETS_TASK_DIR, {k: ASSETS_TASK_DIR / v for k, v in TASK_GAUSSIANS.items()}))
-        
-        if cfg.gs_robot_gaussians:
-            gauss.update(cfg.gs_robot_gaussians)
-            
-        bg = cfg.gs_background_ply.strip() or UR5eRobotiq.robot_background_ply()
-        self.init_renderer(body_gaussians=gauss, background_ply=bg, minibatch=self._num_envs)
+        # task latch state
+        self.is_grasped = np.zeros((self.num_envs,), dtype=bool)
+        self.is_pre_hang = np.zeros((self.num_envs,), dtype=bool)
+        self.is_hung = np.zeros((self.num_envs,), dtype=bool)
+        self.success_latched = np.zeros((self.num_envs,), dtype=bool)
 
-        self._state = None
 
-    @property
-    def observation_space(self) -> gym.Space:
-        cam_spaces = {f"pixels/view_{i}": gym.spaces.Box(0, 255, (self._img_h, self._img_w, 3), np.uint8) for i, _ in enumerate(self._cam_ids)}
-        
-        obs_spaces = {
-            **cam_spaces,
-            "qpos": gym.spaces.Box(-np.inf, np.inf, (6,), np.float32),
-            "gripper": gym.spaces.Box(0, 1, (1,), np.float32),
-            "ee_pose": gym.spaces.Box(-np.inf, np.inf, (6,), np.float32),
-            "bottle_pose": gym.spaces.Box(-np.inf, np.inf, (7,), np.float32),
-            "rack_pose": gym.spaces.Box(-np.inf, np.inf, (7,), np.float32),
-            "prompt": gym.spaces.Text(max_length=256),
-        }
-        return gym.spaces.Dict(obs_spaces)
 
-    @property
-    def action_space(self) -> gym.Space:
-        return self.robot.action_space
+    # ---- Task hooks ----
+    def task_gaussians(self) -> Dict[str, str]:
+        return TASK_GAUSSIANS
 
-    def init_state(self) -> RenderEnvState:
-        data = SceneData(self._model, batch=[self._num_envs])
-        
-        obs_struct = self.observation_space
-        obs = {}
-        for k, s in obs_struct.items():
-            if isinstance(s, gym.spaces.Text):
-                obs[k] = np.empty((self._num_envs,), dtype=object)
-            else:
-                obs[k] = np.zeros((self._num_envs,) + s.shape, dtype=s.dtype)
+    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
+        """
+        Randomization: jitter rack + cup XY positions for the envs being reset.
 
-        reward = np.zeros(self._num_envs, np.float32)
-        term = np.zeros(self._num_envs, bool)
-        trunc = np.zeros(self._num_envs, bool)
-        info = {"steps": np.zeros(self._num_envs, np.uint64)}
-        
-        self._state = RenderEnvState(data, obs, reward, term, trunc, info)
-        self._reset_done_envs()
-        self._state.validate()
-        return self._state
+        Args:
+            data: SceneData view for the subset of envs being reset (len == sum(done_mask)).
+            done_mask: boolean mask over all envs (not used directly here).
+            phase: "reset" or "auto_reset" for potential differentiated logic.
+        """
+        if data.shape[0] == 0:
+            return
 
-    def apply_action(self, actions: np.ndarray, state) -> mtx.SceneData:
-        self.robot.apply_action(state.data, actions, action_mode=self._cfg.action_mode)
-        return state
+        # Get current poses for subset: (B_subset, 2, 7)
+        poses = np.stack(
+            [
+                np.asarray(self.rack_body.get_pose(data), dtype=np.float32),
+                np.asarray(self.cup_body.get_pose(data), dtype=np.float32),
+            ],
+            axis=1,
+        )
 
-    def update_state(self, state, obs_required: bool = True) -> mtx.SceneData:
-        reward, info = self._compute_reward(state.data)
-        
-        terminated = self.is_hung.copy() # 完成任务即终止
+        # Small XY jitters (keep z/orientation unchanged)
+        xy_jitter = self._rng.uniform(-0.03, 0.03, size=poses[..., :2].shape).astype(np.float32)
+        new_pose = poses.copy()
+        new_pose[..., :2] = poses[..., :2] + xy_jitter
 
-        if obs_required:
-            state.obs = self._build_obs(state.data)
+        # Write back poses using set_dof_pos (include floating base)
+        for env_idx in range(data.shape[0]):
+            self.rack_body.set_dof_pos(
+                data[env_idx],
+                new_pose[env_idx, 0],
+                include_floatingbase=True,
+            )
+            self.cup_body.set_dof_pos(
+                data[env_idx],
+                new_pose[env_idx, 1],
+                include_floatingbase=True,
+            )
 
-        state.reward = reward.astype(np.float32)
-        state.terminated = terminated
-        state.info.update(info)
-        return state
-
-    def _reset_done_envs(self):
-        if self._state is None: return
-        done = self._state.terminated | self._state.truncated
-        if not np.any(done): return
-        
+    def _reset_task_state(self, done: np.ndarray):
+        done = np.asarray(done, dtype=bool)
+        if done.size == 0 or not np.any(done):
+            return
         self.is_grasped[done] = False
         self.is_hung[done] = False
+        self.is_pre_hang[done] = False
+        self.success_latched[done] = False
 
-        self._apply_keyframe(self._state.data[done])
-        forward_kinematic(self.model, self._state.data[done])
-        self.robot.reset_envs(self._state.data, done)
-
-        if self._state.obs is not None:
-            new_obs = self._build_obs(self._state.data[done])
-            for k, v in new_obs.items():
-                self._state.obs[k][done] = v
-            
-        self._state.reward[done] = 0.0
-        self._state.terminated[done] = False
-        self._state.truncated[done] = False
-        self._state.info["steps"][done] = 0
-
-    def reset(self, data: SceneData = None, done: np.ndarray = None) -> tuple[np.ndarray, dict]:
-        if data is not None:
-            self._apply_keyframe(data)
-            forward_kinematic(self.model, data)
-            return self._build_obs(data), {}
-
-        if self._state is None: self.init_state()
-        if done is None: done = np.ones(self._num_envs, bool)
-        else: done = np.asarray(done, bool)
-        
-        if not np.any(done): return self._state.obs, self._state.info
-
-        self.is_grasped[done] = False
-        self.is_hung[done] = False
-
-        self._apply_keyframe(self._state.data[done])
-        forward_kinematic(self.model, self._state.data[done])
-        self.robot.reset_envs(self._state.data, done)
-        
-        self._state.obs = self._build_obs(self._state.data)
-        self._state.reward[done] = 0.0
-        self._state.terminated[done] = False
-        self._state.truncated[done] = False
-        self._state.info["steps"][done] = 0
-        return self._state.obs, self._state.info
-
-    # --------------------------------------------------------------------------
-    # 稠密奖励逻辑 (Dense Reward)
-    # --------------------------------------------------------------------------
-    def _compute_reward(self, data: SceneData) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
+        data: SceneData = state.data
+        info = state.info
         cfg = self._cfg
-        B = self._num_envs
-        
+        B = self.num_envs
+
+        # poses
         ee_pos = self.robot.get_ee_pose(data)[:, :3]
-        bottle_grasp_pos = np.asarray(self.grasp_site.get_pose(data), dtype=np.float32)[:, :3]
+        cup_grasp_pos = np.asarray(self.grasp_site.get_pose(data), dtype=np.float32)[:, :3]
         hook_pos = np.asarray(self.hook_site.get_pose(data), dtype=np.float32)[:, :3]
-        
-        # 读取传感器 (使用 safe access 防止报错)
-        grasp_touch = read_touch_scalar_safe(self.model, data, cfg.sensor_grasp, B)
-        hook_touch = read_touch_scalar_safe(self.model, data, cfg.sensor_hook, B)
-        
-        touching_bottle = grasp_touch > cfg.touch_threshold
+
+        # sensors
+        grasp_touch = np.asarray(self.model.get_sensor_value(cfg.sensor_grasp, data), dtype=np.float32).reshape(B, -1)[:, 0]
+        hook_touch = np.asarray(self.model.get_sensor_value(cfg.sensor_hook, data), dtype=np.float32).reshape(B, -1)[:, 0]
+
+        touching_cup = grasp_touch > cfg.touch_threshold
         touching_hook = hook_touch > cfg.touch_threshold
 
-        d_ee_bottle = np.linalg.norm(ee_pos - bottle_grasp_pos, axis=1)
-        d_bottle_hook = np.linalg.norm(bottle_grasp_pos - hook_pos, axis=1)
+        # distances
+        d_ee_cup = np.linalg.norm(ee_pos - cup_grasp_pos, axis=1)
 
-        # 1. Reach Reward
-        r_reach = 1.0 - np.tanh(5.0 * d_ee_bottle)
-        
-        # 2. Grasp Gate
-        # 如果足够近且触发了传感器 -> 视为抓取成功
-        self.is_grasped = self.is_grasped | (touching_bottle & (d_ee_bottle < 0.05))
-        r_grasped = self.is_grasped.astype(np.float32) * cfg.grasp_reward_bonus
+        # --- stage targets: pre_hang vs hang ---
+        pre_hang_tgt = hook_pos + np.asarray(cfg.pre_hang_offset, dtype=np.float32).reshape(1, 3)
+        hang_tgt = hook_pos + np.asarray(cfg.hang_offset, dtype=np.float32).reshape(1, 3)
 
-        # 3. Move to Hook Reward (仅在抓取后激活)
-        r_move = 0.0
-        if np.any(self.is_grasped):
-            r_move = (1.0 - np.tanh(2.0 * d_bottle_hook)) * self.is_grasped.astype(np.float32)
-        
-        # 4. Hang Gate
-        # 如果瓶子在挂钩附近，且挂钩传感器触发，且瓶子高度合适 -> 视为挂载成功
-        # (瓶子高度 > 挂钩高度 - 偏差)
-        is_high_enough = bottle_grasp_pos[:, 2] > (hook_pos[:, 2] - 0.05)
-        success_now = touching_hook & is_high_enough & self.is_grasped
+        d_cup_pre_hang = np.linalg.norm(cup_grasp_pos - pre_hang_tgt, axis=1)
+        d_cup_hang = np.linalg.norm(cup_grasp_pos - hang_tgt, axis=1)
+        # print("d_cup_pre_hang",d_cup_pre_hang)
+        # print("d_cup_hang",d_cup_hang)
+        # 1) Dense reach-to-cup
+        r_reach = 1.0 - np.tanh(cfg.reach_scale * d_ee_cup)
+
+        # 2) Grasp latch + fixed grasp reward
+        grasp_now = touching_cup & (d_ee_cup < cfg.grasp_dist_threshold)
+        self.is_grasped = self.is_grasped | grasp_now
+        r_grasp_fixed = self.is_grasped.astype(np.float32) * cfg.grasp_reward_bonus
+
+        # 3) Two-stage move shaping:
+        #    stage A: move to pre_hang until reached
+        #    stage B: then move to hang target
+        pre_hang_reached_now = self.is_grasped & (~self.is_pre_hang) & (d_cup_pre_hang < cfg.pre_hang_dist_threshold)
+        self.is_pre_hang = self.is_pre_hang | pre_hang_reached_now
+        if self.is_pre_hang.any() :
+            print("d_cup_pre_hang",d_cup_pre_hang)
+            print("d_cup_hang",d_cup_hang)
+            print("hang_tgt",hang_tgt)
+            print("cup_grasp_pos",cup_grasp_pos)
+
+        r_move_pre = (1.0 - np.tanh(cfg.move_scale * d_cup_pre_hang)) * (self.is_grasped & (~self.is_pre_hang)).astype(np.float32)
+        r_move_hang = (1.0 - np.tanh(cfg.move_scale * d_cup_hang)) * (self.is_grasped & self.is_pre_hang).astype(np.float32)
+        r_move = r_move_pre + r_move_hang
+
+        # 4) Sparse success: must correspond to FINAL hang_offset
+        high_enough = cup_grasp_pos[:, 2] > (hang_tgt[:, 2] - cfg.hang_height_margin)
+
+        success_now = (
+            touching_hook
+            & high_enough
+            & self.is_grasped
+            & self.is_pre_hang              # 先对准到 pre_hang
+            & (d_cup_hang < cfg.hang_dist_threshold)  # 再到 hang 点
+            & (~self.is_hung)
+        )
+
+        if success_now.any() :
+            print("d_cup_pre_hang",d_cup_pre_hang)
+            print("d_cup_hang",d_cup_hang)
+
         self.is_hung = self.is_hung | success_now
-        
-        r_success = self.is_hung.astype(np.float32) * cfg.hang_reward_bonus
+        self.success_latched = self.success_latched | self.is_hung
 
-        total_reward = r_reach + r_grasped + r_move + r_success
+        r_success_sparse = success_now.astype(np.float32) * cfg.hang_reward_bonus
 
-        info = {
-            "d_ee_bottle": d_ee_bottle,
-            "d_bottle_hook": d_bottle_hook,
-            "is_grasped": self.is_grasped,
-            "is_hung": self.is_hung
-        }
-        return total_reward, info
+        total_reward = r_reach + r_grasp_fixed + r_move + r_success_sparse
+        print(self.success_latched)
+        # stash info
+        info["d_ee_cup"] = d_ee_cup
+        info["d_cup_pre_hang"] = d_cup_pre_hang
+        info["d_cup_hang"] = d_cup_hang
+        info["grasp_touch"] = grasp_touch
+        info["hook_touch"] = hook_touch
+        info["is_grasped"] = self.is_grasped.copy()
+        info["is_pre_hang"] = self.is_pre_hang.copy()
+        info["is_hung"] = self.is_hung.copy()
+        info["is_success"] = self.success_latched.copy()
+        info["success_now"] = success_now
 
-    def _build_obs(self, data: SceneData) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs(data)
-        obs_pix = self._render_pixels(data)
-        
-        bottle_pose = np.asarray(self.bottle_body.get_pose(data), dtype=np.float32)
-        rack_pose = np.asarray(self.rack_body.get_pose(data), dtype=np.float32)
-        
-        instruction = str(self._cfg.instruction)
-        prompt = str(self._cfg.prompt_template).format(task_description=instruction)
-        prompts = np.array([prompt] * (data.shape[0]), dtype=object)
-
-        return {
-            **obs_pix,
-            **robot_obs,
-            "bottle_pose": bottle_pose,
-            "rack_pose": rack_pose,
-            "prompt": prompts
-        }
+        return total_reward.astype(np.float32)

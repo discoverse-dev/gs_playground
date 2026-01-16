@@ -105,7 +105,13 @@ class PressThreeButtonsEnv(TaskEnv):
                 )
 
     def _reset_task_state(self, done: np.ndarray):
-        return
+        done = np.asarray(done, dtype=bool)
+        if done.size == 0 or not np.any(done):
+            return
+        self.is_grasped[done] = False
+        self.is_hung[done] = False
+        self.success_latched[done] = False
+
     # ---- helpers ----
     def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
         data: SceneData = state.data
