@@ -132,15 +132,22 @@ class StackColorBlocksEnv(TaskEnv):
 
     def _reset_task_state(self, done: np.ndarray):
         """Reset internal task state variables for done environments."""
-        rng = np.random.default_rng()
-        
         n_done = np.sum(done)
         if n_done > 0:
-            # perms = np.argsort(rng.random((n_done, len(self._cfg.cube_names))), axis=1)
-            
-            # self.top_idx[done] = perms[:, 0]
-            # self.base_idx[done] = perms[:, 1]
 
+            try:
+                yellow_idx = self._cfg.cube_names.index("cube_yellow")
+                orange_idx = self._cfg.cube_names.index("cube_orange")
+            except ValueError:
+                # 如果名字写错了，回退到默认索引 1 和 2
+                yellow_idx = 1
+                orange_idx = 2
+
+            # 2. 强制赋值：所有 reset 的环境，目标都是 黄色(top) -> 橙色(base)
+            self.top_idx[done] = yellow_idx
+            self.base_idx[done] = orange_idx
+
+            # 3. 重置状态锁存
             self.grasp_latched[done] = False
             self.success_latched[done] = False
 
@@ -191,47 +198,47 @@ class StackColorBlocksEnv(TaskEnv):
 
         return reward.astype(np.float32)
 
-    def _check_success(self, state: RenderEnvState) -> np.ndarray:
-        data: SceneData = state.data
-        B = self.num_envs
-        cube_pose = np.stack(
-            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
-            axis=1,
-        )
-        name_to_idx = {name: i for i, name in enumerate(self._cfg.cube_names)}
-        yellow_i = name_to_idx["cube_yellow"]
-        orange_i = name_to_idx["cube_orange"]
+    # def _check_success(self, state: RenderEnvState) -> np.ndarray:
+    #     data: SceneData = state.data
+    #     B = self.num_envs
+    #     cube_pose = np.stack(
+    #         [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+    #         axis=1,
+    #     )
+    #     name_to_idx = {name: i for i, name in enumerate(self._cfg.cube_names)}
+    #     yellow_i = name_to_idx["cube_yellow"]
+    #     orange_i = name_to_idx["cube_orange"]
 
-        yellow = cube_pose[:, yellow_i, :3]
-        orange = cube_pose[:, orange_i, :3]
+    #     yellow = cube_pose[:, yellow_i, :3]
+    #     orange = cube_pose[:, orange_i, :3]
 
-        dist_xy = np.linalg.norm(yellow[:, :2] - orange[:, :2], axis=1)
-        dz = np.abs(yellow[:, 2] - (orange[:, 2] + 0.05))
+    #     dist_xy = np.linalg.norm(yellow[:, :2] - orange[:, :2], axis=1)
+    #     dz = np.abs(yellow[:, 2] - (orange[:, 2] + 0.05))
 
-        success = (dist_xy < 0.01) & (dz < 0.01)
-        # latch
-        self.success_latched = self.success_latched | success
-        return self.success_latched.copy()
+    #     success = (dist_xy < 0.01) & (dz < 0.01)
+    #     # latch
+    #     self.success_latched = self.success_latched | success
+    #     return self.success_latched.copy()
 
-    def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
-        state = super().update_state(state, obs_required=obs_required)
+    # def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
+    #     state = super().update_state(state, obs_required=obs_required)
 
-        # Fail-fast check: if any cube leaves workspace bounds, terminate env
-        data: SceneData = state.data
-        cube_pose = np.stack(
-            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
-            axis=1,
-        )
-        xy = cube_pose[..., :2]  # (B, num_cubes, 2)
-        x_ok = (xy[..., 0] >= -0.75) & (xy[..., 0] <= -0.45)
-        y_ok = (xy[..., 1] >= -0.20) & (xy[..., 1] <= 0.20)
-        in_bounds = x_ok & y_ok
-        out_of_bounds = ~np.all(in_bounds, axis=1)
+    #     # Fail-fast check: if any cube leaves workspace bounds, terminate env
+    #     data: SceneData = state.data
+    #     cube_pose = np.stack(
+    #         [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+    #         axis=1,
+    #     )
+    #     xy = cube_pose[..., :2]  # (B, num_cubes, 2)
+    #     x_ok = (xy[..., 0] >= -0.75) & (xy[..., 0] <= -0.45)
+    #     y_ok = (xy[..., 1] >= -0.20) & (xy[..., 1] <= 0.20)
+    #     in_bounds = x_ok & y_ok
+    #     out_of_bounds = ~np.all(in_bounds, axis=1)
 
-        if np.any(out_of_bounds):
-            terminated = state.terminated.copy()
-            terminated[out_of_bounds] = True
-            state.terminated = terminated
-            state.info["out_of_bounds"] = out_of_bounds
+    #     if np.any(out_of_bounds):
+    #         terminated = state.terminated.copy()
+    #         terminated[out_of_bounds] = True
+    #         state.terminated = terminated
+    #         state.info["out_of_bounds"] = out_of_bounds
 
-        return state
+    #     return state

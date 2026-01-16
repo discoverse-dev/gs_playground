@@ -74,7 +74,7 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     reset_dist_threshold: float = 0.06
 
     # randomization
-    xy_jitter: float = 0.02  # uniform[-xy_jitter, xy_jitter] (meters)
+    xy_jitter: float = 0.01  # uniform[-xy_jitter, xy_jitter] (meters)
 
     reset_enabled: bool = True
     reset_keyframe: int | str = "home"

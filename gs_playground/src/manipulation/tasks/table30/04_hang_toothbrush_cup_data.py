@@ -59,13 +59,13 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1000
-    num_envs: int = 50
-    seed: int = 0
-    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect"
+    data_size: int = 321
+    num_envs: int = 10
+    seed: int = 300
+    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_3"
 
     # env control（只保留 collector 的“上限”）
-    max_ctrl_steps: int = 5000
+    max_ctrl_steps: int = 2000
 
     # motion
     max_dp: float = 0.005
@@ -539,7 +539,7 @@ class HangToothbrushCupCollector:
 
         action = np.zeros((B, 7), dtype=np.float32)
         action[:, :3] = self.exec_pos - ref_pos
-        action[:, :2] *= 1
+        action[:, :2] *= 0.5
         action[:, 2] *= 1
         action[:, 3:6] = 0 
         action[:, 6] = grip_cmd

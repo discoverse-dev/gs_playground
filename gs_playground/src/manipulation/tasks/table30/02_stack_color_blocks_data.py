@@ -22,10 +22,12 @@ from gs_playground.src.manipulation.tasks.table30._02_stack_color_blocks_franka 
 # -----------------------------------------------------------------------------
 def smooth_step_pos(curr: np.ndarray, tgt: np.ndarray, max_dp: float) -> np.ndarray:
     """
+    平滑移动：限制单步最大位移 max_dp
     curr/tgt: (B,3)
     """
     dp = tgt - curr
     n = np.linalg.norm(dp, axis=1, keepdims=True)
+    # 避免除以零
     s = np.minimum(1.0, float(max_dp) / (n + 1e-9))
     return curr + dp * s
 
@@ -57,23 +59,24 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 50
-    num_envs: int = 5
+    data_size: int = 1000
+    num_envs: int = 50
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect"
 
     # env control
-    max_ctrl_steps: int = 600
+    # [修改] 增加步数上限，给复位动作留出时间
+    max_ctrl_steps: int = 500
 
-    # motion params (tuned for stacking)
-    max_dp: float = 0.005
-    pos_tol: float = 0.015
+    # motion params
+    max_dp: float = 0.01 
+    pos_tol: float = 0.005
     
     # task specific offsets (Task Logic Params)
-    above_z: float = 0.08
-    grasp_down_z: float = 0.02
-    lift_dz: float = 0.15
-    cube_half: float = 0.0125 # XML size is 0.025 full size usually, but here logic implies radius
+    above_z: float = 0.00
+    grasp_down_z: float = 0.00
+    lift_dz: float = 0.05
+    cube_half: float = 0.025
     
     # gripper
     gripper_open: float = 0.0
@@ -91,24 +94,23 @@ class CollectorCfg:
     cam_view_key: Optional[str] = "pixels/view_0"
 
     # text fields
-    subtask: Optional[str] = "Stack one block on another."
-    prompt: Optional[str] = "Stack the yellow block on the orange block." 
-
+    subtask: Optional[str] = "Stack specific colored blocks."
 
 # -----------------------------------------------------------------------------
 # Collector
 # -----------------------------------------------------------------------------
 class StackColorBlocksCollector:
-    # FSM States matching the Runner logic
-    ST_SAMPLE_PAIR = 0
-    ST_TO_ABOVE_TOP = 1
-    ST_TO_GRASP = 2
-    ST_CLOSE = 3
-    ST_LIFT = 4
-    ST_TO_ABOVE_BASE = 5
-    ST_TO_STACK = 6
-    ST_OPEN_HOLD = 7
-    ST_RETREAT = 8
+    # FSM States
+    ST_TO_ABOVE_TOP = 0
+    ST_TO_GRASP = 1
+    ST_CLOSE = 2
+    ST_LIFT = 3
+    ST_TO_ABOVE_BASE = 4
+    ST_TO_STACK = 5
+    ST_OPEN_HOLD = 6
+    ST_RETREAT = 7
+    # [新增] 回家状态
+    ST_TO_HOME = 8 
     ST_DONE = 9
 
     def __init__(self, cfg: CollectorCfg, env_cfg: Optional[StackColorBlocksEnvCfg] = None):
@@ -119,26 +121,21 @@ class StackColorBlocksCollector:
 
         # --- Env Setup ---
         self.env_cfg = env_cfg if env_cfg is not None else StackColorBlocksEnvCfg()
-        # Force gripper action mode if needed, usually 'eef' implies 7D control
-        # self.env_cfg.action_mode = "eef" 
-
         self.env = StackColorBlocksEnv(self.env_cfg, num_envs=int(cfg.num_envs))
         self.env.reset()
 
         self.model = self.env.model
         self.B = int(cfg.num_envs)
 
-        # Bodies for cubes (Blue, Yellow, Orange)
-        # Assuming names are standardized in env cfg
-        self.cube_names = self.env_cfg.cube_names
+        # Bodies
+        self.cube_names = self.env_cfg.cube_names 
         self.cube_bodies = self.env.cube_bodies
 
-        # cam view key
+        # Cam view key
         self.cam_view_key = cfg.cam_view_key or "pixels/view_0"
 
         # Metadata
         self.ep_subtask = np.array([cfg.subtask] * self.B, dtype=object)
-        self.ep_prompt = np.array([cfg.prompt] * self.B, dtype=object)
 
         # --- Lifecycle ---
         self.active = np.zeros(self.B, dtype=bool)
@@ -160,7 +157,7 @@ class StackColorBlocksCollector:
         self.exec_pos = np.zeros((self.B, 3), dtype=np.float32)
         self.exec_quat = np.zeros((self.B, 4), dtype=np.float32) # xyzw
         
-        # Latch positions (Where the blocks were when we started)
+        # Latch positions
         self.latched_top_pos = np.zeros((self.B, 3), dtype=np.float32)
         self.latched_base_pos = np.zeros((self.B, 3), dtype=np.float32)
 
@@ -170,7 +167,7 @@ class StackColorBlocksCollector:
         self._tmp_video_paths: List[str] = [os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(self.B)]
 
         # Stats
-        self.saved_success = 0
+        self.saved_count = 0
         self.attempted = 0
         self._last_log_t = time.perf_counter()
 
@@ -187,11 +184,8 @@ class StackColorBlocksCollector:
             "gripper": [],
             "ctrl": [],
             "reward": [],
-            # Metrics
             "top_idx": [],
             "base_idx": [],
-            "dist_xy": [],
-            "dist_z": [],
             "is_success": [],
             "video_frames": 0,
         }
@@ -216,7 +210,6 @@ class StackColorBlocksCollector:
         self.done[env_ids] = False
         self.success[env_ids] = False
         self.ctrl_step[env_ids] = 0
-        self.states[env_ids] = self.ST_SAMPLE_PAIR 
         self.state_enter_step[env_ids] = 0
         self.stack_hold_counter[env_ids] = 0
 
@@ -225,45 +218,30 @@ class StackColorBlocksCollector:
         self.env.robot.reset_envs(data, done_mask)
         self.env.robot.update_reference(data) 
 
-        # --- [修复开始] 兼容 6D (Euler) 和 7D (Quat) 返回值 ---
-        # 获取所有环境的末端位姿
-        all_poses = self.env.robot.get_ee_pose(data) # (B, 6) or (B, 7)
+        all_poses = self.env.robot.get_ee_pose(data)
 
         for idx in env_ids:
             pose = all_poses[idx]
             self.exec_pos[idx] = pose[:3]
 
             if len(pose) == 7:
-                # 已经是四元数 [x, y, z, qx, qy, qz, qw]
                 self.exec_quat[idx] = pose[3:]
             elif len(pose) == 6:
-                # 是欧拉角 [x, y, z, rx, ry, rz]，需要转为四元数
-                # 假设通常 robot 接口返回的是 'xyz' 顺序的欧拉角
                 euler = pose[3:]
                 self.exec_quat[idx] = Rotation.from_euler('xyz', euler).as_quat()
-            else:
-                raise ValueError(f"Unexpected pose size: {len(pose)}")
-        # --- [修复结束] ---
 
-        # 4. Logic: Sample Pairs & Latch Positions
-        rng = np.random.default_rng(seed)
-        perms = np.argsort(rng.random((len(env_ids), 3)), axis=1)
-        self.top_idx[env_ids] = perms[:, 0]
-        self.base_idx[env_ids] = perms[:, 1]
+        # 4. Logic: Sync with Env's hardcoded indices
+        self.top_idx[env_ids] = self.env.top_idx[env_ids]
+        self.base_idx[env_ids] = self.env.base_idx[env_ids]
         
-        # Latch positions
         cube_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
             axis=1,
         ) 
         
-        sel_top = self.top_idx[env_ids]
-        sel_base = self.base_idx[env_ids]
+        self.latched_top_pos[env_ids] = cube_pose[env_ids, self.top_idx[env_ids], :3]
+        self.latched_base_pos[env_ids] = cube_pose[env_ids, self.base_idx[env_ids], :3]
         
-        self.latched_top_pos[env_ids] = cube_pose[env_ids, sel_top, :3]
-        self.latched_base_pos[env_ids] = cube_pose[env_ids, sel_base, :3]
-        
-        # Transition immediately
         self.states[env_ids] = self.ST_TO_ABOVE_TOP
 
         # 5. Reset IO
@@ -295,25 +273,17 @@ class StackColorBlocksCollector:
         obs = self.env._state.obs
         buf = self.buffers[env_id]
         
-        buf["times"].append(float(self.ctrl_step[env_id] * 0.02)) # Assume dt=0.02
+        buf["times"].append(float(self.ctrl_step[env_id] * 0.02)) 
         buf["logic_states"].append(int(self.states[env_id]))
         buf["qpos"].append(obs["qpos"][env_id].tolist())
         buf["ee_pose"].append(obs["ee_pose"][env_id].tolist())
         buf["gripper"].append(obs["gripper"][env_id].tolist())
         buf["ctrl"].append(self._last_action[env_id].tolist())
         
-        # Reward / Success
         info = self.env._state.info
-        is_success = False
-        if "is_success" in info:
-            is_success = bool(info["is_success"][env_id])
-        elif "success" in info:
-            is_success = bool(info["success"][env_id])
-            
+        is_success = bool(self.success[env_id])
         buf["is_success"].append(is_success)
         buf["reward"].append(float(1.0 if is_success else 0.0))
-        
-        # Specific indices for this episode
         buf["top_idx"].append(int(self.top_idx[env_id]))
         buf["base_idx"].append(int(self.base_idx[env_id]))
 
@@ -332,20 +302,24 @@ class StackColorBlocksCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
-        if self.success[env_id] and (self.saved_success < self.cfg.data_size):
-            ep_idx = int(self.saved_success)
-            final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
-            abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)
+        # [修改] 只有成功的 episode 才保存
+        # 失败的 episode 会在 collect 循环中被丢弃并重置
+        if self.success[env_id]:
+            if self.saved_count < self.cfg.data_size:
+                ep_idx = int(self.saved_count)
+                final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
+                abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)
 
-            # Move video
-            if self.cfg.save_video and os.path.exists(self._tmp_video_paths[env_id]):
-                shutil.move(self._tmp_video_paths[env_id], abs_video_path)
-            
-            # Write JSONL
-            self._flush_jsonl(env_id, ep_idx, final_video_path)
-            self.saved_success += 1
+                if self.cfg.save_video and os.path.exists(self._tmp_video_paths[env_id]):
+                    shutil.move(self._tmp_video_paths[env_id], abs_video_path)
+                
+                self._flush_jsonl(env_id, ep_idx, final_video_path)
+                self.saved_count += 1
+                print(f"[Success] Saved episode {ep_idx}. Total saved: {self.saved_count}")
+        else:
+            # 调试信息：失败则跳过
+            pass
         
-        # Cleanup tmp
         if os.path.exists(self._tmp_video_paths[env_id]):
             try: os.remove(self._tmp_video_paths[env_id])
             except: pass
@@ -357,29 +331,30 @@ class StackColorBlocksCollector:
         buf = self.buffers[env_id]
         n = len(buf["times"])
         
-        # Construct Prompt string dynamically if needed
-        cube_names = ["Blue", "Yellow", "Orange"]
-        t_name = cube_names[self.top_idx[env_id]]
-        b_name = cube_names[self.base_idx[env_id]]
-        prompt = f"Stack the {t_name.lower()} block on the {b_name.lower()} block."
+        t_raw = self.cube_names[self.top_idx[env_id]]
+        b_raw = self.cube_names[self.base_idx[env_id]]
+        
+        t_name = t_raw.replace("cube_", "").lower()
+        b_name = b_raw.replace("cube_", "").lower()
+        prompt = f"Stack the {t_name} block on top of the {b_name} block."
 
         with open(path, "w", encoding="utf-8") as f:
             for i in range(n):
                 rec = {
                     "images_1": {"url": vid_path, "type": "video", "frame_idx": i},
-                    "subtask": str(self.ep_subtask[env_id]),
+                    # "subtask": str(self.ep_subtask[env_id]),
                     "prompt": prompt,
                     "qpos": buf["qpos"][i],
                     "ee_pose": buf["ee_pose"][i],
                     "gripper": buf["gripper"][i],
                     "ctrl": buf["ctrl"][i],
-                    "reward": buf["reward"][i],
-                    "logic_state": buf["logic_states"][i],
-                    "time": buf["times"][i],
+                    # "reward": buf["reward"][i],
+                    # "logic_state": buf["logic_states"][i],
+                    # "time": buf["times"][i],
                     "is_robot": True,
-                    "success": bool(self.success[env_id]),
-                    "latched_top_pos": self.latched_top_pos[env_id].tolist() if i == 0 else [],
-                    "latched_base_pos": self.latched_base_pos[env_id].tolist() if i == 0 else [],
+                    # "success": bool(self.success[env_id]),
+                    # "latched_top_pos": self.latched_top_pos[env_id].tolist() if i == 0 else [],
+                    # "latched_base_pos": self.latched_base_pos[env_id].tolist() if i == 0 else [],
                 }
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
@@ -398,145 +373,147 @@ class StackColorBlocksCollector:
         running = self.active & (~self.done)
         if not np.any(running): return
 
-        # 1. Calculate Targets based on Latched Positions
         top_p = self.latched_top_pos
         base_p = self.latched_base_pos
         
-        # Offsets
-        # Shape (B, 3)
-        above_top = top_p.copy(); above_top[:, 2] += cfg.above_z
-        grasp_top = top_p.copy(); grasp_top[:, 2] += cfg.grasp_down_z
-        lift_p    = above_top.copy(); lift_p[:, 2] += cfg.lift_dz
-        above_base= base_p.copy(); above_base[:, 2] += (cfg.above_z + 0.05)
-        # 2*half + buffer
-        stack_p   = base_p.copy(); stack_p[:, 2] += (2.0 * cfg.cube_half + 0.005) 
-        retreat_p = above_base.copy(); retreat_p[:, 2] += cfg.lift_dz
+        # 1. 定义所有关键点
+        p_above_top = top_p + np.array([0, 0, cfg.above_z])
+        p_grasp     = top_p + np.array([0, 0, cfg.grasp_down_z])
+        p_lift      = top_p + np.array([0, 0, cfg.lift_dz])
+        p_above_base= base_p + np.array([0, 0, cfg.above_z + 0.05])
+        p_stack     = base_p + np.array([0, 0, 2.0 * cfg.cube_half + 0.005])
+        p_retreat   = base_p + np.array([0, 0, cfg.lift_dz])
+        
+        # [新增] Home Position: 桌面中央偏上 (0.4, 0.0, 0.5)
+        p_home      = np.tile(np.array([0.4, 0.0, 0.5], dtype=np.float32), (B, 1))
 
-        tgt_pos = self.exec_pos.copy()
+        # 2. 根据当前状态确定 目标位置(tgt_pos_curr) 和 夹爪命令(grip_cmd)
+        tgt_pos_curr = self.exec_pos.copy() # 默认不动
         grip_cmd = np.full((B,), cfg.gripper_open, dtype=np.float32)
-
         s = self.states
-        
-        # Mappings
-        m_above_top = running & (s == self.ST_TO_ABOVE_TOP)
-        m_grasp     = running & (s == self.ST_TO_GRASP)
-        m_close     = running & (s == self.ST_CLOSE)
-        m_lift      = running & (s == self.ST_LIFT)
-        m_above_base= running & (s == self.ST_TO_ABOVE_BASE)
-        m_stack     = running & (s == self.ST_TO_STACK)
-        m_open      = running & (s == self.ST_OPEN_HOLD)
-        m_retreat   = running & (s == self.ST_RETREAT)
 
-        # Set Targets
-        if np.any(m_above_top):
-            tgt_pos[m_above_top] = above_top[m_above_top]
-            grip_cmd[m_above_top] = cfg.gripper_open
-        
-        if np.any(m_grasp):
-            tgt_pos[m_grasp] = grasp_top[m_grasp]
-            grip_cmd[m_grasp] = cfg.gripper_open
+        # 使用掩码批量赋值
+        mask_above = running & (s == self.ST_TO_ABOVE_TOP)
+        if np.any(mask_above): tgt_pos_curr[mask_above] = p_above_top[mask_above]
             
-        if np.any(m_close):
-            tgt_pos[m_close] = grasp_top[m_close]
-            grip_cmd[m_close] = cfg.gripper_close
-            
-        if np.any(m_lift):
-            tgt_pos[m_lift] = lift_p[m_lift]
-            grip_cmd[m_lift] = cfg.gripper_close
-            
-        if np.any(m_above_base):
-            tgt_pos[m_above_base] = above_base[m_above_base]
-            grip_cmd[m_above_base] = cfg.gripper_close
-            
-        if np.any(m_stack):
-            tgt_pos[m_stack] = stack_p[m_stack]
-            grip_cmd[m_stack] = cfg.gripper_close
-            
-        if np.any(m_open):
-            tgt_pos[m_open] = stack_p[m_open]
-            grip_cmd[m_open] = cfg.gripper_open
-            
-        if np.any(m_retreat):
-            tgt_pos[m_retreat] = retreat_p[m_retreat]
-            grip_cmd[m_retreat] = cfg.gripper_open
+        mask_grasp = running & (s == self.ST_TO_GRASP)
+        if np.any(mask_grasp): tgt_pos_curr[mask_grasp] = p_grasp[mask_grasp]
 
-        # 2. Smooth Move
-        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, cfg.max_dp)
+        mask_close = running & (s == self.ST_CLOSE)
+        if np.any(mask_close): 
+            tgt_pos_curr[mask_close] = p_grasp[mask_close] # 闭合时维持在抓取点
+            grip_cmd[mask_close] = cfg.gripper_close
+
+        mask_lift = running & (s == self.ST_LIFT)
+        if np.any(mask_lift):
+            tgt_pos_curr[mask_lift] = p_lift[mask_lift]
+            grip_cmd[mask_lift] = cfg.gripper_close
+
+        mask_base = running & (s == self.ST_TO_ABOVE_BASE)
+        if np.any(mask_base):
+            tgt_pos_curr[mask_base] = p_above_base[mask_base]
+            grip_cmd[mask_base] = cfg.gripper_close
+            
+        mask_stack = running & (s == self.ST_TO_STACK)
+        if np.any(mask_stack):
+            tgt_pos_curr[mask_stack] = p_stack[mask_stack]
+            grip_cmd[mask_stack] = cfg.gripper_close
+            
+        mask_open = running & (s == self.ST_OPEN_HOLD)
+        if np.any(mask_open):
+            tgt_pos_curr[mask_open] = p_stack[mask_open] # 保持在堆叠点张开
+            grip_cmd[mask_open] = cfg.gripper_open
+            
+        mask_retreat = running & (s == self.ST_RETREAT)
+        if np.any(mask_retreat):
+            tgt_pos_curr[mask_retreat] = p_retreat[mask_retreat]
+            grip_cmd[mask_retreat] = cfg.gripper_open
+
+        # [新增] Home 状态的目标设定
+        mask_home = running & (s == self.ST_TO_HOME)
+        if np.any(mask_home):
+            tgt_pos_curr[mask_home] = p_home[mask_home]
+            grip_cmd[mask_home] = cfg.gripper_open
+
+        # 3. 更新虚拟轨迹 (exec_pos)
+        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos_curr, cfg.max_dp)
         
-        # 3. Construct Action
-        # Action is [dx, dy, dz, rx, ry, rz, grip] (Assuming P-Control on EE)
-        # We need to convert maintained quat to euler for the action
-        
-        # Current Ref Pose from Robot (needed for delta pos)
-        ref_pose_6d = self.env.robot.ref_ee_pose # (B, 6) usually
-        ref_pos = ref_pose_6d[:, :3]
-        
-        # Rotation: Convert stored quat to euler 'xyz' matching standard robot controller expectations
-        r_obj = Rotation.from_quat(self.exec_quat)
-        euler_xyz = r_obj.as_euler('xyz', degrees=False).astype(np.float32)
-        
+        # 4. 下发控制 (Action)
+        ref_pose_6d = self.env.robot.ref_ee_pose 
+        ref_pos = ref_pose_6d[:, :3] # 真实位置
+
+
+        # 映射状态 -> 目标
+
         action = np.zeros((B, 7), dtype=np.float32)
-        # Position Delta (P-Control)
-        action[:, :3] = self.exec_pos - ref_pos 
-        # Damping factor common in these collectors
-        action[:, :3] *= 0.5 
-        
-        # Rotation: Here we usually send the DESIRED Euler angles if action mode is Absolute Rotation
-        # OR delta if relative. 
-        # Typically 'action_mode="eef"' in these frameworks takes [delta_pos, euler_target, grip] OR [delta_pos, delta_euler, grip]
-        # Let's assume we send the TARGET Euler angles for rotation (holding steady).
-        # If the robot drifts, this pulls it back to initial rotation.
-        action[:, 3:6] = euler_xyz 
-        
+        action[:, :3] = (self.exec_pos - ref_pos) * 1.0 # P-Control
+        action[:, 3:6] = 0 # 保持姿态
         action[:, 6] = grip_cmd
         
         self._last_action[:] = action
         self.env.step(action)
 
-        # 4. State Transitions (Reach Checks)
-        def _reach(targets):
-            # Simple dist check
-            d = np.linalg.norm(self.exec_pos - targets, axis=1)
-            return d < cfg.pos_tol
+        # 5. 状态跳转逻辑
+        def is_reached(target_p):
+            return np.linalg.norm(self.exec_pos - target_p, axis=1) < cfg.pos_tol
 
-        self._enter_state(m_above_top & _reach(above_top), self.ST_TO_GRASP)
-        self._enter_state(m_grasp & _reach(grasp_top), self.ST_CLOSE)
+        # ST_TO_ABOVE_TOP -> ST_TO_GRASP
+        mask = running & (s == self.ST_TO_ABOVE_TOP)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_above_top), self.ST_TO_GRASP)
+
+        # ST_TO_GRASP -> ST_CLOSE
+        mask = running & (s == self.ST_TO_GRASP)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_grasp), self.ST_CLOSE)
         
-        # Close Wait
-        dt_close = self.ctrl_step - self.state_enter_step
-        self._enter_state(m_close & (dt_close >= cfg.close_hold_steps), self.ST_LIFT)
+        # ST_CLOSE -> ST_LIFT (时间判定)
+        mask = running & (s == self.ST_CLOSE)
+        if np.any(mask):
+            time_in_state = self.ctrl_step - self.state_enter_step
+            closed_done = time_in_state >= cfg.close_hold_steps
+            self._enter_state(mask & closed_done, self.ST_LIFT)
         
-        self._enter_state(m_lift & _reach(lift_p), self.ST_TO_ABOVE_BASE)
-        self._enter_state(m_above_base & _reach(above_base), self.ST_TO_STACK)
-        self._enter_state(m_stack & _reach(stack_p), self.ST_OPEN_HOLD)
+        # ST_LIFT -> ST_TO_ABOVE_BASE
+        mask = running & (s == self.ST_LIFT)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_lift), self.ST_TO_ABOVE_BASE)
         
-        # Open/Hold Wait & Success Check logic
-        # Here we just wait blindly, or check stack
-        # Runner logic: increment hold counter if stack_success
-        if np.any(m_open):
+        # ST_TO_ABOVE_BASE -> ST_TO_STACK
+        mask = running & (s == self.ST_TO_ABOVE_BASE)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_above_base), self.ST_TO_STACK)
+
+        # ST_TO_STACK -> ST_OPEN_HOLD
+        mask = running & (s == self.ST_TO_STACK)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_stack), self.ST_OPEN_HOLD)
+        
+        # ST_OPEN_HOLD -> ST_RETREAT
+        mask = running & (s == self.ST_OPEN_HOLD)
+        if np.any(mask):
+            m_open = mask
             is_stacked = self._check_stack_success(m_open)
             self.stack_hold_counter[m_open & is_stacked] += 1
-            self.stack_hold_counter[m_open & (~is_stacked)] = 0 # reset if slip
+            self.stack_hold_counter[m_open & (~is_stacked)] = 0 
             
             ready_retreat = (self.stack_hold_counter >= cfg.stack_hold_steps)
             self._enter_state(m_open & ready_retreat, self.ST_RETREAT)
             
-        self._enter_state(m_retreat & _reach(retreat_p), self.ST_DONE)
-        
-        # Env Success Latch
-        info = self.env._state.info
-        if "is_success" in info:
-            done_env = np.asarray(info["is_success"], dtype=bool)
-            # If env says success, we can treat as done or wait for FSM.
-            # Usually strict FSM is better for clean demos. 
-            pass
+        # [修改] ST_RETREAT -> ST_TO_HOME (不是直接DONE)
+        mask = running & (s == self.ST_RETREAT)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_retreat), self.ST_TO_HOME)
+
+        # [新增] ST_TO_HOME -> ST_DONE
+        mask = running & (s == self.ST_TO_HOME)
+        if np.any(mask):
+            self._enter_state(mask & is_reached(p_home), self.ST_DONE)
 
     def _check_stack_success(self, mask: np.ndarray) -> np.ndarray:
-        # Vectorized geometric check
         data = self.env._state.data
         cube_pose = np.stack([np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies], axis=1)
         
-        # Get poses for current top/base per env
         row_ids = np.arange(self.B)
         t_idx = self.top_idx
         b_idx = self.base_idx
@@ -548,9 +525,8 @@ class StackColorBlocksCollector:
         z_diff = tp[:, 2] - bp[:, 2]
         target_z = 2.0 * self.cfg.cube_half
         
-        # Tolerances
-        xy_ok = xy_dist < 0.02
-        z_ok = np.abs(z_diff - target_z) < 0.015
+        xy_ok = xy_dist < 0.03
+        z_ok = np.abs(z_diff - target_z) < 0.02
         
         return (xy_ok & z_ok) & mask
 
@@ -564,17 +540,17 @@ class StackColorBlocksCollector:
         all_ids = np.arange(self.B, dtype=np.int64)
         self.start_episodes(all_ids, seed=cfg.seed)
         
-        while self.saved_success < target_n:
+        print(f"Starting Collection. Target (Total): {target_n}")
+        
+        while self.saved_count < target_n:
             self._step_logic()
             
             running = self.active & (~self.done)
             
-            # Sample
             sample_mask = running & ((self.ctrl_step % cfg.sample_every_steps) == 0)
             for env_id in np.where(sample_mask)[0]:
                 self._capture_step(env_id)
                 
-            # Render
             if cfg.save_video:
                 render_mask = running & ((self.ctrl_step % cfg.render_every_steps) == 0)
                 for env_id in np.where(render_mask)[0]:
@@ -582,41 +558,33 @@ class StackColorBlocksCollector:
             
             self.ctrl_step[running] += 1
             
-            # Check Termination
             for i in range(self.B):
                 if not running[i]: continue
                 
-                # Check FSM done
                 fsm_done = (self.states[i] == self.ST_DONE)
-                # Check Timeout
                 timeout = (self.ctrl_step[i] >= cfg.max_ctrl_steps)
                 
-                # Double check success at the end
-                is_stacked = self._check_stack_success(np.array([True]))[0] if i == 0 else self._check_stack_success(np.eye(self.B, dtype=bool)[i])[i]
+                is_stacked = self._check_stack_success(np.eye(self.B, dtype=bool)[i])[i]
                 
                 if fsm_done or timeout:
                     self.done[i] = True
-                    # Success if FSM finished AND geometry is valid
+                    # [关键] 流程走完 + 堆叠成功 才算最终成功
                     self.success[i] = bool(fsm_done and is_stacked)
             
-            # Reset Done Envs
             for i in range(self.B):
                 if self.active[i] and self.done[i]:
                     self._finalize_episode(i)
                     
-                    if self.saved_success < target_n:
-                        # Restart env
-                        self.active[i] = False # Briefly mark inactive
-                        # New seed based on total attempts
+                    if self.saved_count < target_n:
+                        self.active[i] = False 
                         new_seed = int(cfg.seed + self.attempted)
                         self.start_episodes(np.array([i]), seed=new_seed)
                     else:
                         self.active[i] = False
 
-            # Log
             now = time.perf_counter()
             if (now - self._last_log_t) > 2.0:
-                print(f"[Collect] Saved: {self.saved_success}/{target_n} | Active: {self.active.sum()}")
+                print(f"[Collect] Saved: {self.saved_count}/{target_n} | Active: {self.active.sum()}")
                 self._last_log_t = now
                 
         print(f"Done. Saved to {cfg.save_dir}")
