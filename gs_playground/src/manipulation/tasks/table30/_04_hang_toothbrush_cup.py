@@ -273,51 +273,51 @@ class HangToothbrushCupEnv(TaskEnv):
 
         return total_reward.astype(np.float32)
     
-    def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
-        state = super().update_state(state, obs_required=obs_required)
+    # def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
+    #     state = super().update_state(state, obs_required=obs_required)
 
-        # -------------------------
-        # Fail-fast: workspace bounds check (no new cfg params)
-        # -------------------------
-        data: SceneData = state.data
+    #     # -------------------------
+    #     # Fail-fast: workspace bounds check (no new cfg params)
+    #     # -------------------------
+    #     data: SceneData = state.data
 
-        # Workspace bounds (world frame). Adjust to your table if needed.
-        # Here we only check XY; optionally you can add a Z floor as well.
-        x_min, x_max = -0.75, 0.10
-        y_min, y_max = -0.35, 0.35
+    #     # Workspace bounds (world frame). Adjust to your table if needed.
+    #     # Here we only check XY; optionally you can add a Z floor as well.
+    #     x_min, x_max = -0.75, 0.10
+    #     y_min, y_max = -0.35, 0.35
 
-        # Optional Z floor (comment out if you don't want it)
-        z_min = -0.20
+    #     # Optional Z floor (comment out if you don't want it)
+    #     z_min = -0.20
 
-        # Choose bodies to check: cup is usually sufficient; rack can be included if desired.
-        # If you only want cup: keep [self.cup_body]
-        bodies = [self.cup_body]  # or: [self.cup_body, self.rack_body]
+    #     # Choose bodies to check: cup is usually sufficient; rack can be included if desired.
+    #     # If you only want cup: keep [self.cup_body]
+    #     bodies = [self.cup_body]  # or: [self.cup_body, self.rack_body]
 
-        # poses: (B, K, 7) where K = len(bodies)
-        poses = np.stack(
-            [np.asarray(b.get_pose(data), dtype=np.float32) for b in bodies],
-            axis=1,
-        )
-        pos = poses[..., :3]   # (B, K, 3)
-        xy = pos[..., :2]      # (B, K, 2)
+    #     # poses: (B, K, 7) where K = len(bodies)
+    #     poses = np.stack(
+    #         [np.asarray(b.get_pose(data), dtype=np.float32) for b in bodies],
+    #         axis=1,
+    #     )
+    #     pos = poses[..., :3]   # (B, K, 3)
+    #     xy = pos[..., :2]      # (B, K, 2)
 
-        x_ok = (xy[..., 0] >= x_min) & (xy[..., 0] <= x_max)
-        y_ok = (xy[..., 1] >= y_min) & (xy[..., 1] <= y_max)
-        z_ok = pos[..., 2] >= z_min
+    #     x_ok = (xy[..., 0] >= x_min) & (xy[..., 0] <= x_max)
+    #     y_ok = (xy[..., 1] >= y_min) & (xy[..., 1] <= y_max)
+    #     z_ok = pos[..., 2] >= z_min
 
-        in_bounds_each = x_ok & y_ok & z_ok          # (B, K)
-        out_of_bounds = ~np.all(in_bounds_each, axis=1)  # (B,)
+    #     in_bounds_each = x_ok & y_ok & z_ok          # (B, K)
+    #     out_of_bounds = ~np.all(in_bounds_each, axis=1)  # (B,)
 
-        if np.any(out_of_bounds):
-            terminated = np.asarray(state.terminated, dtype=bool).copy()
-            terminated[out_of_bounds] = True
-            state.terminated = terminated
+    #     if np.any(out_of_bounds):
+    #         terminated = np.asarray(state.terminated, dtype=bool).copy()
+    #         terminated[out_of_bounds] = True
+    #         state.terminated = terminated
 
-            # Debug info (optional but useful)
-            info = state.info
-            info["out_of_bounds"] = out_of_bounds
-            info["ws_in_bounds_each"] = in_bounds_each
-            info["ws_pos"] = pos  # (B, K, 3)
+    #         # Debug info (optional but useful)
+    #         info = state.info
+    #         info["out_of_bounds"] = out_of_bounds
+    #         info["ws_in_bounds_each"] = in_bounds_each
+    #         info["ws_pos"] = pos  # (B, K, 3)
 
-        return state
+    #     return state
 

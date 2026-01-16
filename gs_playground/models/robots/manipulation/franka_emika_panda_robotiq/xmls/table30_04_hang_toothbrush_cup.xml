@@ -114,7 +114,8 @@
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
 
-    <camera fovy="43.365" name="front" pos="1.05139524 0.00603114 0.6419337" quat="0.6090352  0.29501705 0.31961847 0.66323834"/>
+    <camera fovy="43.365" name="front" pos="1.516 0.044 1.111" xyaxes="-0.043 0.999 -0.000 -0.551 -0.023 0.834"/>
+
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>

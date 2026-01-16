@@ -24,7 +24,7 @@ TASK_GAUSSIANS = {
 @dataclass
 class StackColorBlocksEnvCfg(TaskEnvCfg):
     # model / sim
-    robot_name: str = "ur5e_robotiq"
+    robot_name: str = "franka_robotiq"
     model_file: str = str((ROOT_PATH / "models" / "robots" / 
                            "manipulation" / "franka_emika_panda_robotiq" / 
                            "xmls" / "table30_02_stack_color_blocks.xml").as_posix())
