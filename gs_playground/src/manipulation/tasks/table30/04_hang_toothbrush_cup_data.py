@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 10
+    num_envs: int = 10
     seed: int = 0
     save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect"
 
@@ -112,7 +112,8 @@ class HangToothbrushCupCollector:
     ST_HANG_DOWN = 5
     ST_RELEASE = 6
     ST_RETREAT = 7
-    ST_DONE = 8
+    ST_GO_RESET = 8     # NEW
+    ST_DONE = 9   
 
     def __init__(self, cfg: CollectorCfg, env_cfg: Optional[HangToothbrushCupEnvCfg] = None):
         self.cfg = cfg
@@ -155,6 +156,11 @@ class HangToothbrushCupCollector:
 
         # exec target position (x,y,z) for EEF
         self.exec_pos = np.zeros((B, 3), dtype=np.float32)
+        # NEW: 每个 episode 记录 reset/home 目标（用 episode 起始 EE 位置）
+        self.home_pos = np.zeros((B, 3), dtype=np.float32)
+
+        # NEW: 是否已经挂上（来自 env info 的 is_success latch）
+        self.hung_latched = np.zeros(B, dtype=bool)
 
         # latch sites per episode
         self.latched_grasp_pos = np.zeros((B, 3), dtype=np.float32)
@@ -261,6 +267,9 @@ class HangToothbrushCupCollector:
         ee6_all = np.asarray(obs["ee_pose"], dtype=np.float32).reshape(self.B, -1)  # (B,6)
         self.exec_pos[env_ids] = ee6_all[env_ids, :3]
         self.fixed_rpy[env_ids] = ee6_all[env_ids, 3:6]
+
+        self.home_pos[env_ids] = ee6_all[env_ids, :3]
+        # print(self.home_pos)
 
         # 5) Latch site positions (take full, index by env_ids)
         data = self.env._state.data
@@ -466,12 +475,13 @@ class HangToothbrushCupCollector:
 
         retreat_p = hang_p.copy()
         retreat_p[:, 0] -= float(cfg.retreat_dx)
+        reset_p = self.home_pos
 
         tgt_pos = self.exec_pos.copy()
         grip_cmd = np.full((B,), float(cfg.gripper_open), dtype=np.float32)
 
         s = self.states
-        print(s)
+        # print(s)
         m0 = running & (s == self.ST_GO_PRE_GRASP)
         m1 = running & (s == self.ST_GO_GRASP)
         m2 = running & (s == self.ST_CLOSE)
@@ -480,6 +490,7 @@ class HangToothbrushCupCollector:
         m5 = running & (s == self.ST_HANG_DOWN)
         m6 = running & (s == self.ST_RELEASE)
         m7 = running & (s == self.ST_RETREAT)
+        m8 = running & (s == self.ST_GO_RESET)
 
         if np.any(m0):
             tgt_pos[m0] = pre_grasp_p[m0]
@@ -512,6 +523,11 @@ class HangToothbrushCupCollector:
         if np.any(m7):
             tgt_pos[m7] = retreat_p[m7]
             grip_cmd[m7] = float(cfg.gripper_open)
+        
+        if np.any(m8):
+            tgt_pos[m8] = reset_p[m8]
+            grip_cmd[m8] = float(cfg.gripper_open)
+
 
         ref_pose_6d = self.env.robot.ref_ee_pose   # (B,6)
 
@@ -540,6 +556,7 @@ class HangToothbrushCupCollector:
         reach_pre_hang = _reach(pre_hang_p)
         reach_hang = _reach(hang_p)
         reach_retreat = _reach(retreat_p)
+        reach_reset = _reach(reset_p)
 
         self._enter_state(running & (s == self.ST_GO_PRE_GRASP) & reach_pre_grasp, self.ST_GO_GRASP)
         self._enter_state(running & (s == self.ST_GO_GRASP) & reach_grasp, self.ST_CLOSE)
@@ -556,7 +573,12 @@ class HangToothbrushCupCollector:
         rel_done = in_rel & ((self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps))
         self._enter_state(rel_done, self.ST_RETREAT)
 
-        self._enter_state(running & (self.states == self.ST_RETREAT) & reach_retreat, self.ST_DONE)
+                # RETREAT -> GO_RESET
+        self._enter_state(running & (self.states == self.ST_RETREAT) & reach_retreat, self.ST_GO_RESET)
+
+        # GO_RESET -> DONE
+        self._enter_state(running & (self.states == self.ST_GO_RESET) & reach_reset, self.ST_DONE)
+
 
         # done by env success latch（兼容 is_success / success）
         info = self.env._state.info
@@ -564,6 +586,7 @@ class HangToothbrushCupCollector:
             info.get("is_success", info.get("success", np.zeros((B,), dtype=np.bool_))),
             dtype=np.bool_,
         ).reshape(-1)
+        self.hung_latched = self.hung_latched | (running & is_success)
         done_by_env = running & is_success
         if np.any(done_by_env):
             self.states[done_by_env] = self.ST_DONE
