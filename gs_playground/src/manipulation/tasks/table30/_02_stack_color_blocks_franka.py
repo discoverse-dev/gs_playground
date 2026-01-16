@@ -20,7 +20,7 @@ TASK_GAUSSIANS = {
     "cube_orange" : ASSETS_TASK_DIR / "cube_orange.ply",
 }
 
-@envcfg("table30/stack_color_blocks")
+@envcfg("table30/stack_color_blocks_franka")
 @dataclass
 class StackColorBlocksEnvCfg(TaskEnvCfg):
     # model / sim
@@ -50,7 +50,7 @@ class StackColorBlocksEnvCfg(TaskEnvCfg):
     grasp_dist_thresh: float = 0.03
 
 
-@env("table30/stack_color_blocks", "np")
+@env("table30/stack_color_blocks_franka", "np")
 class StackColorBlocksEnv(TaskEnv):
     """
     Task: Stack color blocks.
