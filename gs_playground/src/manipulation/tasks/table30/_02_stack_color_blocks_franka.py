@@ -30,7 +30,7 @@ class StackColorBlocksEnvCfg(TaskEnvCfg):
                            "xmls" / "table30_02_stack_color_blocks.xml").as_posix())
 
     # control
-    action_mode: str = "joint"  # "joint" or "eef"
+    action_mode: str = "eef_relative"  # "joint" or "eef"
 
     # rendering
     img_width: int = 320
@@ -136,10 +136,10 @@ class StackColorBlocksEnv(TaskEnv):
         
         n_done = np.sum(done)
         if n_done > 0:
-            perms = np.argsort(rng.random((n_done, len(self._cfg.cube_names))), axis=1)
+            # perms = np.argsort(rng.random((n_done, len(self._cfg.cube_names))), axis=1)
             
-            self.top_idx[done] = perms[:, 0]
-            self.base_idx[done] = perms[:, 1]
+            # self.top_idx[done] = perms[:, 0]
+            # self.base_idx[done] = perms[:, 1]
 
             self.grasp_latched[done] = False
             self.success_latched[done] = False

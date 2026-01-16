@@ -64,14 +64,14 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
 
     hang_height_margin: float = 0.05         # cup_z > hook_z - margin
 
-    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.07, 0.02)
-    hang_offset: Tuple[float, float, float] = (-0.04, 0, -0.035)
+    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.15, 0.03)
+    hang_offset: Tuple[float, float, float] = (-0.04, 0, -0.03)
     
     pre_hang_dist_threshold: float = 0.03
     hang_dist_threshold: float = 0.03
 
     reset_pos_target: Tuple[float, float, float] = (0.3048082 , 0    ,  0.2743337)
-    reset_dist_threshold: float = 0.05
+    reset_dist_threshold: float = 0.06
 
     # randomization
     xy_jitter: float = 0.02  # uniform[-xy_jitter, xy_jitter] (meters)

@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 10
-    num_envs: int = 10
+    data_size: int = 1000
+    num_envs: int = 50
     seed: int = 0
     save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect"
 
@@ -72,12 +72,12 @@ class CollectorCfg:
     pos_tol: float = 0.02
 
     # keypoints offsets (world frame offsets)
-    grasp_offset: Tuple[float, float, float] = (0.0, 0.04, 0.0)
+    grasp_offset: Tuple[float, float, float] = (0.0, -0.04, 0.01)
     pre_grasp_z: float = 0.05
     lift_height: float = 0.20
 
-    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.07, 0.02)
-    hang_offset: Tuple[float, float, float] = (0, 0.025, 0.0)
+    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.15, 0.03)
+    hang_offset: Tuple[float, float, float] = (-0.04, 0, 0.03)
     retreat_dx: float = 0.10
 
     # gripper
@@ -91,8 +91,8 @@ class CollectorCfg:
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 800
-    video_h: int = 600
+    video_w: int = 320
+    video_h: int = 240
     cam_view_key: Optional[str] = None  # None -> 默认 "pixels/view_0"
 
     # text fields（若 None，则默认继承 env cfg）
@@ -377,27 +377,27 @@ class HangToothbrushCupCollector:
                 legacy_state = buf["qpos"][i] + buf["gripper"][i]
                 rec = {
                     "images_1": {"url": video_rel_path, "type": "video", "frame_idx": i},
-                    "subtask": str(self.ep_subtask[env_id]),
+                    # "subtask": str(self.ep_subtask[env_id]),
                     "prompt": str(self.ep_prompt[env_id]),
                     "state": legacy_state,
                     "qpos": buf["qpos"][i],
                     "ee_pose": buf["ee_pose"][i],
                     "ctrl": buf["ctrl"][i],
                     "gripper": buf["gripper"][i],
-                    "reward": float(buf["reward"][i]),
-                    "is_robot": True,
-                    "logic_state": int(buf["logic_states"][i]),
-                    "time": float(buf["times"][i]),
-                    "success": bool(self.success[env_id]),
+                    # "reward": float(buf["reward"][i]),
+                    # "is_robot": True,
+                    # "logic_state": int(buf["logic_states"][i]),
+                    # "time": float(buf["times"][i]),
+                    # "success": bool(self.success[env_id]),
                     # metrics
-                    "d_ee_obj": float(buf["d_ee_obj"][i]),
-                    "d_obj_hook": float(buf["d_obj_hook"][i]),
-                    "grasp_touch": float(buf["grasp_touch"][i]),
-                    "hook_touch": float(buf["hook_touch"][i]),
-                    "is_grasped": bool(buf["is_grasped"][i]),
-                    "is_hung": bool(buf["is_hung"][i]),
-                    "is_success_env": bool(buf["is_success"][i]),
-                    "success_now": bool(buf["success_now"][i]),
+                    # "d_ee_obj": float(buf["d_ee_obj"][i]),
+                    # "d_obj_hook": float(buf["d_obj_hook"][i]),
+                    # "grasp_touch": float(buf["grasp_touch"][i]),
+                    # "hook_touch": float(buf["hook_touch"][i]),
+                    # "is_grasped": bool(buf["is_grasped"][i]),
+                    # "is_hung": bool(buf["is_hung"][i]),
+                    # "is_success_env": bool(buf["is_success"][i]),
+                    # "success_now": bool(buf["success_now"][i]),
                 }
 
                 # 只在第一帧写一次，避免每帧重复
@@ -539,8 +539,8 @@ class HangToothbrushCupCollector:
 
         action = np.zeros((B, 7), dtype=np.float32)
         action[:, :3] = self.exec_pos - ref_pos
-        action[:, :2] *= 0.7
-        action[:, 2] *= 0.7
+        action[:, :2] *= 1
+        action[:, 2] *= 1
         action[:, 3:6] = 0 
         action[:, 6] = grip_cmd
         self._last_action[:] = action
@@ -630,7 +630,7 @@ class HangToothbrushCupCollector:
                 finished = bool(is_success[i]) or (int(self.states[i]) == self.ST_DONE)
                 if finished or timeout:
                     self.done[i] = True
-                    self.success[i] = bool(is_success[i])
+                    self.success[i] = bool(is_success[i]) 
 
             for i in range(self.B):
                 if (not self.active[i]) or (not self.done[i]):
