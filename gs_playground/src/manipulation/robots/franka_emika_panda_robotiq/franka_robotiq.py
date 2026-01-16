@@ -20,7 +20,6 @@ class FrankaRobotiq(BaseRobot):
     """
     
     GAUSSIANS: Dict[str, Path] = {
-        "link0": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link0.ply",
         "link1": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link1.ply",
         "link2": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link2.ply",
         "link3": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link3.ply",
@@ -28,15 +27,15 @@ class FrankaRobotiq(BaseRobot):
         "link5": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link5.ply",
         "link6": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link6.ply",
         "link7": ASSETS_FRANKA_DIR / "3dgs" / "franka" / "link7.ply",
-        "robotiq_base": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "robotiq_base.ply",
-        "left_driver": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_driver.ply",
-        "left_coupler": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_coupler.ply",
-        "left_spring_link": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_spring_link.ply",
-        "left_follower": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_follower.ply",
-        "right_driver": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_driver.ply",
-        "right_coupler": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_coupler.ply",
-        "right_spring_link": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_spring_link.ply",
-        "right_follower": ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_follower.ply",
+        "robotiq_base"      : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "robotiq_base.ply",
+        "left_driver"       : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_driver.ply",
+        "left_coupler"      : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_coupler.ply",
+        "left_spring_link"  : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_spring_link.ply",
+        "left_follower"     : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "left_follower.ply",
+        "right_driver"      : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_driver.ply",
+        "right_coupler"     : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_coupler.ply",
+        "right_spring_link" : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_spring_link.ply",
+        "right_follower"    : ASSETS_FRANKA_DIR / "3dgs" / "robotiq" / "right_follower.ply",
     }
     
     BACKGROUND_PLY = ASSETS_FRANKA_DIR / "3dgs" / "background.ply"

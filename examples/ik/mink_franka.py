@@ -30,8 +30,8 @@ _ARM_JOINTS = [
 ]
 _FINGER_JOINTS = ["right_driver_joint", "left_driver_joint"]
 
-_ASSETS_FRANKA_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "franka_robotiq"
-_ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "table30_02_stack_color_blocks"
+_ASSETS_FRANKA_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "franka_emika_panda_robotiq"
+_ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_01_press_three_buttons"
 
 def update_assets(
     assets: Dict[str, Any],
@@ -54,7 +54,7 @@ def get_assets() -> Dict[str, bytes]:
     return assets
 
 class FrankaCfg:
-    mjcf_file_path = "xmls/table30_02_stack_color_blocks.xml"
+    mjcf_file_path = "xmls/table30_01_press_three_buttons.xml"
     decimation     = 8
     timestep       = 0.005
 
@@ -157,9 +157,9 @@ class FrankaBase:
 if __name__ == "__main__":
     cfg = FrankaCfg()
     cfg.gaussians["background"] = FrankaRobotiq.robot_background_ply()
-    cfg.gaussians["cube_blue"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_blue.ply").as_posix()
-    cfg.gaussians["cube_orange"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_orange.ply").as_posix()
-    cfg.gaussians["cube_yellow"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_yellow.ply").as_posix()
+    # cfg.gaussians["cube_blue"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_blue.ply").as_posix()
+    # cfg.gaussians["cube_orange"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_orange.ply").as_posix()
+    # cfg.gaussians["cube_yellow"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_yellow.ply").as_posix()
 
     exec_node = FrankaBase(cfg)
     obs = exec_node.reset()
