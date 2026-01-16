@@ -1,12 +1,9 @@
 from __future__ import annotations
-import numpy as np
 import motrixsim as mtx
 from motrixsim import ik
-import gymnasium as gym
 from typing import Dict, Optional
 from pathlib import Path
 from gs_playground import ROOT_PATH
-from gs_playground.src.utils.path_utils import as_posix_if_exists
 
 from ..base_robot import BaseRobot
 
@@ -60,21 +57,3 @@ class UR5eRobotiq(BaseRobot):
             tolerance=1e-3,
             damping=1e-3,
         )
-
-    @property
-    def action_space(self) -> gym.Space:
-        limits = self.mx_model.actuator_ctrl_limits
-        return gym.spaces.Box(low=limits[0], high=limits[1], dtype=np.float32)
-
-    @classmethod
-    def robot_gaussians(cls) -> Dict[str, str]:
-        out: Dict[str, str] = {}
-        for name, path in cls.GAUSSIANS.items():
-            posix = as_posix_if_exists(path)
-            if posix:
-                out[name] = posix
-        return out
-
-    @classmethod
-    def robot_background_ply(cls) -> Optional[str]:
-        return as_posix_if_exists(cls.BACKGROUND_PLY)
