@@ -1,0 +1,87 @@
+<mujoco model="ur5e_stack_cubes">
+  <include file="ur5e_robotiq.xml"/>
+
+  <statistic center="-0.6 0 0.3" extent="0.8"/>
+
+  <option timestep="0.002" iterations="50" ls_iterations="20" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <mesh name="cube_blue_mesh"   file="../../../../../tasks/table30/_02_stack_color_blocks/meshes/blue_plastic_cube/blue_plastic_cube.obj"/>
+    <mesh name="cube_yellow_mesh" file="../../../../../tasks/table30/_02_stack_color_blocks/meshes/yellow_plastic_cube/yellow_plastic_cube.obj"/>
+    <mesh name="cube_orange_mesh" file="../../../../../tasks/table30/_02_stack_color_blocks/meshes/orange_plastic_cube/orange_plastic_cube.obj"/>
+
+    <material name="cube_blue_mat"   rgba="0.10 0.35 0.95 1" reflectance="0.2"/>
+    <material name="cube_yellow_mat" rgba="0.95 0.85 0.10 1" reflectance="0.2"/>
+    <material name="cube_orange_mat" rgba="0.95 0.55 0.10 1" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <camera fovy="43.3411" name="front" pos="-1.51797336 0.19244078 0.91595487" quat="-0.57521489 -0.30011449  0.38479723  0.65649845"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    
+    <geom name="table" pos="-0.73 0.045 0.096" quat="0.99875 0 0 -0.04994" size="0.375 0.55 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+
+    <body name="cube_blue" pos="-0.6933 -0.1015 0.13078" quat="0.933601 -0.294398 -0.0913976 0.182661 ">
+      <joint type="free" frictionloss="0.0001"/>
+      <geom name="cube_blue_vis" type="mesh" mesh="cube_blue_mesh" material="cube_blue_mat" contype="0" conaffinity="0"/>
+      <geom name="cube_blue_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1" quat="0.933601 0.294398 0.0913976 -0.182661" contype="1" conaffinity="1"/>
+      <site name="cube_blue_center" pos="0 0 0" type="box" size="0.03 0.03 0.02" quat="0.933601 0.294398 0.0913976 -0.182661" rgba="1 0 0 0.6" group="4"/>
+    </body>
+
+    <body name="cube_yellow" pos="-0.6655 0.0117 0.13078" quat="0.953246 -0.299531 -0.0399664 0.00244832">
+      <joint type="free" frictionloss="0.0001"/>
+      <geom name="cube_yellow_vis" type="mesh" mesh="cube_yellow_mesh" material="cube_yellow_mat" contype="0" conaffinity="0"/>
+      <geom name="cube_yellow_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1" quat="0.953246 0.299531 0.0399664 -0.00244832" contype="1" conaffinity="1"/>
+      <site name="cube_yellow_center" pos="0 0 0" type="box" size="0.03 0.03 0.02" quat="0.953246 0.299531 0.0399664 -0.00244832" rgba="1 1 1 1" group="4"/>
+    </body>
+
+    <body name="cube_orange" pos="-0.6570 0.1268 0.13078" quat="0.570725 -0.171633 -0.766874 -0.238159">
+      <joint type="free" frictionloss="0.0001"/>
+      <geom name="cube_orange_vis" type="mesh" mesh="cube_orange_mesh" material="cube_orange_mat" contype="0" conaffinity="0"/>
+      <geom name="cube_orange_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1" quat="0.570725 0.171633 0.766874 0.238159" contype="1" conaffinity="1"/>
+      <site name="cube_orange_center" pos="0 0 0" type="box" size="0.03 0.03 0.02" quat="0.570725 0.171633 0.766874 0.238159" rgba="1 1 1 1" group="4"/>
+    </body>
+
+    <site name="place_target_A" pos="-0.80 -0.20 0.13" size="0.01" type="sphere" rgba="0.2 0.8 0.2 0.6" group="4"/>
+    <site name="place_target_B" pos="-0.80  0.20 0.13" size="0.01" type="sphere" rgba="0.2 0.8 0.2 0.6" group="4"/>
+
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size="0.001" type="sphere"/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+      <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
+      <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
+      <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
+    </body>
+  </worldbody>
+  
+  <keyframe>
+    <key name="home"
+      qpos="0 -1.5708 -1.5708 -1.5708 1.5708 0 
+            0 0 0 0 0 0
+            -0.6933 -0.1015 0.13078 0.933601 -0.294398 -0.0913976 0.182661
+            -0.6655 0.0117 0.13078 0.953246 -0.299531 -0.0399664 0.00244832
+            -0.6570 0.1268 0.13078 0.570725 -0.171633 -0.766874 -0.238159"
+       ctrl="0 -1.5708 -1.5708 -1.5708 1.5708 0 0"
+    />
+  </keyframe>
+  
+  <sensor>
+    <touch name="blue_cube_touch" site="cube_blue_center"/>
+    <touch name="yellow_cube_touch" site="cube_yellow_center"/>
+    <touch name="orange_cube_touch" site="cube_orange_center"/>
+  </sensor>
+</mujoco>
