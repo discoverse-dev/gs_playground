@@ -1,0 +1,197 @@
+<mujoco model="airbot_play">
+  <compiler angle="radian" meshdir="assets" autolimits="true"/>
+
+  <default>
+    <default class="airbot_play">
+      <material specular="0.5" shininess="0.25"/>
+      <joint armature="0.1" damping="1" axis="0 0 1" range="-3.151 2.089"/>
+      <general dyntype="none" biastype="affine" ctrlrange="-3.151 2.089" forcerange="-87 87"/>
+      <position forcerange="-100 100"/>
+
+      <default class="finger">
+        <joint axis="0 1 0" type="slide" range="0 0.04"/>
+      </default>
+
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="3" condim="3" solimp="0.99 0.995 0.01" solref="0.01 1" friction="1 0.005 0.0001"/>
+      </default>
+
+      <default class="joint1">
+        <joint range="-3.151 2.089" actuatorfrcrange="-24 24" damping="5"/>
+      </default>
+      <default class="joint2">
+        <joint range="-2.963 0.181" actuatorfrcrange="-24 24" damping="5"/>
+      </default>
+      <default class="joint3">
+        <joint range="-0.094 3.161" actuatorfrcrange="-24 24" damping="5"/>
+      </default>
+      <default class="joint4">
+        <joint range="-3.012 4.711" actuatorfrcrange="-16 16" damping="2"/>
+      </default>
+      <default class="joint5">
+        <joint range="-1.859 1.859" actuatorfrcrange="-16 16" damping="2"/>
+      </default>
+      <default class="joint6">
+        <joint range="-4.711 3.017" actuatorfrcrange="-16 16" damping="2"/>
+      </default>
+      <default class="finger_left">
+        <joint axis="0 1 0" range="0 0.04" type="slide" actuatorfrcrange="-5 5" damping="2"/>
+      </default>
+      <default class="finger_right">
+        <joint axis="0 -1 0" range="0 0.04" type="slide" actuatorfrcrange="-5 5" damping="2"/>
+      </default>
+    </default>
+    <site size="0.001" group="3"/>
+  </default>
+
+  <asset>
+    <material name="Paint_Matte_Black" specular="0.5" shininess="0.5" rgba="0.00111266039 0.00111266039 0.00111266039 1.0"/>
+    <material name="Paint_Metallic_White" specular="0.5" shininess="0.5" rgba="0.928523183 0.928523183 0.928523123 1.0"/>
+    <material name="Gree_Light_Base" specular="0.5" shininess="0.5" rgba="0.6 1 1 1"/>
+  </asset>
+
+  <asset>
+    <mesh name="arm_base_0" file="arm_base_0.obj"/>
+    <mesh name="arm_base_1" file="arm_base_1.obj"/>
+    <mesh name="link1" file="link1.obj"/>
+    <mesh name="link2_0" file="link2_0.obj"/>
+    <mesh name="link2_1" file="link2_1.obj"/>
+    <mesh name="link3_0" file="link3_0.obj"/>
+    <mesh name="link3_1" file="link3_1.obj"/>
+    <mesh name="link4" file="link4.obj"/>
+    <mesh name="link5_0" file="link5_0.obj"/>
+    <mesh name="link5_1" file="link5_1.obj"/>
+    <mesh name="link6" file="link6.obj"/>
+    <mesh name="camera_stand" file="camera_stand.obj"/>
+    <mesh name="left" file="left.obj"/>
+    <mesh name="right" file="right.obj"/>
+  </asset>
+
+  <!-- ======= AITBOT PLAY ======= -->
+  <worldbody>
+    <light name="top" pos="0 0 2" mode="trackcom"/>
+    <body name="arm_base" childclass="airbot_play" gravcomp="1">
+      <site name="armbase"/>
+      <geom mesh="arm_base_0" pos="0 0 -0.0015" material="Gree_Light_Base" class="visual"/>
+      <geom mesh="arm_base_1" material="Paint_Matte_Black" class="visual"/>
+      <body name="link1" pos="0 0 0.1172" gravcomp="1">
+        <inertial pos="7.9126e-05 -0.002527 -0.0041359" quat="0.696716 0.716558 0.0238919 -0.0236876" mass="0.54639" diaginertia="0.000346294 0.000325437 0.000286269"/>
+        <joint name="joint1" class="joint1"/>
+        <geom type="mesh" material="Paint_Matte_Black" mesh="link1" class="visual"/>
+        <body name="link2" quat="0.135866 0.135867 -0.69393 0.693932" gravcomp="1">
+          <inertial pos="0.22493 0.0047721 0.008023" quat="-0.210875 0.632473 -0.273056 0.693506" mass="0.64621" diaginertia="0.00516535 0.00505042 0.000418626"/>
+          <joint name="joint2" class="joint2"/>
+          <geom type="box" pos="0.08 0.015 0" euler="0 0 0.15" size="0.11 0.03 0.04" rgba="1 0 0 1" class="collision"/>
+          <geom type="box" pos="0.235 0.015 0" euler="0 0 -0.3" size="0.065 0.025 0.045" rgba="1 0 0 1" class="collision"/>
+          <geom mesh="link2_0" material="Paint_Matte_Black" class="visual"/>
+          <geom mesh="link2_1" material="Paint_Metallic_White" class="visual"/>
+          <body name="link3" pos="0.27009 0 0" quat="0.192144 0 0 -0.981367" gravcomp="1">
+            <inertial pos="0.16813 -5.5576e-05 0.0031184" quat="0.511278 0.488423 0.489191 0.510617" mass="0.26829" diaginertia="0.0031527 0.0030951 0.000239403"/>
+            <joint name="joint3" class="joint3"/>
+            <geom type="box" pos="0.13 0 0" size="0.13 0.025 0.025" rgba="1 0 0 1" class="collision"/>
+            <geom mesh="link3_0" material="Paint_Matte_Black" class="visual"/>
+            <geom mesh="link3_1" material="Paint_Metallic_White" class="visual"/>
+            <body name="link4" pos="0.29015 0 0" quat="-2.59734e-06 0.707105 2.59735e-06 0.707108" gravcomp="1">
+              <inertial pos="5.2436e-06 0.00040412 -0.03228" quat="0.999969 -0.000174762 -0.00792041 -6.98144e-05" mass="0.34876" diaginertia="0.000423574 0.000412 0.000126826"/>
+              <joint name="joint4" class="joint4"/>
+              <geom type="mesh" material="Paint_Matte_Black" mesh="link4" class="visual"/>
+              <body name="link5" quat="0.707105 0.707108 0 0" gravcomp="1">
+                <inertial pos="8.3328e-06 0.026148 0.002525" quat="0.531568 0.4663 0.4663 0.531568" mass="0.36132" diaginertia="0.0004677 0.000432922 0.000178178"/>
+                <joint name="joint5" class="joint5"/>
+                <geom mesh="link5_0" material="Paint_Matte_Black" class="visual"/>
+                <geom mesh="link5_1" material="Paint_Metallic_White" class="visual"/>
+                <body name="link6" pos="0 0.23645 0" quat="0.499998 -0.5 0.5 0.500002" gravcomp="1">
+                  <!-- <body name="1" pos="-0.105 0 -0.12" euler="3.1416 0 1.5708">
+                    <camera name="eye_arm" euler="-0.5236 0 0" fovy="72.5376526571421"/>
+                  </body> -->
+                  <inertial pos="3.54807e-05 -0.00259012 -0.120604" quat="0.699294 -0.0373828 0.0386404 0.712809" mass="0.617009" diaginertia="0.00236094 0.00225984 0.000562288"/>
+                  <joint name="joint6" class="joint6"/>
+                  <geom name="hand_box" type="box" pos="0 0 -0.07" size="0.025 0.08 0.015" rgba="1 0 0 1" class="collision"/>
+                  <geom type="mesh" material="Paint_Matte_Black" mesh="link6" class="visual"/>
+                  <geom type="mesh" material="Paint_Matte_Black" mesh="camera_stand" class="visual"/>
+                  <site name="endpoint" pos='0 0 0.023' euler="0 0 1.5708"/>
+                  <body name="left" gravcomp="1">
+                    <inertial pos="0 0.018307 -0.012505" quat="0.95 0.1 0 0" mass="0.027004" diaginertia="2.55732e-05 2.9e-05 1.12468e-05"/>
+                    <joint name="endleft" class='finger_left'/>
+                    <geom type="mesh" mesh="left" material="Paint_Matte_Black" class="visual"/>
+                    <geom name="left_finger_pad" type="box" size=".00625 .005 .019" pos="0 0.005 0.005" rgba="1 0 0 1" class="collision"/>
+                    <geom type="box" size=".015 .005 .018" pos="0 0.005 -0.032" rgba="1 0 0 1" class="collision"/>
+                  </body>
+                  <body name="right" gravcomp="1">
+                    <inertial pos="0 -0.018307 -0.012505" quat="0.95 -0.1 0 0" mass="0.027004" diaginertia="2.550732e-05 2.9e-05 1.124468e-05"/>
+                    <joint name="endright" class="finger_right"/>
+                    <geom type="mesh" mesh="right" material="Paint_Matte_Black" class="visual"/>
+                    <geom name="right_finger_pad" type="box" size=".00625 .005 .019" pos="0 -0.005 0.005" rgba="1 0 0 1" class="collision"/>
+                    <geom type="box" size=".015 .005 .018" pos="0 -0.005 -0.032" rgba="1 0 0 1" class="collision"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <equality>
+    <joint joint1="endleft" joint2="endright" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+  </equality>
+
+  <sensor>
+    <jointpos name="joint1_pos" joint="joint1" />
+    <jointpos name="joint2_pos" joint="joint2" />
+    <jointpos name="joint3_pos" joint="joint3" />
+    <jointpos name="joint4_pos" joint="joint4" />
+    <jointpos name="joint5_pos" joint="joint5" />
+    <jointpos name="joint6_pos" joint="joint6" />
+    <jointpos name="gripper_pos" joint="endleft" />
+    <!-- <tendonpos name="gripper_pos" tendon="gripper_gear" /> -->
+
+    <jointvel name="joint1_vel" joint="joint1" />
+    <jointvel name="joint2_vel" joint="joint2" />
+    <jointvel name="joint3_vel" joint="joint3" />
+    <jointvel name="joint4_vel" joint="joint4" />
+    <jointvel name="joint5_vel" joint="joint5" />
+    <jointvel name="joint6_vel" joint="joint6" />
+    <jointvel name="gripper_vel" joint="endleft" />
+    <!-- <tendonvel name="gripper_vel" tendon="gripper_gear" /> -->
+
+    <jointactuatorfrc name="joint1_torque" joint="joint1" />
+    <jointactuatorfrc name="joint2_torque" joint="joint2" />
+    <jointactuatorfrc name="joint3_torque" joint="joint3" />
+    <jointactuatorfrc name="joint4_torque" joint="joint4" />
+    <jointactuatorfrc name="joint5_torque" joint="joint5" />
+    <jointactuatorfrc name="joint6_torque" joint="joint6" />
+    <jointactuatorfrc name="gripper_torque" joint="endleft" />
+
+    <framepos name="endpoint_pos" objtype="site" objname="endpoint" reftype="site" refname="armbase"/>
+    <framequat name="endpoint_quat" objtype="site" objname="endpoint" reftype="site" refname="armbase"/>
+    <framelinvel name="endpoint_vel" objtype="site" objname="endpoint" reftype="site" refname="armbase"/>
+    <gyro name="endpoint_gyro" site="endpoint"/>
+    <accelerometer name="endpoint_acc" site="endpoint" />
+  </sensor>
+
+  <actuator>
+    <position class="joint1" name="joint1" joint="joint1" kp="1000" kv="20" ctrlrange="-3.151 2.089"/>
+    <position class="joint2" name="joint2" joint="joint2" kp="1000" kv="20" ctrlrange="-2.963 0.181"/>
+    <position class="joint3" name="joint3" joint="joint3" kp="750" kv="4" ctrlrange="-0.094 3.161"/>
+    <position class="joint4" name="joint4" joint="joint4" kp="750" kv="4" ctrlrange="-3.012 4.711"/>
+    <position class="joint5" name="joint5" joint="joint5" kp="300" kv="2" ctrlrange="-1.859 1.859"/>
+    <position class="joint6" name="joint6" joint="joint6" kp="300" kv="2" ctrlrange="-4.711 3.017"/>
+
+    <!-- <position name="joint1" class='joint1' joint="joint1" kp="350" kv="7"/>
+    <position name="joint2" class='joint2' joint="joint2" kp="350" kv="7"/>
+    <position name="joint3" class='joint3' joint="joint3" kp="350" kv="7"/>
+    <position name="joint4" class='joint4' joint="joint4" kp="175" kv="3"/>
+    <position name="joint5" class='joint5' joint="joint5" kp="175" kv="3"/>
+    <position name="joint6" class='joint6' joint="joint6" kp="175" kv="3"/> -->
+
+    <general class="airbot_play" name="gripper" joint="endleft"
+     ctrlrange="0 0.04" gainprm="350 0 0" biasprm="0 -350 -10" forcerange="-200 200"/>
+    <!-- <position name="gripper" tendon="gripper_gear" ctrlrange="0. 0.04" kp="350" kv="10"/> -->
+  </actuator>
+
+</mujoco>

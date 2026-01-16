@@ -59,7 +59,14 @@
     <site name="place_target_A" pos="0.38 -0.185 0.1" size="0.01" type="sphere" rgba="0.2 0.8 0.2 0.6" group="4"/>
     <site name="place_target_B" pos="0.38  0.215 0.1" size="0.01" type="sphere" rgba="0.2 0.8 0.2 0.6" group="4"/>
 
-
+    <!-- Keep mocap_target -->
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size="0.001" type="sphere"/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+      <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
+      <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
+      <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
+    </body>
   </worldbody>
   
   <keyframe>

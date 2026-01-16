@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Tuple, Optional
 import numpy as np
+from pathlib import Path
 from scipy.spatial.transform import Rotation
 import motrixsim as mtx
 import gymnasium as gym
+from gs_playground.src.utils.path_utils import as_posix_if_exists
 
 class BaseRobot(ABC):
     """
@@ -13,6 +15,9 @@ class BaseRobot(ABC):
     num_dof_arm = 7
     ee_site_name = None
     gripper_actuator_name = None
+
+    GAUSSIANS: Dict[str, Path] = {}
+    BACKGROUND_PLY: Path = None
 
     def __init__(self, mx_model: mtx.SceneModel):
         self.mx_model = mx_model
@@ -201,8 +206,19 @@ class BaseRobot(ABC):
         return np.concatenate([pos, rpy], axis=-1).astype(np.float32)
         
     @property
-    @abstractmethod
     def action_space(self) -> gym.Space:
-        """Returns the action space for the robot."""
-        pass
-    
+        limits = self.mx_model.actuator_ctrl_limits
+        return gym.spaces.Box(low=limits[0], high=limits[1], dtype=np.float32)
+
+    @classmethod
+    def robot_gaussians(cls) -> Dict[str, str]:
+        out: Dict[str, str] = {}
+        for name, path in cls.GAUSSIANS.items():
+            posix = as_posix_if_exists(path)
+            if posix:
+                out[name] = posix
+        return out
+
+    @classmethod
+    def robot_background_ply(cls) -> Optional[str]:
+        return as_posix_if_exists(cls.BACKGROUND_PLY)

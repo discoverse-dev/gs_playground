@@ -11,27 +11,13 @@ from gaussian_renderer import GSRendererMuJoCo
 from gs_playground.src.utils.mink_arm_ik import MinkIK
 
 from gs_playground import ROOT_PATH
-from gs_playground.src.manipulation.robots.franka_emika_panda_robotiq.franka_robotiq import FrankaRobotiq
+from gs_playground.src.manipulation.robots.airbot_play.airbot_play import AirbotPlay
 
-
-_TEST_SPEED = False
 _USE_MOCAP_IK = True
 _SYNC = True
 
 H = 300; W = 400
-_ARM_JOINTS = [
-    "joint1",
-    "joint2",
-    "joint3",
-    "joint4",
-    "joint5",
-    "joint6",
-    "joint7",
-]
-_FINGER_JOINTS = ["right_driver_joint", "left_driver_joint"]
-
-_ASSETS_FRANKA_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "franka_emika_panda_robotiq"
-_ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_02_stack_color_blocks"
+_ASSETS_AIRBOT_PLAY_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "airbot_play"
 
 def update_assets(
     assets: Dict[str, Any],
@@ -47,39 +33,30 @@ def update_assets(
 
 def get_assets() -> Dict[str, bytes]:
     assets = {}
-    path = _ASSETS_FRANKA_DIR / "xmls"
+    path = _ASSETS_AIRBOT_PLAY_DIR / "xmls"
     update_assets(assets, path, "*.xml")
     update_assets(assets, path / "assets", recursive=True)
-    update_assets(assets, _ASSETS_TASK_DIR / "meshes", recursive=True)
     return assets
 
-class FrankaCfg:
-    mjcf_file_path = "xmls/table30_02_stack_color_blocks.xml"
+class AirbotPlayCfg:
+    mjcf_file_path = "xmls/single_cube.xml"
     decimation     = 8
     timestep       = 0.005
+    gaussians = AirbotPlay.robot_gaussians()
 
-    gaussians = FrankaRobotiq.robot_gaussians()
-
-class FrankaBase:
-    def __init__(self, config: FrankaCfg):
+class AirbotPlayBase:
+    def __init__(self, config: AirbotPlayCfg):
         self.config = config
         self.free_camera = None
 
-        xml_path = _ASSETS_FRANKA_DIR / self.config.mjcf_file_path
+        xml_path = _ASSETS_AIRBOT_PLAY_DIR / self.config.mjcf_file_path
         self.mjcf_xml = xml_path.read_text()
         self._model_assets = get_assets()
         self.mj_model = mujoco.MjModel.from_xml_string(self.mjcf_xml, assets=self._model_assets)
         self.mj_model.opt.timestep = self.config.timestep
         self.mj_data = mujoco.MjData(self.mj_model)
 
-        self._robot_arm_qposadr = np.array([
-            self.mj_model.jnt_qposadr[self.mj_model.joint(j).id] for j in _ARM_JOINTS
-        ])
-        self._robot_qposadr = np.array([
-            self.mj_model.jnt_qposadr[self.mj_model.joint(j).id] for j in _ARM_JOINTS + _FINGER_JOINTS
-        ])
         self.renderer = GSRendererMuJoCo(self.config.gaussians, self.mj_model)
-        self.timing_stats = []
 
     def reset(self):
         mujoco.mj_resetData(self.mj_model, self.mj_data)
@@ -98,15 +75,7 @@ class FrankaBase:
         return False
 
     def getObservation(self):
-        evt_start = torch.cuda.Event(enable_timing=True)
-        evt_update = torch.cuda.Event(enable_timing=True)
-        evt_render = torch.cuda.Event(enable_timing=True)
-        evt_end = torch.cuda.Event(enable_timing=True)
-
-        evt_start.record()
         self.renderer.update_gaussians(self.mj_data)
-        evt_update.record()
-        
         results_tensor = self.renderer.render(
             self.mj_model,
             self.mj_data,
@@ -115,35 +84,17 @@ class FrankaBase:
             H,
             self.free_camera
         )
-        evt_render.record()
-        
         rgb_np = (255. * torch.clamp(results_tensor[0][0], 0.0, 1.0)).to(torch.uint8).cpu().numpy()
-        evt_end.record()
-
-        if _TEST_SPEED:
-            torch.cuda.synchronize()
-            t_update = evt_start.elapsed_time(evt_update)
-            t_render = evt_update.elapsed_time(evt_render)
-            t_post = evt_render.elapsed_time(evt_end)
-            t_total = evt_start.elapsed_time(evt_end)
-            
-          
-            self.timing_stats.append({
-                'update': t_update,
-                'render': t_render,
-                'post': t_post,
-                'total': t_total,
-            })
-
+        
         observation_dict = {
-            "state" : self.mj_data.qpos[self._robot_qposadr].copy(),
-            "rgb"   : rgb_np,
+            "state"       : self.mj_data.sensordata[:7].copy(),
+            "rgb"         : rgb_np,
         }
-
+        
         if self.free_camera is not None and -1 in results_tensor:
             rgb_free = (255. * torch.clamp(results_tensor[-1][0], 0.0, 1.0)).to(torch.uint8).cpu().numpy()
             observation_dict["free_camera"] = rgb_free
-
+        
         return observation_dict
 
     def set_mocap_target(self, target_name, target_pos, target_quat, box_color=(0,1,0,0.1)):
@@ -155,26 +106,24 @@ class FrankaBase:
             self.mj_model.geom(f'{target_name}_box').rgba = box_color
 
 if __name__ == "__main__":
-    cfg = FrankaCfg()
-    cfg.gaussians["background"] = FrankaRobotiq.robot_background_ply()
-    cfg.gaussians["cube_blue"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_blue.ply").as_posix()
-    cfg.gaussians["cube_orange"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_orange.ply").as_posix()
-    cfg.gaussians["cube_yellow"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_yellow.ply").as_posix()
+    cfg = AirbotPlayCfg()
+    cfg.gaussians["background"] = AirbotPlay.robot_background_ply()
+    # cfg.gaussians["cube_blue"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_blue.ply").as_posix()
+    # cfg.gaussians["cube_orange"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_orange.ply").as_posix()
+    # cfg.gaussians["cube_yellow"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_yellow.ply").as_posix()
 
-    exec_node = FrankaBase(cfg)
+    exec_node = AirbotPlayBase(cfg)
     obs = exec_node.reset()
-    exec_node.timing_stats = [] # Clear warmup stats
-
 
     if _USE_MOCAP_IK:
         ik_model = mujoco.MjModel.from_xml_string(exec_node.mjcf_xml, assets=exec_node._model_assets)
-        ik_solver = MinkIK(ik_model, len(_ARM_JOINTS), frame_name="gripper")
+        ik_solver = MinkIK(ik_model, 6, frame_name="endpoint")
 
         mocap_name = "mocap_target"
         mocap_box_name = mocap_name + "_box"
         mocap_id = exec_node.mj_model.body(mocap_name).mocapid[0]
 
-        mink.move_mocap_to_frame(exec_node.mj_model, exec_node.mj_data, mocap_name, "gripper", "site")
+        mink.move_mocap_to_frame(exec_node.mj_model, exec_node.mj_data, mocap_name, "endpoint", "site")
         ik_solver.configuration.update(exec_node.mj_data.qpos)
         ik_solver.posture_task.set_target_from_configuration(ik_solver.configuration)
 
@@ -186,7 +135,7 @@ if __name__ == "__main__":
                 _last_time = -1.
                 exec_node.reset()
                 if _USE_MOCAP_IK:
-                    mink.move_mocap_to_frame(exec_node.mj_model, exec_node.mj_data, mocap_name, "gripper", "site")
+                    mink.move_mocap_to_frame(exec_node.mj_model, exec_node.mj_data, mocap_name, "endpoint", "site")
                     ik_solver.configuration.update(exec_node.mj_data.qpos)
                     ik_solver.posture_task.set_target_from_configuration(ik_solver.configuration)
             _last_time = exec_node.mj_data.time
@@ -209,31 +158,8 @@ if __name__ == "__main__":
                 solution = None
 
             exec_node.step(solution)
-            
-            if _TEST_SPEED and len(exec_node.timing_stats) >= 100:
-                print("=" * 60)
-                print(f"Average Timing over {len(exec_node.timing_stats)} steps:")
-                
-                avg_update = np.mean([s['update'] for s in exec_node.timing_stats])
-                avg_render = np.mean([s['render'] for s in exec_node.timing_stats])
-                avg_post = np.mean([s['post'] for s in exec_node.timing_stats])
-                avg_total = np.mean([s['total'] for s in exec_node.timing_stats])
-                
-                print(f"  Update Gaussians: {avg_update:.2f} ms")
-                print(f"  Render:           {avg_render:.2f} ms")
-                print(f"  Post-process:     {avg_post:.2f} ms")
-                print(f"  Total:            {avg_total:.2f} ms")
-                
-                if len(exec_node.timing_stats) > 0 and 'detailed' in exec_node.timing_stats[0]:
-                    print(f"  Detailed CUDA Timing (Average):")
-                    first_detailed = exec_node.timing_stats[0]['detailed']
-                    for name in first_detailed.keys():
-                        avg_val = np.mean([s['detailed'][name] for s in exec_node.timing_stats])
-                        print(f"    {name}: {avg_val:.2f} ms")
-                break
-
             obs = exec_node.getObservation()
-
+            
             if "free_camera" in obs:
                 viewport = mujoco.MjrRect(viewer.viewport.left + viewer.viewport.width - W, 0, W, H * 2)
                 viewer.set_images([(viewport, np.vstack([obs["free_camera"], obs["rgb"]]))])
