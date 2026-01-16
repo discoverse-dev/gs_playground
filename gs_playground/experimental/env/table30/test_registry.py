@@ -3,8 +3,8 @@ import math
 import sys
 from pathlib import Path
 
-import cv2
 import matplotlib.pyplot as plt
+import mediapy as media
 import numpy as np
 
 # add project root to path
@@ -83,7 +83,7 @@ def run_test(
     print(f"[reset] env={env_name}, action_mode={action_mode}, num_envs={num_envs}")
 
     video_path = Path(output) / env_name / f"{action_mode}_mode.mp4"
-    writer = None
+    frames = [] if save_video else None
     grid_n = int(math.ceil(math.sqrt(num_envs)))
     if save_video:
         rgb0 = _extract_rgb(obs)
@@ -91,10 +91,7 @@ def run_test(
             grid_frame = _make_grid(rgb0, grid_n)
             if grid_frame is not None:
                 Path(video_path).parent.mkdir(parents=True, exist_ok=True)
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                h, w = grid_frame.shape[:2]
-                writer = cv2.VideoWriter(str(video_path), fourcc, 10.0, (w, h))
-                writer.write(grid_frame[..., ::-1])  # RGB -> BGR
+                frames.append(grid_frame)
 
     # Targets setup
     goal_pose = None
@@ -168,20 +165,21 @@ def run_test(
             hist_qpos_0.append(q)
             hist_action_0.append(act[0].copy())
 
-        if writer is not None:
+        if frames is not None:
             rgb_b = _extract_rgb(obs)
             if rgb_b is not None:
                 grid_frame = _make_grid(rgb_b, grid_n)
                 if grid_frame is not None:
-                    writer.write(grid_frame[..., ::-1])
+                    frames.append(grid_frame)
 
         print(f"[step {t+1}] reward_mean={np.mean(reward):.4f}, success={np.sum(info.get('is_success', 0))}")
         if np.all(terminated | truncated):
             print(f"[done early at {t+1}] all envs terminated or truncated")
             break
 
-    if writer is not None:
-        writer.release()
+    if save_video and frames:
+        Path(video_path).parent.mkdir(parents=True, exist_ok=True)
+        media.write_video(str(video_path), frames, fps=10.0)
         print(f"[video] saved to {video_path}")
     
     # Plotting for Joint mode

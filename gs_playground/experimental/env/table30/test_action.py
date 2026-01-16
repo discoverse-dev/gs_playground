@@ -3,8 +3,8 @@ import math
 import sys
 from pathlib import Path
 
-import cv2
 import numpy as np
+import mediapy as media
 
 # add project root to path
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,16 +102,13 @@ def run_test_mode(
     video_path = output_dir / f"{mode}.mp4"
     video_path.parent.mkdir(parents=True, exist_ok=True)
     
-    writer = None
+    frames = []
     rgb0 = _extract_rgb(obs)
     grid_n = int(math.ceil(math.sqrt(num_envs)))
     
     if rgb0 is not None:
         grid = _make_grid(rgb0, grid_n)
-        h, w = grid.shape[:2]
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(video_path), fourcc, 25.0, (w, h)) # 25fps assuming sim_dt/ctrl_dt matches
-        writer.write(grid[..., ::-1])
+        frames.append(grid)
 
     print(f"  Target generated. Moving {steps} steps...")
     
@@ -148,14 +145,15 @@ def run_test_mode(
         obs = state.obs
 
         # Visualize
-        if writer is not None:
+        if frames is not None:
             rgb = _extract_rgb(obs)
             if rgb is not None:
                 grid = _make_grid(rgb, grid_n)
-                writer.write(grid[..., ::-1])
+                frames.append(grid)
 
-    if writer:
-        writer.release()
+    if frames:
+        video_path.parent.mkdir(parents=True, exist_ok=True)
+        media.write_video(str(video_path), frames, fps=25.0)
         print(f"  Saved video to {video_path}")
         
     print("  Done.")

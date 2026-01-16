@@ -107,10 +107,8 @@ class BaseRobot(ABC):
             else:
                 raise ValueError(f"Unknown sub_mode: {sub_mode}")
 
-            # Update Last Command
-            self.last_cmd_ee_pose = target_pose_6d
             self.last_cmd_qpos = None # Invalidate joint history to force sync on mode switch
-            
+
             # Convert Target (XYZ+RPY) to XYZ+Quat (xyzw)
             t_pos = target_pose_6d[:, :3]
             t_rpy = target_pose_6d[:, 3:] # Roll, Pitch, Yaw
@@ -133,6 +131,9 @@ class BaseRobot(ABC):
             good = np.isfinite(residual) & (residual < 2e-2) 
             if np.any(good):
                 ctrl[good, :self.num_dof_arm] = desired_j[good, :self.num_dof_arm]
+                # Update Last Command only for successful IK solves
+                self.last_cmd_ee_pose[good] = target_pose_6d[good]
+
             # Gripper
             ctrl[:, self.gripper_act_id] = act_gripper
             
