@@ -40,12 +40,12 @@ class BaseRobot(ABC):
             return
 
         # 1. Sync Joint State
-        curr_q = np.asarray(data.dof_pos[:, :7], dtype=np.float32)
+        curr_q = np.asarray(data.dof_pos[:, :self.num_dof_arm], dtype=np.float32)
         if self.last_cmd_qpos is not None:
-             self.last_cmd_qpos[env_mask] = curr_q[env_mask]
+            self.last_cmd_qpos[env_mask] = curr_q[env_mask]
         
         if self.ref_qpos is not None:
-             self.ref_qpos[env_mask] = curr_q[env_mask]
+            self.ref_qpos[env_mask] = curr_q[env_mask]
 
         # 2. Sync EE Pose
         # Check if we need to compute pose (expensive if not needed)

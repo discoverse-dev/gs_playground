@@ -37,7 +37,7 @@ class StackColorBlocksEnvCfg(TaskEnvCfg):
     img_height: int = 240
  
     # observation / prompt
-    instruction: str = "Stack the blue cube on top of the yellow cube."
+    instruction: str = "Stack the yellow block on top of the orange block."
 
     # task entities
     cube_names: Tuple[str, str, str] = ("cube_blue", "cube_yellow", "cube_orange")
@@ -85,16 +85,41 @@ class StackColorBlocksEnv(TaskEnv):
         if data.shape[0] == 0:
             return
 
+        num_cubes = len(self.cube_bodies)
+        min_xy_dist = 0.05
+
         # Get current poses for the subset: (B_subset, num_cubes, 7)
         cube_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
             axis=1,
         )
 
-        # Sample small XY jitters per cube/per env
-        xy_jitter = self._rng.uniform(-0.08, 0.08, size=cube_pose[..., :2].shape).astype(np.float32)
+        base_xy = cube_pose[..., :2]
         new_pose = cube_pose.copy()
-        new_pose[..., :2] = cube_pose[..., :2] + xy_jitter  # keep z/orientation unchanged
+
+        remaining = np.ones((data.shape[0],), dtype=bool)
+        eye_mask = np.eye(num_cubes, dtype=np.float32) * 1e6  # ignore self-distance
+
+        # Try a few times to satisfy min distance; fallback to base if not achieved
+        for _ in range(10):
+            if not remaining.any():
+                break
+            # Sample jitters only for remaining envs
+            jitter = self._rng.uniform(-0.08, 0.08, size=(remaining.sum(), num_cubes, 2)).astype(np.float32)
+            candidate_xy = base_xy[remaining] + jitter
+
+            diff = candidate_xy[:, :, None, :] - candidate_xy[:, None, :, :]
+            dist = np.linalg.norm(diff, axis=-1) + eye_mask[None]
+            ok = dist.min(axis=(1, 2)) >= min_xy_dist
+
+            if ok.any():
+                # Assign successful candidates back into new_pose
+                rem_indices = np.where(remaining)[0]
+                new_pose_view = new_pose[remaining]
+                new_pose_view[ok, :, :2] = candidate_xy[ok]
+                new_pose[remaining] = new_pose_view
+                # Update remaining mask
+                remaining[rem_indices[ok]] = False
 
         # Write back poses using set_dof_pos (include floating base)
         for env_idx in range(data.shape[0]):
@@ -165,3 +190,48 @@ class StackColorBlocksEnv(TaskEnv):
         info["dz"] = dz
 
         return reward.astype(np.float32)
+
+    def _check_success(self, state: RenderEnvState) -> np.ndarray:
+        data: SceneData = state.data
+        B = self.num_envs
+        cube_pose = np.stack(
+            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+            axis=1,
+        )
+        name_to_idx = {name: i for i, name in enumerate(self._cfg.cube_names)}
+        yellow_i = name_to_idx["cube_yellow"]
+        orange_i = name_to_idx["cube_orange"]
+
+        yellow = cube_pose[:, yellow_i, :3]
+        orange = cube_pose[:, orange_i, :3]
+
+        dist_xy = np.linalg.norm(yellow[:, :2] - orange[:, :2], axis=1)
+        dz = np.abs(yellow[:, 2] - (orange[:, 2] + 0.05))
+
+        success = (dist_xy < 0.01) & (dz < 0.01)
+        # latch
+        self.success_latched = self.success_latched | success
+        return self.success_latched.copy()
+
+    def update_state(self, state: RenderEnvState, obs_required: bool = True) -> RenderEnvState:
+        state = super().update_state(state, obs_required=obs_required)
+
+        # Fail-fast check: if any cube leaves workspace bounds, terminate env
+        data: SceneData = state.data
+        cube_pose = np.stack(
+            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+            axis=1,
+        )
+        xy = cube_pose[..., :2]  # (B, num_cubes, 2)
+        x_ok = (xy[..., 0] >= -0.75) & (xy[..., 0] <= -0.45)
+        y_ok = (xy[..., 1] >= -0.20) & (xy[..., 1] <= 0.20)
+        in_bounds = x_ok & y_ok
+        out_of_bounds = ~np.all(in_bounds, axis=1)
+
+        if np.any(out_of_bounds):
+            terminated = state.terminated.copy()
+            terminated[out_of_bounds] = True
+            state.terminated = terminated
+            state.info["out_of_bounds"] = out_of_bounds
+
+        return state

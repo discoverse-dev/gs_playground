@@ -116,7 +116,10 @@ class TaskEnv(NpRenderEnv):
         reward = np.zeros((self._num_envs,), dtype=np.float32)
         terminated = np.ones((self._num_envs,), dtype=bool)
         truncated = np.zeros((self._num_envs,), dtype=bool)
-        info = {"steps": np.zeros((self._num_envs,), dtype=np.uint64)}
+        info = {
+            "steps": np.zeros((self._num_envs,), dtype=np.uint64),
+            "success": np.zeros((self._num_envs,), dtype=bool),
+        }
 
         self._state = RenderEnvState(data, obs, reward, terminated, truncated, info)
 
@@ -130,9 +133,11 @@ class TaskEnv(NpRenderEnv):
         # Compute reward and write info in-place to avoid extra dict copies
         reward = self._compute_reward(state)
         terminated = state.terminated.copy()
-        # Tasks can latch success flags inside _compute_reward; prefer that over recomputation here
-        if hasattr(self, "success_latched"):
-            terminated = np.asarray(self.success_latched).copy()
+
+        # Success check is task-specific; subclasses override _check_success
+        success = self._check_success(state)
+        state.info["success"] = np.asarray(success, dtype=bool)
+        terminated = terminated | state.info["success"]
 
         if obs_required:
             obs = self._build_obs(state.data)
@@ -169,6 +174,8 @@ class TaskEnv(NpRenderEnv):
 
         # 2b. Task/domain randomization hook (after keyframe, before robot reset)
         self._randomize(self._state.data[done], done_mask=done, phase="auto_reset")
+        # Recompute kinematics after randomization to ensure renders reflect new poses
+        forward_kinematic(self.model, self._state.data[done])
 
         # 2b. Update BG cache for done envs if renderer has background
         if self._bg_renderer is not None:
@@ -240,6 +247,8 @@ class TaskEnv(NpRenderEnv):
 
         # Task/domain randomization hook (after keyframe, before robot reset)
         self._randomize(self._state.data[done_mask], done_mask=done_mask, phase="reset")
+        # Recompute kinematics after randomization to ensure renders reflect new poses
+        forward_kinematic(self.model, self._state.data[done_mask])
 
         # Reset Robot Internal State
         self.robot.reset_envs(self._state.data, done_mask)
@@ -263,8 +272,24 @@ class TaskEnv(NpRenderEnv):
     def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
         """Compute reward given full state; write aux metrics into state.info in-place."""
 
+    def _check_success(self, state: RenderEnvState) -> np.ndarray:
+        """
+        Task-specific success predicate. Override per task.
+        Returns a boolean array of shape (num_envs,).
+        """
+        return np.zeros((self._num_envs,), dtype=bool)
+
     def _build_obs(self, data: SceneData) -> Dict[str, np.ndarray]:
-        obs_pix = self._render_pixels(data)
+        # If rendering a subset batch, temporarily disable cached BG to avoid shape mismatch
+        restore_bg = None
+        if self._bg_imgs is not None and data.shape[0] != self._num_envs:
+            restore_bg = self._bg_imgs
+            self._bg_imgs = None
+        try:
+            obs_pix = self._render_pixels(data)
+        finally:
+            if restore_bg is not None:
+                self._bg_imgs = restore_bg
         robot_obs = self.robot.get_obs(data)
         obs_dict = {
             **obs_pix,
