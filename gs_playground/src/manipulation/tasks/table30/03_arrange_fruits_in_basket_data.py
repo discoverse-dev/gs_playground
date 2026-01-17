@@ -69,13 +69,13 @@ class StageOffsets:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
     seed: int = 0
-    save_dir: str = "./data/table30_arrange_fruits_collect"
+    save_dir: str = "./data/table30_arrange_fruits_collect_1k_5"
 
     # env control（只保留 collector 的“上限”）
-    max_ctrl_steps: int = 2000
+    max_ctrl_steps: int = 1200
 
     # motion
     max_dp: float = 0.005
@@ -415,6 +415,7 @@ class ArrangeFruitsCollector:
         tmp_path = self._tmp_video_paths[env_id]
 
         if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        # if True:
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -466,7 +467,8 @@ class ArrangeFruitsCollector:
 
         # Sync our current fruit idx with env internal index (env increments when place succeeds)
         env_cur = np.asarray(getattr(self.env, "current_obj_idx", np.zeros((B,), dtype=np.int32))).reshape(-1)
-        advance = running & (env_cur > self.current_fruit_idx)
+        N = len(self.env._cfg.fruit_names)
+        advance = running & (env_cur > self.current_fruit_idx) & (env_cur < N)
         if np.any(advance):
             self.current_fruit_idx[advance] = env_cur[advance]
             self.states[advance] = self.ST_IDLE
@@ -515,7 +517,7 @@ class ArrangeFruitsCollector:
             lift_p[i] = grasp_p[i] + np.asarray(offs.lift, dtype=np.float32)
             basket_p[i] = bp + np.asarray(offs.above_container, dtype=np.float32)
             retreat_p[i] = basket_p[i].copy()
-            retreat_p[i, 2] += 0.05
+            retreat_p[i, 2] += 0.2
 
         s = self.states
         m1 = running & (s == self.ST_GO_ABOVE)
@@ -619,52 +621,62 @@ class ArrangeFruitsCollector:
         self.start_episodes(all_ids, seed=int(cfg.seed))
 
         while self.saved_success < target:
+            # 1) step env + update state machine
             self._step_logic()
 
             running = self.active & (~self.done)
 
+            # 2) capture
             sample_mask = running & ((self.ctrl_step % int(cfg.sample_every_steps)) == 0)
             for env_id in np.where(sample_mask)[0].tolist():
-                self._capture_step(env_id)
+                self._capture_step(int(env_id))
 
+            # 3) render
             if cfg.save_video:
                 render_mask = running & ((self.ctrl_step % int(cfg.render_every_steps)) == 0)
                 for env_id in np.where(render_mask)[0].tolist():
-                    self._write_video_frame(env_id)
+                    self._write_video_frame(int(env_id))
 
+            # 4) increment ctrl steps for running envs
             self.ctrl_step[running] += 1
 
+            # 5) read env success
             info = self.env._state.info
             is_success = np.asarray(
                 info.get("is_success", info.get("success", np.zeros((self.B,), dtype=np.bool_))),
                 dtype=np.bool_,
             ).reshape(-1)
 
+            # 6) mark done/success (per-env)
             for i in range(self.B):
                 if (not self.active[i]) or self.done[i]:
                     continue
+
                 timeout = int(self.ctrl_step[i]) >= int(cfg.max_ctrl_steps)
-                finished = bool(is_success[i]) or (int(self.states[i]) == self.ST_DONE)
+                finished = bool(is_success[i]) or (int(self.states[i]) == int(self.ST_DONE))
+
                 if finished or timeout:
                     self.done[i] = True
                     self.success[i] = bool(is_success[i])
 
-            for i in range(self.B):
-                if (not self.active[i]) or (not self.done[i]):
-                    continue
 
-                self._finalize_episode(i)
+            # 7) finalize ALL done envs first (no restart inside per-env loop!)
+            done_ids = np.where(self.active & self.done)[0]
+            for env_id in done_ids.tolist():
+                self._finalize_episode(int(env_id))
 
-                if self.saved_success >= target:
-                    self.active[i] = False
-                    continue
-
-                restart_ids = np.where(self.active & self.done)[0]
+            # 8) if reached target, stop remaining envs and exit loop naturally
+            if self.saved_success >= target:
+                self.active[done_ids] = False
+            else:
+                # 9) restart done envs in one batch (only those still active)
+                restart_ids = done_ids[self.active[done_ids]]
                 if restart_ids.size > 0:
                     batch_seed = int(cfg.seed + self.attempted)
                     self.done[restart_ids] = False
                     self.start_episodes(restart_ids, seed=batch_seed)
 
+            # 10) periodic log
             now = time.perf_counter()
             if (now - self._last_log_t) >= 2.0:
                 print(
@@ -673,8 +685,9 @@ class ArrangeFruitsCollector:
                 )
                 self._last_log_t = now
 
-        print(f"[DONE] saved_success={self.saved_success}/{target}, attempted={self.attempted}")
+        print(f"[DONE] saved_success={self.saved_success}/{target}, attempted={int(self.attempted)}")
         print(f"Saved to: {cfg.save_dir}")
+
 
     def close(self) -> None:
         for vw in self.video_writers:
