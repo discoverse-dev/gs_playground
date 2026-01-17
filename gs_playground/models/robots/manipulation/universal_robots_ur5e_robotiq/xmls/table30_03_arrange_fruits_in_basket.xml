@@ -1,0 +1,179 @@
+<mujoco model="ur5e_place_fruits_task3">
+  <include file="ur5e_robotiq.xml"/>
+
+  <option timestep="0.002" iterations="50" ls_iterations="20" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <mesh name="banana_mesh_0"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_000.obj"/>
+    <mesh name="banana_mesh_1"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_001.obj"/>
+    <mesh name="banana_mesh_2"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_002.obj"/>
+    <mesh name="banana_mesh_3"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_003.obj"/>
+    
+    <mesh name="avocado_mesh"     scale="0.9 0.9 0.9"    file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/avocado/avocado.obj"/>
+    
+    <mesh name="carambola_mesh"   file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/carambola/carambola.obj"/>
+    <mesh name="mangosteen_mesh"  file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/mangosteen/mangosteen.obj"/>
+    
+    <material name="banana_yellow" rgba="0.8 0.8 0 1"/>
+    <material name="banana_brown" rgba="0.3 0.2 0 1"/>
+    <material name="avocado_mat"       rgba="0.20 0.55 0.20 1" reflectance="0.10"/>
+    <material name="carambola_mat"     rgba="0.98 0.88 0.20 1" reflectance="0.08"/>
+    <material name="mangosteen_mat"    rgba="0.45 0.10 0.55 1" reflectance="0.10"/>
+
+    <material name="basket_mat" rgba="0.7 0.2 0.2 1" reflectance="0.1"/>
+    <mesh name="basket_part_000" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_000.obj"/>
+    <mesh name="basket_part_001" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_001.obj"/>
+    <mesh name="basket_part_002" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_002.obj"/>
+    <mesh name="basket_part_003" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_003.obj"/>
+    <mesh name="basket_part_004" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_004.obj"/>
+    <mesh name="basket_part_005" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_005.obj"/>
+    <mesh name="basket_part_006" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_006.obj"/>
+    <mesh name="basket_part_007" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_007.obj"/>
+    <mesh name="basket_part_008" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_008.obj"/>
+    <mesh name="basket_part_009" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_009.obj"/>
+    <mesh name="basket_part_010" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_010.obj"/>
+    <mesh name="basket_part_011" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_011.obj"/>
+    <mesh name="basket_part_012" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_012.obj"/>
+    <mesh name="basket_part_013" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_013.obj"/>
+    <mesh name="basket_part_014" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_014.obj"/>
+    <mesh name="basket_part_015" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_015.obj"/>
+    <mesh name="basket_part_016" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_016.obj"/>
+    <mesh name="basket_part_017" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_017.obj"/>
+    <mesh name="basket_part_018" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_018.obj"/>
+    <mesh name="basket_part_019" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_019.obj"/>
+    <mesh name="basket_part_020" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_020.obj"/>
+    <mesh name="basket_part_021" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_021.obj"/>
+    <mesh name="basket_part_022" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_022.obj"/>
+    <mesh name="basket_part_023" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_023.obj"/>
+    <mesh name="basket_part_024" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_024.obj"/>
+    <mesh name="basket_part_025" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_025.obj"/>
+    <mesh name="basket_part_026" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_026.obj"/>
+    <mesh name="basket_part_027" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_027.obj"/>
+    <mesh name="basket_part_028" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_028.obj"/>
+    <mesh name="basket_part_029" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_029.obj"/>
+    <mesh name="basket_part_030" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_030.obj"/>
+    <mesh name="basket_part_031" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_031.obj"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    
+    <!-- <camera name="yaml_camera" 
+            pos="-0.38479723 -0.02494382 1.78063059" 
+            quat="-0.38479723 0.30011449 0.57521489 -0.65649845" 
+            fovy="45"/>  -->
+    <camera pos="-1.577 -0.804 0.931" xyaxes="0.454 -0.891 -0.000 0.415 0.211 0.885"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    
+    <geom name="table" pos="-0.8 0.00914 0.096" size="0.375 0.75 0.01" type="box" contype="1" conaffinity="1" rgba="0.6 0.6 0.6 1" />
+
+    <body name="fruit_avocado" pos="-0.78 0.135 0.13" quat="0.64187 0.73999 0.03906 0.19722">
+      <joint type="free" frictionloss="0.00001"/>
+      <geom name="avocado_vis" type="mesh" mesh="avocado_mesh" material="avocado_mat" contype="1" conaffinity="1"  density="1"  friction="0.99 0.005 0.0001"/>
+      <site name="avocado_center" type="box" size="0.04 0.035 0.02" rgba="0 1 0 0.2" group="4"/>
+    </body>
+
+    <body name="fruit_banana" pos="-0.61 0.125 0.14" quat="0.0457711 -0.0556633 -0.780756 0.620666">
+      <joint type="free" frictionloss="0.00001"/>
+      <geom name="banana_vis_0" type="mesh" mesh="banana_mesh_0" material="banana_yellow" contype="1" conaffinity="1"  density="0.100"  friction="0.99 0.005 0.0001"/>
+      <geom name="banana_vis_1" type="mesh" mesh="banana_mesh_1" material="banana_yellow" contype="1" conaffinity="1"  density="0.01"  friction="0.99 0.005 0.0001"/>
+      <geom name="banana_vis_2" type="mesh" mesh="banana_mesh_2" material="banana_brown" contype="1" conaffinity="1"  density="0.01"  friction="0.99 0.005 0.0001"/>
+      <geom name="banana_vis_3" type="mesh" mesh="banana_mesh_3" material="banana_yellow" contype="1" conaffinity="1"  density="0.01"  friction="0.99 0.005 0.0001"/>
+      <site name="banana_center" type="box" size="0.081 0.041 0.011" rgba="0 0 1 1" group="4"/>
+    </body>
+
+    <body name="fruit_carambola" pos="-0.76 -0.05 0.14" quat="0.629499 0.607317 -0.34279 -0.342622">
+      <joint type="free" frictionloss="0.00001"/>
+      <geom name="carambola_vis" type="mesh" mesh="carambola_mesh" material="carambola_mat" contype="1" conaffinity="1"   density="1"  friction="0.99 0.005 0.0001"/>
+      <site name="carambola_center" type="box" size="0.06 0.03 0.02" rgba="1 1 0 0.15" group="4"/>
+    </body>
+
+    <body name="fruit_mangosteen" pos="-0.577 -0.063 0.15" quat="0.475702 0.430952 -0.754853 -0.134844">
+      <joint type="free" frictionloss="0.00001"/>
+      <geom name="mangosteen_vis" type="mesh" mesh="mangosteen_mesh" material="mangosteen_mat" contype="1" conaffinity="1" density="1"  friction="0.99 0.005 0.0001"/>
+      <site name="mangosteen_center" type="box" size="0.03 0.03 0.02" rgba="0.6 0 0.6 0.2" group="4"/>
+    </body>
+
+    <body name="basket" pos="-0.656 0.366 0.169" quat="-0.63098 -0.32633 -0.62044 -0.33231">
+      <freejoint/> 
+      
+      <body name="basket_site_holder">
+         <site group="4" name="basket_site" type="box" size="0.1 0.1 0.005" rgba="0 1 0 1"/>
+      </body>
+
+      <geom name="basket_geom_000" type="mesh" mesh="basket_part_000" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_001" type="mesh" mesh="basket_part_001" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_002" type="mesh" mesh="basket_part_002" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_003" type="mesh" mesh="basket_part_003" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_004" type="mesh" mesh="basket_part_004" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_005" type="mesh" mesh="basket_part_005" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_006" type="mesh" mesh="basket_part_006" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_007" type="mesh" mesh="basket_part_007" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_008" type="mesh" mesh="basket_part_008" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_009" type="mesh" mesh="basket_part_009" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_010" type="mesh" mesh="basket_part_010" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_011" type="mesh" mesh="basket_part_011" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_012" type="mesh" mesh="basket_part_012" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_013" type="mesh" mesh="basket_part_013" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_014" type="mesh" mesh="basket_part_014" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_015" type="mesh" mesh="basket_part_015" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_016" type="mesh" mesh="basket_part_016" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_017" type="mesh" mesh="basket_part_017" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_018" type="mesh" mesh="basket_part_018" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_019" type="mesh" mesh="basket_part_019" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_020" type="mesh" mesh="basket_part_020" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_021" type="mesh" mesh="basket_part_021" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_022" type="mesh" mesh="basket_part_022" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_023" type="mesh" mesh="basket_part_023" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_024" type="mesh" mesh="basket_part_024" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_025" type="mesh" mesh="basket_part_025" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_026" type="mesh" mesh="basket_part_026" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_027" type="mesh" mesh="basket_part_027" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_028" type="mesh" mesh="basket_part_028" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_029" type="mesh" mesh="basket_part_029" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_030" type="mesh" mesh="basket_part_030" material="basket_mat" contype="1" conaffinity="1"/>
+      <geom name="basket_geom_031" type="mesh" mesh="basket_part_031" material="basket_mat" contype="1" conaffinity="1"/>
+    </body>
+
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size="0.001" type="sphere"/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+    </body>
+    
+  </worldbody>
+
+  <sensor>
+    <touch name="touch_basket" site="basket_site"/>
+    <touch name="touch_fruit_banana" site="banana_center"/>
+    <touch name="touch_fruit_avocado" site="avocado_center"/>
+    <touch name="touch_fruit_carambola" site="carambola_center"/>
+    <touch name="touch_fruit_mangosteen" site="mangosteen_center"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home" qpos="0 -1.5708 -1.5708 -1.5708 1.5708 0 
+            0 0 0 0 0 0 
+  -0.78 0.15 0.13 0.641869 0.739989 0.0390599 0.19722 
+  -0.61 0.125 0.14 0.0457711 -0.0556633 -0.780756 0.620666 
+  -0.76 -0.05 0.14 0.6295 0.607318 -0.34279 -0.342622 
+  -0.577 -0.063 0.15 0.475702 0.430952 -0.754854 -0.134844 
+  -0.656 0.366 0.169 -0.630979 -0.32633 -0.620439 -0.33231" 
+    ctrl = "0 -1.5708 -1.5708 -1.5708 1.5708 0  0"
+  />
+
+  </keyframe>
+</mujoco>
+

@@ -1,341 +1,260 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Tuple, Optional, Any, List
+from typing import Dict, Tuple
 
-import gymnasium as gym
-import motrixsim as mtx
 import numpy as np
-from motrixsim import SceneData, forward_kinematic
+from motrixsim import SceneData
 
 from gs_playground import ROOT_PATH
-from gs_playground.src.env.motrix_env.render_env import RenderEnvCfg, NpRenderEnv, RenderEnvState
 from gs_playground.src.env.registry import envcfg, env
+from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
+from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
-# [Robot] UR5e
-from gs_playground.src.manipulation.robots.universal_robots_ur5e_robotiq.ur5e_robotiq import UR5eRobotiq
-
-# [Assets]
-from gs_playground.src.manipulation.tasks.table30.gaussian_assets import (
-    build_task_gaussians,
-)
-from gs_playground.src.manipulation._tasks.common.safe_access import read_touch_scalar_safe
-
-# -----------------------------------------------------------------------------
-# Paths
-# -----------------------------------------------------------------------------
-ASSETS_UR5E_DIR = ROOT_PATH.parent / "models" / "robots" / "manipulation" / "universal_robots_ur5e_robotiq"
-# 资源依然复用 03 文件夹
-ASSETS_TASK_DIR = ROOT_PATH.parent / "models" / "tasks" / "table30" / "03_arrange_fruits_in_basket"
-
-# [修改] 仅保留 XML 中定义的 4 种水果
-FRUIT_NAMES = [
-    "fruit_avocado",
-    "fruit_banana",
-    "fruit_carambola",
-    "fruit_mangosteen",
-]
-
-# [修改] 对应 XML 中的 sensor name
-TOUCH_NAMES = {
-    "fruit_avocado": "touch_fruit_avocado",
-    "fruit_banana": "touch_fruit_banana",
-    "fruit_carambola": "touch_fruit_carambola",
-    "fruit_mangosteen": "touch_fruit_mangosteen",
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "03_arrange_fruits_in_basket"
+TASK_GAUSSIANS = {
+    "fruit_avocado":    ASSETS_TASK_DIR / "3dgs" / "fruit_avocado.ply",
+    "fruit_banana":     ASSETS_TASK_DIR / "3dgs" / "fruit_banana.ply",
+    "fruit_carambola":  ASSETS_TASK_DIR / "3dgs" / "fruit_carambola.ply",
+    "fruit_mangosteen": ASSETS_TASK_DIR / "3dgs" / "fruit_mangosteen.ply",
+    "basket":           ASSETS_TASK_DIR / "3dgs" / "basket.ply",
 }
-
 
 @envcfg("table30/arrange_fruits")
 @dataclass
-class ArrangeFruitsEnvCfg(RenderEnvCfg):
+class ArrangeFruitsEnvCfg(TaskEnvCfg):
     # model / sim
-    # 请确保你将新的 XML 保存为了这个文件名
-    model_file: str = str((ASSETS_UR5E_DIR / "xmls" / "03_arrange_fruits_in_basket.xml").as_posix())
-    sim_dt: float = 0.002
-    ctrl_dt: float = 0.02
+    robot_name: str = "ur5e_robotiq"
+    model_file: str = str((ROOT_PATH / "models"/ "robots"/ 
+                           "manipulation" / "universal_robots_ur5e_robotiq"/ 
+                           "xmls" / "table30_03_arrange_fruits_in_basket.xml").as_posix())
 
     # control
-    max_episode_steps: int = 1200 
-    action_mode: str = "eef"
-
-    # observation / prompt
-    prompt_template: str = "What action should the robot take to {task_description}?"
-    instruction: str = "Pick up all fruits and arrange them in the basket."
+    action_mode: str = "eef"  # "joint" or "eef"
 
     # rendering
     img_width: int = 320
     img_height: int = 240
-    cam_id: Tuple[int, ...] = (0,)
+ 
+    # observation / prompt
+    instruction: str = "Place the four fruits into the nearby basket one by one."
 
-    # assets
-    gs_background_ply: str = ""
-    gs_robot_gaussians: Optional[Dict[str, str]] = None
-
-    # entities
+    # task entities
     basket_name: str = "basket"
     basket_site: str = "basket_site"
-    
-    # reward params
-    touch_threshold: float = 0.01
-    grasp_bonus: float = 2.0
-    place_bonus: float = 5.0
+    fruit_names: Tuple[str, str, str, str] = (
+        "fruit_avocado",
+        "fruit_banana",
+        "fruit_carambola",
+        "fruit_mangosteen",
+    )
+    fruit_touch_names: Tuple[str, str, str, str] = (
+        "touch_fruit_avocado",
+        "touch_fruit_banana",
+        "touch_fruit_carambola",
+        "touch_fruit_mangosteen",
+    )
 
-    # reset
-    reset_enabled: bool = True
-    reset_keyframe: int | str = "home"
+    # reward / logic
+    touch_threshold: float = 0.01
+    grasp_dist_thresh: float = 0.05
+    gripper_close_thresh: float = 0.2
+
+    basket_xy_thresh: float = 0.15
+    basket_z_thresh: float = 0.10
+    place_dist_thresh: float = 0.10
+
+    # stage reward: 4 fruits * 2.5 = 10
+    stage_reward: float = 2.5
+
+    # shaping (optional)
+    reach_reward_scale: float = 1.0
+    move_reward_scale: float = 1.0
 
 
 @env("table30/arrange_fruits", "np")
-class ArrangeFruitsEnv(NpRenderEnv):
+class ArrangeFruitsEnv(TaskEnv):
     """
-    Task: Arrange 4 fruits into a basket using UR5e.
+    Task: Arrange fruits into the basket (fixed order: cfg.fruit_names).
+    Robot: UR5e + Robotiq.
+    Backend: MotrixSim (np).
     """
 
     def __init__(self, cfg: ArrangeFruitsEnvCfg, num_envs: int = 32):
-        cfg.cam_id = tuple(cfg.cam_id) if not isinstance(cfg.cam_id, tuple) else cfg.cam_id
         super().__init__(cfg, num_envs=num_envs)
-        self._cfg: ArrangeFruitsEnvCfg = cfg
 
-        # 1. Initialize Robot
-        self.robot = UR5eRobotiq(self.model)
-
-        # 2. Initialize Task Handles
-        self.fruit_bodies = [self.model.get_body(self.model.get_body_index(n)) for n in FRUIT_NAMES]
+        self.fruit_bodies = [self.model.get_body(self.model.get_body_index(n)) for n in cfg.fruit_names]
         self.basket_body = self.model.get_body(self.model.get_body_index(cfg.basket_name))
         self.basket_site = self.model.get_site(cfg.basket_site)
 
-        # [State Tracking]
-        B = self._num_envs
-        self.current_obj_idx = np.zeros(B, dtype=np.int32)
-        self.is_grasped = np.zeros(B, dtype=bool)
-        self.completed_mask = np.zeros((B, len(FRUIT_NAMES)), dtype=bool)
+        self.num_envs = self.num_envs
+        N = len(cfg.fruit_names)
 
-        # 3. Init Renderer
-        gauss = UR5eRobotiq.robot_gaussians()
-        
-        # Mapping: fruit_avocado -> 3dgs/fruit_avocado.ply
-        task_gaussians = {}
-        for fname in FRUIT_NAMES:
-            task_gaussians[fname] = f"3dgs/{fname}.ply"
-        task_gaussians[cfg.basket_name] = f"3dgs/{cfg.basket_name}.ply"
+        self.current_obj_idx = np.zeros((self.num_envs,), dtype=np.int32)   # 0..N
+        self.fruit_placed_mask = np.zeros((self.num_envs, N), dtype=bool)   # per-fruit placed
+        self.is_grasped = np.zeros((self.num_envs,), dtype=bool)            # current fruit grasp latch
+        self.success_latched = np.zeros((self.num_envs,), dtype=bool)       # terminal latch
 
-        gauss.update(build_task_gaussians(ASSETS_TASK_DIR, {k: ASSETS_TASK_DIR / v for k, v in task_gaussians.items()}))
-        
-        if cfg.gs_robot_gaussians:
-            gauss.update(cfg.gs_robot_gaussians)
-            
-        bg = cfg.gs_background_ply.strip() or UR5eRobotiq.robot_background_ply()
-        self.init_renderer(body_gaussians=gauss, background_ply=bg, minibatch=self._num_envs)
+    # ---- Task hooks ----
+    def task_gaussians(self) -> Dict[str, str]:
+        return TASK_GAUSSIANS
 
-        self._state = None
+    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
+        """
+        Randomization: jitter fruit XY positions for the envs being reset.
+        Keep a minimum inter-fruit XY separation (simple rejection sampling).
+        """
+        if data.shape[0] == 0:
+            return
 
-    @property
-    def observation_space(self) -> gym.Space:
-        cam_spaces = {f"pixels/view_{i}": gym.spaces.Box(0, 255, (self._img_h, self._img_w, 3), np.uint8) for i, _ in enumerate(self._cam_ids)}
-        
-        obs_spaces = {
-            **cam_spaces,
-            "qpos": gym.spaces.Box(-np.inf, np.inf, (6,), np.float32),
-            "gripper": gym.spaces.Box(0, 1, (1,), np.float32),
-            "ee_pose": gym.spaces.Box(-np.inf, np.inf, (6,), np.float32),
-            "basket_pose": gym.spaces.Box(-np.inf, np.inf, (7,), np.float32),
-            "target_fruit_pose": gym.spaces.Box(-np.inf, np.inf, (7,), np.float32),
-            "target_idx": gym.spaces.Box(0, len(FRUIT_NAMES), (1,), np.int32),
-            "prompt": gym.spaces.Text(max_length=256),
-        }
-        return gym.spaces.Dict(obs_spaces)
-
-    @property
-    def action_space(self) -> gym.Space:
-        return self.robot.action_space
-
-    def init_state(self) -> RenderEnvState:
-        data = SceneData(self._model, batch=[self._num_envs])
-        
-        obs_struct = self.observation_space
-        obs = {}
-        for k, s in obs_struct.items():
-            if isinstance(s, gym.spaces.Text):
-                obs[k] = np.empty((self._num_envs,), dtype=object)
-            else:
-                obs[k] = np.zeros((self._num_envs,) + s.shape, dtype=s.dtype)
-
-        reward = np.zeros(self._num_envs, np.float32)
-        term = np.zeros(self._num_envs, bool)
-        trunc = np.zeros(self._num_envs, bool)
-        info = {"steps": np.zeros(self._num_envs, np.uint64)}
-        
-        self._state = RenderEnvState(data, obs, reward, term, trunc, info)
-        self._reset_done_envs()
-        self._state.validate()
-        return self._state
-
-    def apply_action(self, actions: np.ndarray, state) -> mtx.SceneData:
-        self.robot.apply_action(state.data, actions, action_mode=self._cfg.action_mode)
-        return state
-
-    def update_state(self, state, obs_required: bool = True) -> mtx.SceneData:
-        reward, info = self._compute_reward(state.data)
-        
-        all_done = np.all(self.completed_mask, axis=1)
-        terminated = all_done.copy()
-
-        if obs_required:
-            state.obs = self._build_obs(state.data)
-
-        state.reward = reward.astype(np.float32)
-        state.terminated = terminated
-        state.info.update(info)
-        return state
-
-    def _reset_done_envs(self):
-        if self._state is None: return
-        done = self._state.terminated | self._state.truncated
-        if not np.any(done): return
-        
-        self.current_obj_idx[done] = 0
-        self.is_grasped[done] = False
-        self.completed_mask[done] = False
-
-        self._apply_keyframe(self._state.data[done])
-        forward_kinematic(self.model, self._state.data[done])
-        self.robot.reset_envs(self._state.data, done)
-
-        if self._state.obs is not None:
-            new_obs = self._build_obs(self._state.data[done])
-            for k, v in new_obs.items():
-                self._state.obs[k][done] = v
-            
-        self._state.reward[done] = 0.0
-        self._state.terminated[done] = False
-        self._state.truncated[done] = False
-        self._state.info["steps"][done] = 0
-
-    def reset(self, data: SceneData = None, done: np.ndarray = None) -> tuple[np.ndarray, dict]:
-        if data is not None:
-            self._apply_keyframe(data)
-            forward_kinematic(self.model, data)
-            return self._build_obs(data), {}
-
-        if self._state is None: self.init_state()
-        if done is None: done = np.ones(self._num_envs, bool)
-        else: done = np.asarray(done, bool)
-        
-        if not np.any(done): return self._state.obs, self._state.info
-
-        self.current_obj_idx[done] = 0
-        self.is_grasped[done] = False
-        self.completed_mask[done] = False
-
-        self._apply_keyframe(self._state.data[done])
-        forward_kinematic(self.model, self._state.data[done])
-        self.robot.reset_envs(self._state.data, done)
-        
-        self._state.obs = self._build_obs(self._state.data)
-        self._state.reward[done] = 0.0
-        self._state.terminated[done] = False
-        self._state.truncated[done] = False
-        self._state.info["steps"][done] = 0
-        return self._state.obs, self._state.info
-
-    # --------------------------------------------------------------------------
-    # Dense Reward
-    # --------------------------------------------------------------------------
-    def _compute_reward(self, data: SceneData) -> Tuple[np.ndarray, Dict[str, Any]]:
         cfg = self._cfg
-        B = self._num_envs
-        
+        num_fruits = len(self.fruit_bodies)
+        min_xy_dist = float(cfg.fruit_min_xy_dist)
+        jitter_scale = float(cfg.fruit_xy_jitter)
+
+        # Current poses (Bsub, N, 7)
+        fruit_pose = np.stack(
+            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.fruit_bodies],
+            axis=1,
+        )
+        base_xy = fruit_pose[..., :2]
+        new_pose = fruit_pose.copy()
+
+        remaining = np.ones((data.shape[0],), dtype=bool)
+        eye_mask = np.eye(num_fruits, dtype=np.float32) * 1e6  # ignore self-distance
+
+        for _ in range(10):
+            if not remaining.any():
+                break
+
+            jitter = self._rng.uniform(-jitter_scale, jitter_scale, size=(remaining.sum(), num_fruits, 2)).astype(
+                np.float32
+            )
+            cand_xy = base_xy[remaining] + jitter
+
+            diff = cand_xy[:, :, None, :] - cand_xy[:, None, :, :]
+            dist = np.linalg.norm(diff, axis=-1) + eye_mask[None]
+            ok = dist.min(axis=(1, 2)) >= min_xy_dist
+
+            if ok.any():
+                rem_idx = np.where(remaining)[0]
+                new_pose_view = new_pose[remaining]
+                new_pose_view[ok, :, :2] = cand_xy[ok]
+                new_pose[remaining] = new_pose_view
+                remaining[rem_idx[ok]] = False
+
+        # Write back
+        for env_i in range(data.shape[0]):
+            for f_i, body in enumerate(self.fruit_bodies):
+                body.set_dof_pos(
+                    data[env_i],
+                    new_pose[env_i, f_i],
+                    include_floatingbase=True,
+                )
+
+    def _reset_task_state(self, done: np.ndarray):
+        done = np.asarray(done, dtype=bool)
+        if done.size == 0 or not np.any(done):
+            return
+
+        self.current_obj_idx[done] = 0
+        self.fruit_placed_mask[done] = False
+        self.is_grasped[done] = False
+        self.success_latched[done] = False
+
+    # ---- helpers ----
+    def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
+        cfg = self._cfg
+        data: SceneData = state.data
+        info: Dict[str, np.ndarray] = state.info
+
+        self.num_envs = self.num_envs
+        N = len(cfg.fruit_names)
+
+        cur_idx = np.clip(self.current_obj_idx, 0, N - 1)
+
         ee_pos = self.robot.get_ee_pose(data)[:, :3]
         basket_pos = np.asarray(self.basket_site.get_pose(data), dtype=np.float32)[:, :3]
-        
-        cur_idx = np.clip(self.current_obj_idx, 0, len(FRUIT_NAMES)-1)
-        
-        all_fruit_poses = np.stack([
-            np.asarray(b.get_pose(data), dtype=np.float32)[:, :3] for b in self.fruit_bodies
-        ], axis=1)
-        
-        target_fruit_pos = all_fruit_poses[np.arange(B), cur_idx, :]
 
-        d_ee_fruit = np.linalg.norm(ee_pos - target_fruit_pos, axis=1)
-        d_fruit_basket = np.linalg.norm(target_fruit_pos - basket_pos, axis=1)
+        fruit_pos_all = np.stack(
+            [np.asarray(self.num_envs.get_pose(data), dtype=np.float32)[:, :3] for self.num_envs in self.fruit_bodies],
+            axis=1,  # (self.num_envs, N, 3)
+        )
+        target_pos = fruit_pos_all[np.arange(self.num_envs), cur_idx, :]  # (self.num_envs, 3)
 
-        # Touch Logic
-        current_touch_val = np.zeros(B, dtype=np.float32)
-        for i, fname in enumerate(FRUIT_NAMES):
-            touch_name = TOUCH_NAMES[fname]
-            val = read_touch_scalar_safe(self.model, data, touch_name, B)
-            mask = (cur_idx == i)
-            current_touch_val[mask] = val[mask]
-        
-        is_touching_fruit = current_touch_val > cfg.touch_threshold
-        
-        # Gates
-        # Grasp
-        newly_grasped = (~self.is_grasped) & is_touching_fruit & (d_ee_fruit < 0.05)
+        target_pos_above = target_pos.copy()
+        target_pos_above[:, 2] += 0.05
+
+        dist_ee_fruit = np.linalg.norm(ee_pos - target_pos_above, axis=1)
+        dist_fruit_basket = np.linalg.norm(target_pos - basket_pos, axis=1)
+
+        # gripper gate
+        grip_cmd = np.asarray(data.actuator_ctrls)[:, self.robot.gripper_act_id]
+        grip_closed = grip_cmd > float(cfg.gripper_close_thresh)
+        grip_open = ~grip_closed
+
+        # touch: same style as button task (model.get_sensor_value)
+        touch_all = []
+        for s_name in cfg.fruit_touch_names:
+            v = np.asarray(self.model.get_sensor_value(s_name, data), dtype=np.float32)
+            v = v.reshape(self.num_envs, -1)[:, 0].astype(np.float32)
+            touch_all.append(v)
+        touch_all = np.stack(touch_all, axis=1)  # (self.num_envs, N)
+
+        touch_val = touch_all[np.arange(self.num_envs), cur_idx]
+        is_touched = touch_val > float(cfg.touch_threshold)
+
+        # grasp latch (touch + close + near)
+        newly_grasped = (~self.is_grasped) & is_touched & grip_closed & (dist_ee_fruit < float(cfg.grasp_dist_thresh))
         self.is_grasped = self.is_grasped | newly_grasped
-        
-        # Place
-        in_basket_xy = np.linalg.norm(target_fruit_pos[:, :2] - basket_pos[:, :2], axis=1) < 0.15
-        in_basket_z = (target_fruit_pos[:, 2] - basket_pos[:, 2]) < 0.10
+
+        # place (require grasped -> in basket -> release)
+        in_basket_xy = np.linalg.norm(target_pos[:, :2] - basket_pos[:, :2], axis=1) < float(cfg.basket_xy_thresh)
+        in_basket_z = (target_pos[:, 2] - basket_pos[:, 2]) < float(cfg.basket_z_thresh)
         in_basket = in_basket_xy & in_basket_z
-        
-        place_success_now = in_basket & (d_fruit_basket < 0.1)
-        # print(FRUIT_NAMES,place_success_now)
-        # print(self.is_grasped)
-        # print(in_basket)
-        # print((d_fruit_basket < 0.1))
-        if np.any(place_success_now):
-            done_envs = np.where(place_success_now)[0]
-            self.completed_mask[done_envs, cur_idx[done_envs]] = True
-            self.current_obj_idx[done_envs] += 1
-            self.is_grasped[done_envs] = False
 
-        # Rewards
-        r_stage = np.sum(self.completed_mask, axis=1) * cfg.place_bonus
-        
-        active_mask = (self.current_obj_idx < len(FRUIT_NAMES))
-        r_reach = np.zeros(B, dtype=np.float32)
-        r_move = np.zeros(B, dtype=np.float32)
-        
-        if np.any(active_mask):
-            r_reach[active_mask] = (1.0 - np.tanh(5.0 * d_ee_fruit[active_mask])) * (~self.is_grasped[active_mask])
-            r_move[active_mask] = (1.0 - np.tanh(2.0 * d_fruit_basket[active_mask])) * self.is_grasped[active_mask]
+        already_placed = self.fruit_placed_mask[np.arange(self.num_envs), cur_idx]
+        place_now = (
+            self.is_grasped
+            & in_basket
+            & (dist_fruit_basket < float(cfg.place_dist_thresh))
+            & grip_open
+            & (~already_placed)
+        )
 
-        r_grasp = self.is_grasped.astype(np.float32) * cfg.grasp_bonus
+        if np.any(place_now):
+            envs = np.where(place_now)[0]
+            self.fruit_placed_mask[envs, cur_idx[envs]] = True
+            self.current_obj_idx[envs] += 1
+            self.is_grasped[envs] = False
 
-        total_reward = r_stage + r_reach + r_move + r_grasp
+        completed = np.sum(self.fruit_placed_mask, axis=1).astype(np.int32)
+        all_done = completed >= N
+        self.success_latched = self.success_latched | all_done
 
-        info = {
-            "cur_idx": self.current_obj_idx,
-            "d_ee_fruit": d_ee_fruit,
-            "is_grasped": self.is_grasped,
-            "completed": np.sum(self.completed_mask, axis=1)
-        }
-        return total_reward, info
+        # rewards
+        # stage reward: each placed fruit => +2.5, total 10 for 4 fruits
+        r_stage = completed.astype(np.float32) * float(cfg.stage_reward)
 
-    def _build_obs(self, data: SceneData) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs(data)
-        obs_pix = self._render_pixels(data)
-        
-        B = data.shape[0] if data is not None else self._num_envs
-        cur_idx = np.clip(self.current_obj_idx, 0, len(FRUIT_NAMES)-1)
-        
-        all_fruit_poses = np.stack([
-            np.asarray(b.get_pose(data), dtype=np.float32) for b in self.fruit_bodies
-        ], axis=1)
-        target_fruit_pose = all_fruit_poses[np.arange(B), cur_idx, :]
-        
-        basket_pose = np.asarray(self.basket_body.get_pose(data), dtype=np.float32)
-        
-        instruction = str(self._cfg.instruction)
-        prompt = str(self._cfg.prompt_template).format(task_description=instruction)
-        prompts = np.array([prompt] * B, dtype=object)
+        # shaping (same pattern as buttons: reach when not grasped; move when grasped)
+        r_reach = (1.0 - np.tanh(5.0 * dist_ee_fruit)) * (~self.is_grasped).astype(np.float32)
+        r_move = (1.0 - np.tanh(2.0 * dist_fruit_basket)) * self.is_grasped.astype(np.float32)
 
-        return {
-            **obs_pix,
-            **robot_obs,
-            "basket_pose": basket_pose,
-            "target_fruit_pose": target_fruit_pose,
-            "target_idx": cur_idx.reshape(B, 1),
-            "prompt": prompts
-        }
+        reward = r_stage + float(cfg.reach_reward_scale) * r_reach + float(cfg.move_reward_scale) * r_move
+
+        info["is_success"] = self.success_latched.copy()
+        info["cur_idx"] = self.current_obj_idx.copy()
+        info["completed"] = completed
+        info["is_grasped"] = self.is_grasped.copy()
+        info["touch_val"] = touch_val
+        info["dist_ee_fruit"] = dist_ee_fruit
+        info["dist_fruit_basket"] = dist_fruit_basket
+        info["in_basket"] = in_basket
+
+        return reward.astype(np.float32)
+
+    def _check_success(self, state: RenderEnvState) -> np.ndarray:
+        completed = np.sum(self.fruit_placed_mask, axis=1)
+        success = completed >= len(self._cfg.fruit_names)
+        self.success_latched = self.success_latched | success
+        return self.success_latched.copy()
