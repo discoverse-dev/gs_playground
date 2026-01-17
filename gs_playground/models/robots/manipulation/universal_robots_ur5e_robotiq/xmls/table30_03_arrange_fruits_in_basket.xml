@@ -70,11 +70,7 @@
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
     
-    <!-- <camera name="yaml_camera" 
-            pos="-0.38479723 -0.02494382 1.78063059" 
-            quat="-0.38479723 0.30011449 0.57521489 -0.65649845" 
-            fovy="45"/>  -->
-    <camera pos="-1.577 -0.804 0.931" xyaxes="0.454 -0.891 -0.000 0.415 0.211 0.885"/>
+    <camera fovy="43.3411" name="front" pos="-1.51797336 0.19244078 0.91595487" quat="-0.57521489 -0.30011449  0.38479723  0.65649845"/>
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     

@@ -161,7 +161,7 @@ def run_test_mode(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env", type=str, default="table30/stack_color_blocks_franka")
+    parser.add_argument("--env", type=str, default="table30/arrange_fruits")
     parser.add_argument("--output_dir", type=str, default="output/test_action")
     args = parser.parse_args()
 

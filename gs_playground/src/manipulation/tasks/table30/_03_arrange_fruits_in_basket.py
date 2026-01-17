@@ -30,7 +30,7 @@ class ArrangeFruitsEnvCfg(TaskEnvCfg):
                            "xmls" / "table30_03_arrange_fruits_in_basket.xml").as_posix())
 
     # control
-    action_mode: str = "eef"  # "joint" or "eef"
+    action_mode: str = "eef_relative"  # "joint" or "eef"
 
     # rendering
     img_width: int = 320
@@ -57,7 +57,7 @@ class ArrangeFruitsEnvCfg(TaskEnvCfg):
 
     # reward / logic
     touch_threshold: float = 0.01
-    grasp_dist_thresh: float = 0.05
+    grasp_dist_thresh: float = 0.10
     gripper_close_thresh: float = 0.2
 
     basket_xy_thresh: float = 0.15
@@ -70,6 +70,9 @@ class ArrangeFruitsEnvCfg(TaskEnvCfg):
     # shaping (optional)
     reach_reward_scale: float = 1.0
     move_reward_scale: float = 1.0
+
+    reset_enabled: bool = True
+    reset_keyframe: int | str = "home"
 
 
 @env("table30/arrange_fruits", "np")
@@ -86,8 +89,8 @@ class ArrangeFruitsEnv(TaskEnv):
         self.fruit_bodies = [self.model.get_body(self.model.get_body_index(n)) for n in cfg.fruit_names]
         self.basket_body = self.model.get_body(self.model.get_body_index(cfg.basket_name))
         self.basket_site = self.model.get_site(cfg.basket_site)
-
-        self.num_envs = self.num_envs
+        self.max_episode_steps = 1500
+         
         N = len(cfg.fruit_names)
 
         self.current_obj_idx = np.zeros((self.num_envs,), dtype=np.int32)   # 0..N
@@ -107,11 +110,9 @@ class ArrangeFruitsEnv(TaskEnv):
         if data.shape[0] == 0:
             return
 
-        cfg = self._cfg
         num_fruits = len(self.fruit_bodies)
-        min_xy_dist = float(cfg.fruit_min_xy_dist)
-        jitter_scale = float(cfg.fruit_xy_jitter)
-
+        min_xy_dist = 0.05
+        jitter_scale = 0.03
         # Current poses (Bsub, N, 7)
         fruit_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.fruit_bodies],
@@ -168,7 +169,7 @@ class ArrangeFruitsEnv(TaskEnv):
         data: SceneData = state.data
         info: Dict[str, np.ndarray] = state.info
 
-        self.num_envs = self.num_envs
+         
         N = len(cfg.fruit_names)
 
         cur_idx = np.clip(self.current_obj_idx, 0, N - 1)
@@ -177,7 +178,7 @@ class ArrangeFruitsEnv(TaskEnv):
         basket_pos = np.asarray(self.basket_site.get_pose(data), dtype=np.float32)[:, :3]
 
         fruit_pos_all = np.stack(
-            [np.asarray(self.num_envs.get_pose(data), dtype=np.float32)[:, :3] for self.num_envs in self.fruit_bodies],
+            [np.asarray(b.get_pose(data), dtype=np.float32)[:, :3] for b in self.fruit_bodies],
             axis=1,  # (self.num_envs, N, 3)
         )
         target_pos = fruit_pos_all[np.arange(self.num_envs), cur_idx, :]  # (self.num_envs, 3)
