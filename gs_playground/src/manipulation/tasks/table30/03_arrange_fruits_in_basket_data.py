@@ -69,8 +69,8 @@ class StageOffsets:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1000
-    num_envs: int = 20
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 0
     save_dir: str = "./data/table30_arrange_fruits_collect"
 
@@ -592,7 +592,7 @@ class ArrangeFruitsCollector:
         self._enter_state(running & (self.states == self.ST_GO_BASKET) & reach_basket, self.ST_OPEN)
 
         in_open = running & (self.states == self.ST_OPEN)
-        
+
         open_done = in_open & ((self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps))
         self._enter_state(open_done, self.ST_RETREAT)
 

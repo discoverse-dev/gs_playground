@@ -31,7 +31,7 @@ class ArrangeFruitsEnvCfg(TaskEnvCfg):
 
     # control
     action_mode: str = "eef_relative"  # "joint" or "eef"
-
+    max_episode_steps = 1500
     # rendering
     img_width: int = 320
     img_height: int = 240
@@ -89,7 +89,6 @@ class ArrangeFruitsEnv(TaskEnv):
         self.fruit_bodies = [self.model.get_body(self.model.get_body_index(n)) for n in cfg.fruit_names]
         self.basket_body = self.model.get_body(self.model.get_body_index(cfg.basket_name))
         self.basket_site = self.model.get_site(cfg.basket_site)
-        self.max_episode_steps = 1500
          
         N = len(cfg.fruit_names)
 
@@ -258,4 +257,5 @@ class ArrangeFruitsEnv(TaskEnv):
         completed = np.sum(self.fruit_placed_mask, axis=1)
         success = completed >= len(self._cfg.fruit_names)
         self.success_latched = self.success_latched | success
+
         return self.success_latched.copy()
