@@ -11,7 +11,8 @@ from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
 from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
-ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "04_hang_toothbrush_cup" / "3dgs"
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_04_hang_toothbrush_cup" / "3dgs"
+print(ASSETS_TASK_DIR / "toothbrush_cup.ply")
 TASK_GAUSSIANS = {
     "toothbrush_cup": ASSETS_TASK_DIR / "toothbrush_cup.ply",
     "rack": ASSETS_TASK_DIR / "rack.ply",
@@ -74,7 +75,7 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     reset_dist_threshold: float = 0.06
 
     # randomization
-    xy_jitter: float = 0.01  # uniform[-xy_jitter, xy_jitter] (meters)
+    xy_jitter: float = 0.10  # uniform[-xy_jitter, xy_jitter] (meters)
 
     reset_enabled: bool = True
     reset_keyframe: int | str = "home"
@@ -110,43 +111,39 @@ class HangToothbrushCupEnv(TaskEnv):
     # ---- Task hooks ----
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
-
+    
+        # ---- Task hooks ----
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
-        """
-        Randomization: jitter rack + cup XY positions for the envs being reset.
+            """
+            Randomization: Only jitter cup XY positions. Rack remains fixed.
+            """
+            if data.shape[0] == 0:
+                return
 
-        Args:
-            data: SceneData view for the subset of envs being reset (len == sum(done_mask)).
-            done_mask: boolean mask over all envs (not used directly here).
-            phase: "reset" or "auto_reset" for potential differentiated logic.
-        """
-        if data.shape[0] == 0:
-            return
+            # 1. 只获取 Cup 的 Pose (Batch, 7)
+            # 移除了 rack_body 的获取
+            cup_poses = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)
 
-        poses = np.stack(
-            [
-                np.asarray(self.rack_body.get_pose(data), dtype=np.float32),
-                np.asarray(self.cup_body.get_pose(data), dtype=np.float32),
-            ],
-            axis=1,
-        )
-        # Small XY jitters (keep z/orientation unchanged)
-        xy_jitter = self._rng.uniform(-self._cfg.xy_jitter, self._cfg.xy_jitter, size=poses[..., :2].shape).astype(np.float32)
-        new_pose = poses.copy()
-        new_pose[..., :2] = poses[..., :2] + xy_jitter
+            # 2. 生成随机噪声
+            # 形状对应 (Batch, 2)，只针对 XY
+            xy_jitter = self._rng.uniform(
+                -self._cfg.xy_jitter, 
+                self._cfg.xy_jitter, 
+                size=(data.shape[0], 2)
+            ).astype(np.float32)
+            
+            # 3. 应用噪声
+            new_cup_poses = cup_poses.copy()
+            new_cup_poses[:, :2] = cup_poses[:, :2] + xy_jitter
 
-        # Write back poses using set_dof_pos (include floating base)
-        for env_idx in range(data.shape[0]):
-            self.rack_body.set_dof_pos(
-                data[env_idx],
-                new_pose[env_idx, 0],
-                include_floatingbase=True,
-            )
-            self.cup_body.set_dof_pos(
-                data[env_idx],
-                new_pose[env_idx, 1],
-                include_floatingbase=True,
-            )
+            # 4. 写回物理引擎
+            for env_idx in range(data.shape[0]):
+                # 仅设置 Cup，不再设置 Rack
+                self.cup_body.set_dof_pos(
+                    data[env_idx],
+                    new_cup_poses[env_idx],
+                    include_floatingbase=True,
+                )
 
     def _reset_task_state(self, done: np.ndarray):
         done = np.asarray(done, dtype=bool)

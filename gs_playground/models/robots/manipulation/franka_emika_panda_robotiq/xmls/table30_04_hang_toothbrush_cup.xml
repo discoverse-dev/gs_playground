@@ -122,7 +122,7 @@
 
     <!-- Rack/Hooks: static body -->
     <body name="rack" pos="0.539524 0.323790 0.174200" quat="0.721105 0 0 -0.692826">
-      <joint type="free" frictionloss="0.0001"/>
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
 
       <!-- collision + visual. If your rack mesh is non-convex, prefer primitive colliders in code. -->
       <geom name="rack_geom_0" type="mesh" mesh="rack_mesh_0" material="rack_mat" contype="1" conaffinity="1"/>
@@ -217,13 +217,13 @@
     </body>
 
     <!-- Mocap target -->
-    <body mocap="true" name="mocap_target">
+    <!-- <body mocap="true" name="mocap_target">
       <site name="mocap_target_site" size="0.001" type="sphere"/>
       <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
       <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
       <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
       <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
-    </body>
+    </body> -->
   </worldbody>
 
   <sensor>
@@ -235,21 +235,18 @@
   <keyframe>
     <key name="home"
       qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
-      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
         0.515367 0.056162 0.105959 -0.881827 0.304215 0.359299 -0.0271738"
       ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
     />
-    <key name ="pick"
+    <!-- <key name ="pick"
       qpos="0.144298 -0.0181929 -0.0260173 -2.69614 -0.00500998 2.73329 -0.0455701 
       0.753394 0.752039 0.757078 0.75296 0.75216 0.753854 
-      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
-      0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
+\      0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
       ctrl="0.14485 -0.01763 -0.0252932 -2.69673 -0.00471172 2.7329 -0.0455642 0.82"
     />
     <key name ="hang"
         qpos="-0.0445106 -0.36456 -0.169781 -2.28542 -0.0480373 1.9759 -0.355341
          0.756043 0.755244 0.75823 0.755676 0.754789 0.758494
-        0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
         0.496940 0.203481 0.383664 -0.884311 0.334280 0.325413 -0.018881"
 
         ctrl="-0.0445136 -0.364917 -0.169742 -2.28489 -0.0481067 1.97619 -0.355346 0.8"
@@ -260,6 +257,6 @@
       0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
       0.544401 0.274831 0.334977 -0.405661 0.141917 0.902931 -0.003535"
       ctrl="-0.0289854 -0.407101 -0.157445 -2.32209 -0.0516258 1.97132 -0.324822 0"
-    />
+    /> -->
   </keyframe>
 </mujoco>
