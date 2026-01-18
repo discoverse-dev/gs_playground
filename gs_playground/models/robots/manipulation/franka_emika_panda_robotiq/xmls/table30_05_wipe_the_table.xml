@@ -1,0 +1,499 @@
+<mujoco model="panda_storage_task5">
+  <!-- Robot -->
+  <include file="panda_robotiq.xml"/>
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="20" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <!-- Environment -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <!-- Task5 materials -->
+    <material name="white_box_mat" rgba="0.85 0.85 0.85 1" reflectance="0.08"/>
+    <material name="dog_mat" rgba="0.60 0.45 0.30 1" reflectance="0.08"/>
+    <material name="blue_duck_mat" rgba="0.20 0.45 0.90 1" reflectance="0.08"/>
+    <material name="chicken_doll_mat" rgba="0.95 0.85 0.20 1" reflectance="0.08"/>
+    <material name="rake_mat" rgba="0.40 0.25 0.15 1" reflectance="0.08"/>
+    <material name="yellow_brush_mat" rgba="0.95 0.85 0.10 1" reflectance="0.08"/>
+    <material name="transparent_tape_paper_mat" rgba="0.90 0.90 0.95 0.65" reflectance="0.08"/>
+
+    <!-- Task5 convex-decomposed meshes (parts) -->
+    <mesh name="blue_duck_part_000" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_000.obj"/>
+    <mesh name="blue_duck_part_001" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_001.obj"/>
+    <mesh name="blue_duck_part_002" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_002.obj"/>
+    <mesh name="blue_duck_part_003" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_003.obj"/>
+    <mesh name="blue_duck_part_004" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_004.obj"/>
+    <mesh name="blue_duck_part_005" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_005.obj"/>
+    <mesh name="blue_duck_part_006" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_006.obj"/>
+    <mesh name="blue_duck_part_007" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_007.obj"/>
+    <mesh name="blue_duck_part_008" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_008.obj"/>
+    <mesh name="blue_duck_part_009" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_009.obj"/>
+    <mesh name="blue_duck_part_010" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_010.obj"/>
+    <mesh name="blue_duck_part_011" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_011.obj"/>
+    <mesh name="blue_duck_part_012" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_012.obj"/>
+    <mesh name="blue_duck_part_013" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_013.obj"/>
+    <mesh name="blue_duck_part_014" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_014.obj"/>
+    <mesh name="blue_duck_part_015" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_015.obj"/>
+    <mesh name="blue_duck_part_016" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_016.obj"/>
+    <mesh name="blue_duck_part_017" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_017.obj"/>
+    <mesh name="blue_duck_part_018" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_018.obj"/>
+    <mesh name="blue_duck_part_019" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_019.obj"/>
+    <mesh name="blue_duck_part_020" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_020.obj"/>
+    <mesh name="blue_duck_part_021" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_021.obj"/>
+    <mesh name="blue_duck_part_022" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_022.obj"/>
+    <mesh name="blue_duck_part_023" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_023.obj"/>
+    <mesh name="blue_duck_part_024" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_024.obj"/>
+    <mesh name="blue_duck_part_025" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_025.obj"/>
+    <mesh name="blue_duck_part_026" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_026.obj"/>
+    <mesh name="blue_duck_part_027" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_027.obj"/>
+    <mesh name="blue_duck_part_028" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_028.obj"/>
+    <mesh name="blue_duck_part_029" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_029.obj"/>
+    <mesh name="blue_duck_part_030" file="../../../../../tasks/table30/05_wipe_the_table/blue_duck/part_030.obj"/>
+    <mesh name="chicken_doll_part_000" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_000.obj"/>
+    <mesh name="chicken_doll_part_001" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_001.obj"/>
+    <mesh name="chicken_doll_part_002" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_002.obj"/>
+    <mesh name="chicken_doll_part_003" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_003.obj"/>
+    <mesh name="chicken_doll_part_004" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_004.obj"/>
+    <mesh name="chicken_doll_part_005" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_005.obj"/>
+    <mesh name="chicken_doll_part_006" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_006.obj"/>
+    <mesh name="chicken_doll_part_007" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_007.obj"/>
+    <mesh name="chicken_doll_part_008" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_008.obj"/>
+    <mesh name="chicken_doll_part_009" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_009.obj"/>
+    <mesh name="chicken_doll_part_010" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_010.obj"/>
+    <mesh name="chicken_doll_part_011" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_011.obj"/>
+    <mesh name="chicken_doll_part_012" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_012.obj"/>
+    <mesh name="chicken_doll_part_013" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_013.obj"/>
+    <mesh name="chicken_doll_part_014" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_014.obj"/>
+    <mesh name="chicken_doll_part_015" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_015.obj"/>
+    <mesh name="chicken_doll_part_016" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_016.obj"/>
+    <mesh name="chicken_doll_part_017" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_017.obj"/>
+    <mesh name="chicken_doll_part_018" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_018.obj"/>
+    <mesh name="chicken_doll_part_019" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_019.obj"/>
+    <mesh name="chicken_doll_part_020" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_020.obj"/>
+    <mesh name="chicken_doll_part_021" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_021.obj"/>
+    <mesh name="chicken_doll_part_022" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_022.obj"/>
+    <mesh name="chicken_doll_part_023" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_023.obj"/>
+    <mesh name="chicken_doll_part_024" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_024.obj"/>
+    <mesh name="chicken_doll_part_025" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_025.obj"/>
+    <mesh name="chicken_doll_part_026" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_026.obj"/>
+    <mesh name="chicken_doll_part_027" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_027.obj"/>
+    <mesh name="chicken_doll_part_028" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_028.obj"/>
+    <mesh name="chicken_doll_part_029" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_029.obj"/>
+    <mesh name="chicken_doll_part_030" file="../../../../../tasks/table30/05_wipe_the_table/chicken_doll/part_030.obj"/>
+    <mesh name="dog_part_000" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_000.obj"/>
+    <mesh name="dog_part_001" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_001.obj"/>
+    <mesh name="dog_part_002" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_002.obj"/>
+    <mesh name="dog_part_003" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_003.obj"/>
+    <mesh name="dog_part_004" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_004.obj"/>
+    <mesh name="dog_part_005" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_005.obj"/>
+    <mesh name="dog_part_006" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_006.obj"/>
+    <mesh name="dog_part_007" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_007.obj"/>
+    <mesh name="dog_part_008" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_008.obj"/>
+    <mesh name="dog_part_009" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_009.obj"/>
+    <mesh name="dog_part_010" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_010.obj"/>
+    <mesh name="dog_part_011" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_011.obj"/>
+    <mesh name="dog_part_012" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_012.obj"/>
+    <mesh name="dog_part_013" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_013.obj"/>
+    <mesh name="dog_part_014" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_014.obj"/>
+    <mesh name="dog_part_015" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_015.obj"/>
+    <mesh name="dog_part_016" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_016.obj"/>
+    <mesh name="dog_part_017" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_017.obj"/>
+    <mesh name="dog_part_018" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_018.obj"/>
+    <mesh name="dog_part_019" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_019.obj"/>
+    <mesh name="dog_part_020" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_020.obj"/>
+    <mesh name="dog_part_021" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_021.obj"/>
+    <mesh name="dog_part_022" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_022.obj"/>
+    <mesh name="dog_part_023" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_023.obj"/>
+    <mesh name="dog_part_024" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_024.obj"/>
+    <mesh name="dog_part_025" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_025.obj"/>
+    <mesh name="dog_part_026" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_026.obj"/>
+    <mesh name="dog_part_027" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_027.obj"/>
+    <mesh name="dog_part_028" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_028.obj"/>
+    <mesh name="dog_part_029" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_029.obj"/>
+    <mesh name="dog_part_030" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_030.obj"/>
+    <mesh name="dog_part_031" file="../../../../../tasks/table30/05_wipe_the_table/dog/part_031.obj"/>
+    <mesh name="rake_part_000" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_000.obj"/>
+    <mesh name="rake_part_001" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_001.obj"/>
+    <mesh name="rake_part_002" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_002.obj"/>
+    <mesh name="rake_part_003" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_003.obj"/>
+    <mesh name="rake_part_004" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_004.obj"/>
+    <mesh name="rake_part_005" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_005.obj"/>
+    <mesh name="rake_part_006" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_006.obj"/>
+    <mesh name="rake_part_007" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_007.obj"/>
+    <mesh name="rake_part_008" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_008.obj"/>
+    <mesh name="rake_part_009" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_009.obj"/>
+    <mesh name="rake_part_010" file="../../../../../tasks/table30/05_wipe_the_table/rake/part_010.obj"/>
+    <mesh name="white_box_part_000" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_000.obj"/>
+    <mesh name="white_box_part_001" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_001.obj"/>
+    <mesh name="white_box_part_002" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_002.obj"/>
+    <mesh name="white_box_part_003" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_003.obj"/>
+    <mesh name="white_box_part_004" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_004.obj"/>
+    <mesh name="white_box_part_005" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_005.obj"/>
+    <mesh name="white_box_part_006" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_006.obj"/>
+    <mesh name="white_box_part_007" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_007.obj"/>
+    <mesh name="white_box_part_008" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_008.obj"/>
+    <mesh name="white_box_part_009" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_009.obj"/>
+    <mesh name="white_box_part_010" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_010.obj"/>
+    <mesh name="white_box_part_011" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_011.obj"/>
+    <mesh name="white_box_part_012" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_012.obj"/>
+    <mesh name="white_box_part_013" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_013.obj"/>
+    <mesh name="white_box_part_014" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_014.obj"/>
+    <mesh name="white_box_part_015" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_015.obj"/>
+    <mesh name="white_box_part_016" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_016.obj"/>
+    <mesh name="white_box_part_017" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_017.obj"/>
+    <mesh name="white_box_part_018" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_018.obj"/>
+    <mesh name="white_box_part_019" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_019.obj"/>
+    <mesh name="white_box_part_020" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_020.obj"/>
+    <mesh name="white_box_part_021" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_021.obj"/>
+    <mesh name="white_box_part_022" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_022.obj"/>
+    <mesh name="white_box_part_023" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_023.obj"/>
+    <mesh name="white_box_part_024" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_024.obj"/>
+    <mesh name="white_box_part_025" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_025.obj"/>
+    <mesh name="white_box_part_026" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_026.obj"/>
+    <mesh name="white_box_part_027" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_027.obj"/>
+    <mesh name="white_box_part_028" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_028.obj"/>
+    <mesh name="white_box_part_029" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_029.obj"/>
+    <mesh name="white_box_part_030" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_030.obj"/>
+    <mesh name="white_box_part_031" file="../../../../../tasks/table30/05_wipe_the_table/white_box/part_031.obj"/>
+    <mesh name="yellow_brush_part_000" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_000.obj"/>
+    <mesh name="yellow_brush_part_001" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_001.obj"/>
+    <mesh name="yellow_brush_part_002" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_002.obj"/>
+    <mesh name="yellow_brush_part_003" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_003.obj"/>
+    <mesh name="yellow_brush_part_004" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_004.obj"/>
+    <mesh name="yellow_brush_part_005" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_005.obj"/>
+    <mesh name="yellow_brush_part_006" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_006.obj"/>
+    <mesh name="yellow_brush_part_007" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_007.obj"/>
+    <mesh name="yellow_brush_part_008" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_008.obj"/>
+    <mesh name="yellow_brush_part_009" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_009.obj"/>
+    <mesh name="yellow_brush_part_010" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_010.obj"/>
+    <mesh name="yellow_brush_part_011" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_011.obj"/>
+    <mesh name="yellow_brush_part_012" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_012.obj"/>
+    <mesh name="yellow_brush_part_013" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_013.obj"/>
+    <mesh name="yellow_brush_part_014" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_014.obj"/>
+    <mesh name="yellow_brush_part_015" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_015.obj"/>
+    <mesh name="yellow_brush_part_016" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_016.obj"/>
+    <mesh name="yellow_brush_part_017" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_017.obj"/>
+    <mesh name="yellow_brush_part_018" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_018.obj"/>
+    <mesh name="yellow_brush_part_019" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_019.obj"/>
+    <mesh name="yellow_brush_part_020" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_020.obj"/>
+    <mesh name="yellow_brush_part_021" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_021.obj"/>
+    <mesh name="yellow_brush_part_022" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_022.obj"/>
+    <mesh name="yellow_brush_part_023" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_023.obj"/>
+    <mesh name="yellow_brush_part_024" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_024.obj"/>
+    <mesh name="yellow_brush_part_025" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_025.obj"/>
+    <mesh name="yellow_brush_part_026" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_026.obj"/>
+    <mesh name="yellow_brush_part_027" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_027.obj"/>
+    <mesh name="yellow_brush_part_028" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_028.obj"/>
+    <mesh name="yellow_brush_part_029" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_029.obj"/>
+    <mesh name="yellow_brush_part_030" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_030.obj"/>
+    <mesh name="yellow_brush_part_031" file="../../../../../tasks/table30/05_wipe_the_table/yellow_brush/part_031.obj"/>
+    <mesh name="transparent_tape_paper_part_000" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_000.obj"/>
+    <mesh name="transparent_tape_paper_part_001" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_001.obj"/>
+    <mesh name="transparent_tape_paper_part_002" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_002.obj"/>
+    <mesh name="transparent_tape_paper_part_003" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_003.obj"/>
+    <mesh name="transparent_tape_paper_part_004" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_004.obj"/>
+    <mesh name="transparent_tape_paper_part_005" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_005.obj"/>
+    <mesh name="transparent_tape_paper_part_006" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_006.obj"/>
+    <mesh name="transparent_tape_paper_part_007" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_007.obj"/>
+    <mesh name="transparent_tape_paper_part_008" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_008.obj"/>
+    <mesh name="transparent_tape_paper_part_009" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_009.obj"/>
+    <mesh name="transparent_tape_paper_part_010" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_010.obj"/>
+    <mesh name="transparent_tape_paper_part_011" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_011.obj"/>
+    <mesh name="transparent_tape_paper_part_012" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_012.obj"/>
+    <mesh name="transparent_tape_paper_part_013" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_013.obj"/>
+    <mesh name="transparent_tape_paper_part_014" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_014.obj"/>
+    <mesh name="transparent_tape_paper_part_015" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_015.obj"/>
+    <mesh name="transparent_tape_paper_part_016" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_016.obj"/>
+    <mesh name="transparent_tape_paper_part_017" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_017.obj"/>
+    <mesh name="transparent_tape_paper_part_018" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_018.obj"/>
+    <mesh name="transparent_tape_paper_part_019" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_019.obj"/>
+    <mesh name="transparent_tape_paper_part_020" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_020.obj"/>
+    <mesh name="transparent_tape_paper_part_021" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_021.obj"/>
+    <mesh name="transparent_tape_paper_part_022" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_022.obj"/>
+    <mesh name="transparent_tape_paper_part_023" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_023.obj"/>
+    <mesh name="transparent_tape_paper_part_024" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_024.obj"/>
+    <mesh name="transparent_tape_paper_part_025" file="../../../../../tasks/table30/05_wipe_the_table/transparent_tape_paper/part_025.obj"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    
+    <camera fovy="43.365" name="front" pos="1.574 0.022 1.073" xyaxes="-0.029 1.000 0.000 -0.488 -0.014 0.872"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    
+    <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+    <body name="blue_duck" pos="0.4629 0.2951 0.1" quat="0.4411 0.8874 0.1331 0.0136">
+      <joint type="free" frictionloss="0.0001"/>
+      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
+      <geom name="blue_duck_geom_part_000" type="mesh" mesh="blue_duck_part_000" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_001" type="mesh" mesh="blue_duck_part_001" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_002" type="mesh" mesh="blue_duck_part_002" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_003" type="mesh" mesh="blue_duck_part_003" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_004" type="mesh" mesh="blue_duck_part_004" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_005" type="mesh" mesh="blue_duck_part_005" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_006" type="mesh" mesh="blue_duck_part_006" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_007" type="mesh" mesh="blue_duck_part_007" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_008" type="mesh" mesh="blue_duck_part_008" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_009" type="mesh" mesh="blue_duck_part_009" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_010" type="mesh" mesh="blue_duck_part_010" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_011" type="mesh" mesh="blue_duck_part_011" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_012" type="mesh" mesh="blue_duck_part_012" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_013" type="mesh" mesh="blue_duck_part_013" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_014" type="mesh" mesh="blue_duck_part_014" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_015" type="mesh" mesh="blue_duck_part_015" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_016" type="mesh" mesh="blue_duck_part_016" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_017" type="mesh" mesh="blue_duck_part_017" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_018" type="mesh" mesh="blue_duck_part_018" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_019" type="mesh" mesh="blue_duck_part_019" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_020" type="mesh" mesh="blue_duck_part_020" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_021" type="mesh" mesh="blue_duck_part_021" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_022" type="mesh" mesh="blue_duck_part_022" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_023" type="mesh" mesh="blue_duck_part_023" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_024" type="mesh" mesh="blue_duck_part_024" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_025" type="mesh" mesh="blue_duck_part_025" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_026" type="mesh" mesh="blue_duck_part_026" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_027" type="mesh" mesh="blue_duck_part_027" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_028" type="mesh" mesh="blue_duck_part_028" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_029" type="mesh" mesh="blue_duck_part_029" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <geom name="blue_duck_geom_part_030" type="mesh" mesh="blue_duck_part_030" material="blue_duck_mat"  contype="1" conaffinity="1"/>
+      <site name="blue_duck_center" type="box" size="0.04 0.04 0.02" pos="0 0 0" rgba="0 0 1 0.2"  quat="0.441126 -0.887413 -0.133122 -0.0136001" group="4"/>
+    </body>
+
+    <body name="chicken_doll" pos="0.6182 0.3000 0.1" quat="0.4607 0.4366 -0.6836 0.3604">
+      <joint type="free" frictionloss="0.0001"/>
+      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
+      <geom name="chicken_doll_geom_part_000" type="mesh" mesh="chicken_doll_part_000" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_001" type="mesh" mesh="chicken_doll_part_001" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_002" type="mesh" mesh="chicken_doll_part_002" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_003" type="mesh" mesh="chicken_doll_part_003" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_004" type="mesh" mesh="chicken_doll_part_004" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_005" type="mesh" mesh="chicken_doll_part_005" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_006" type="mesh" mesh="chicken_doll_part_006" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_007" type="mesh" mesh="chicken_doll_part_007" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_008" type="mesh" mesh="chicken_doll_part_008" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_009" type="mesh" mesh="chicken_doll_part_009" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_010" type="mesh" mesh="chicken_doll_part_010" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_011" type="mesh" mesh="chicken_doll_part_011" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_012" type="mesh" mesh="chicken_doll_part_012" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_013" type="mesh" mesh="chicken_doll_part_013" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_014" type="mesh" mesh="chicken_doll_part_014" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_015" type="mesh" mesh="chicken_doll_part_015" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_016" type="mesh" mesh="chicken_doll_part_016" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_017" type="mesh" mesh="chicken_doll_part_017" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_018" type="mesh" mesh="chicken_doll_part_018" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_019" type="mesh" mesh="chicken_doll_part_019" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_020" type="mesh" mesh="chicken_doll_part_020" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_021" type="mesh" mesh="chicken_doll_part_021" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_022" type="mesh" mesh="chicken_doll_part_022" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_023" type="mesh" mesh="chicken_doll_part_023" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_024" type="mesh" mesh="chicken_doll_part_024" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_025" type="mesh" mesh="chicken_doll_part_025" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_026" type="mesh" mesh="chicken_doll_part_026" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_027" type="mesh" mesh="chicken_doll_part_027" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_028" type="mesh" mesh="chicken_doll_part_028" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_029" type="mesh" mesh="chicken_doll_part_029" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <geom name="chicken_doll_geom_part_030" type="mesh" mesh="chicken_doll_part_030" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
+      <site name="chicken_doll_center" type="box" size="0.04 0.04 0.02" pos="0 0 0" rgba="0 0 1 0.2"  quat="0.460696 -0.436551 0.683602 -0.360374" group="4"/>
+    </body>
+
+    <body name="dog" pos="0.5820 -0.3015 0.2" quat="0.9968 -0.0083 0.0054 0.0797">
+      <joint type="free" frictionloss="0.0001"/>
+      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
+      <geom name="dog_geom_part_000" type="mesh" mesh="dog_part_000" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_001" type="mesh" mesh="dog_part_001" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_002" type="mesh" mesh="dog_part_002" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_003" type="mesh" mesh="dog_part_003" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_004" type="mesh" mesh="dog_part_004" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_005" type="mesh" mesh="dog_part_005" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_006" type="mesh" mesh="dog_part_006" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_007" type="mesh" mesh="dog_part_007" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_008" type="mesh" mesh="dog_part_008" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_009" type="mesh" mesh="dog_part_009" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_010" type="mesh" mesh="dog_part_010" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_011" type="mesh" mesh="dog_part_011" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_012" type="mesh" mesh="dog_part_012" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_013" type="mesh" mesh="dog_part_013" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_014" type="mesh" mesh="dog_part_014" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_015" type="mesh" mesh="dog_part_015" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_016" type="mesh" mesh="dog_part_016" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_017" type="mesh" mesh="dog_part_017" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_018" type="mesh" mesh="dog_part_018" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_019" type="mesh" mesh="dog_part_019" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_020" type="mesh" mesh="dog_part_020" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_021" type="mesh" mesh="dog_part_021" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_022" type="mesh" mesh="dog_part_022" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_023" type="mesh" mesh="dog_part_023" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_024" type="mesh" mesh="dog_part_024" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_025" type="mesh" mesh="dog_part_025" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_026" type="mesh" mesh="dog_part_026" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_027" type="mesh" mesh="dog_part_027" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_028" type="mesh" mesh="dog_part_028" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_029" type="mesh" mesh="dog_part_029" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_030" type="mesh" mesh="dog_part_030" material="dog_mat"  contype="1" conaffinity="1"/>
+      <geom name="dog_geom_part_031" type="mesh" mesh="dog_part_031" material="dog_mat"  contype="1" conaffinity="1"/>
+      <site name="dog_center" type="box" size="0.0503 0.0503 0.09" pos="0 0 0" rgba="1 0 0 0.2" group ="4" />
+      <geom name="dog_collision" type="box" size="0.035 0.035 0.02" pos="0 0 0" rgba="1 1 1 0.2" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
+    </body>
+
+
+    <body name="box" pos="0.5820 -0.2015 0.15" quat="0.9997 0.0010 -0.0005 0.0251">
+      <joint type="free" frictionloss="0.0001"/>
+      <!-- <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/> -->
+      <site group="4" name="box_site" type="box" size="0.14 0.14 0.01" rgba="0 1 0 0.8"/>
+
+      <geom name="box_geom_part_000" type="mesh" mesh="white_box_part_000" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_001" type="mesh" mesh="white_box_part_001" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_002" type="mesh" mesh="white_box_part_002" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_003" type="mesh" mesh="white_box_part_003" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_004" type="mesh" mesh="white_box_part_004" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_005" type="mesh" mesh="white_box_part_005" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_006" type="mesh" mesh="white_box_part_006" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_007" type="mesh" mesh="white_box_part_007" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_008" type="mesh" mesh="white_box_part_008" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_009" type="mesh" mesh="white_box_part_009" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_010" type="mesh" mesh="white_box_part_010" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_011" type="mesh" mesh="white_box_part_011" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_012" type="mesh" mesh="white_box_part_012" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_013" type="mesh" mesh="white_box_part_013" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_014" type="mesh" mesh="white_box_part_014" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_015" type="mesh" mesh="white_box_part_015" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_016" type="mesh" mesh="white_box_part_016" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_017" type="mesh" mesh="white_box_part_017" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_018" type="mesh" mesh="white_box_part_018" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_019" type="mesh" mesh="white_box_part_019" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_020" type="mesh" mesh="white_box_part_020" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_021" type="mesh" mesh="white_box_part_021" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_022" type="mesh" mesh="white_box_part_022" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_023" type="mesh" mesh="white_box_part_023" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_024" type="mesh" mesh="white_box_part_024" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_025" type="mesh" mesh="white_box_part_025" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_026" type="mesh" mesh="white_box_part_026" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_027" type="mesh" mesh="white_box_part_027" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_028" type="mesh" mesh="white_box_part_028" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_029" type="mesh" mesh="white_box_part_029" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_030" type="mesh" mesh="white_box_part_030" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <geom name="box_geom_part_031" type="mesh" mesh="white_box_part_031" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
+      <site name="box_center" pos="0 0 0" size="0.004" type="sphere" rgba="1 1 1 0.2" group="4"/>
+    </body>
+
+    <body name="yellow_brush" pos="0.6220 -0.1215 0.2" quat="0.2239 -0.8204 0.2995 0.4325">
+      <joint type="free" frictionloss="0.0001"/>
+      <inertial pos="0 0 0" mass="0.05" diaginertia="0.003 0.003 0.003"/>
+      <geom name="yellow_brush_geom_part_000" type="mesh" mesh="yellow_brush_part_000" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_001" type="mesh" mesh="yellow_brush_part_001" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_002" type="mesh" mesh="yellow_brush_part_002" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_003" type="mesh" mesh="yellow_brush_part_003" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_004" type="mesh" mesh="yellow_brush_part_004" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_005" type="mesh" mesh="yellow_brush_part_005" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_006" type="mesh" mesh="yellow_brush_part_006" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_007" type="mesh" mesh="yellow_brush_part_007" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_008" type="mesh" mesh="yellow_brush_part_008" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_009" type="mesh" mesh="yellow_brush_part_009" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_010" type="mesh" mesh="yellow_brush_part_010" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_011" type="mesh" mesh="yellow_brush_part_011" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_012" type="mesh" mesh="yellow_brush_part_012" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_013" type="mesh" mesh="yellow_brush_part_013" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_014" type="mesh" mesh="yellow_brush_part_014" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_015" type="mesh" mesh="yellow_brush_part_015" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_016" type="mesh" mesh="yellow_brush_part_016" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_017" type="mesh" mesh="yellow_brush_part_017" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_018" type="mesh" mesh="yellow_brush_part_018" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_019" type="mesh" mesh="yellow_brush_part_019" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_020" type="mesh" mesh="yellow_brush_part_020" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_021" type="mesh" mesh="yellow_brush_part_021" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_022" type="mesh" mesh="yellow_brush_part_022" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_023" type="mesh" mesh="yellow_brush_part_023" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_024" type="mesh" mesh="yellow_brush_part_024" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_025" type="mesh" mesh="yellow_brush_part_025" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_026" type="mesh" mesh="yellow_brush_part_026" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_027" type="mesh" mesh="yellow_brush_part_027" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_028" type="mesh" mesh="yellow_brush_part_028" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_029" type="mesh" mesh="yellow_brush_part_029" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_030" type="mesh" mesh="yellow_brush_part_030" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <geom name="yellow_brush_geom_part_031" type="mesh" mesh="yellow_brush_part_031" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+      <site name="yellow_brush_center" type="box" size="0.1 0.02 0.01" pos="0 0 0" rgba="1 0 0 0"  quat="0.464092 0.791924 0.368404 -0.147488"/>
+    </body>
+
+    <body name="transparent_tape_paper" pos="0.3094 0.1863 0.1" quat="0.0748 -0.1892 0.9191 -0.3374">
+      <joint type="free" frictionloss="0.0001"/>
+      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
+      <geom name="transparent_tape_paper_geom_part_000" type="mesh" mesh="transparent_tape_paper_part_000" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_001" type="mesh" mesh="transparent_tape_paper_part_001" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_002" type="mesh" mesh="transparent_tape_paper_part_002" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_003" type="mesh" mesh="transparent_tape_paper_part_003" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_004" type="mesh" mesh="transparent_tape_paper_part_004" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_005" type="mesh" mesh="transparent_tape_paper_part_005" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_006" type="mesh" mesh="transparent_tape_paper_part_006" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_007" type="mesh" mesh="transparent_tape_paper_part_007" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_008" type="mesh" mesh="transparent_tape_paper_part_008" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_009" type="mesh" mesh="transparent_tape_paper_part_009" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_010" type="mesh" mesh="transparent_tape_paper_part_010" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_011" type="mesh" mesh="transparent_tape_paper_part_011" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_012" type="mesh" mesh="transparent_tape_paper_part_012" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_013" type="mesh" mesh="transparent_tape_paper_part_013" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_014" type="mesh" mesh="transparent_tape_paper_part_014" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_015" type="mesh" mesh="transparent_tape_paper_part_015" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_016" type="mesh" mesh="transparent_tape_paper_part_016" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_017" type="mesh" mesh="transparent_tape_paper_part_017" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_018" type="mesh" mesh="transparent_tape_paper_part_018" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_019" type="mesh" mesh="transparent_tape_paper_part_019" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_020" type="mesh" mesh="transparent_tape_paper_part_020" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_021" type="mesh" mesh="transparent_tape_paper_part_021" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_022" type="mesh" mesh="transparent_tape_paper_part_022" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_023" type="mesh" mesh="transparent_tape_paper_part_023" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_024" type="mesh" mesh="transparent_tape_paper_part_024" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <geom name="transparent_tape_paper_geom_part_025" type="mesh" mesh="transparent_tape_paper_part_025" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
+      <site name="transparent_tape_paper_center" type="box" size="0.05 0.05 0.01" pos="0 0 0" rgba="1 0 0 0.2" quat="0.0748384 0.189223 -0.919095 0.337428"  group="4"/>
+    </body>
+
+
+
+
+  </worldbody>
+
+    <sensor>
+    <!-- robot end-effector touch -->
+    <touch name="gripper_touch" site="gripper"/>
+
+    <!-- box touch (target container) -->
+    <touch name="box_touch" site="box_site"/>
+
+    <!-- object touches: reuse existing *_center sites -->
+    <touch name="blue_duck_touch" site="blue_duck_center"/>
+    <touch name="chicken_doll_touch" site="chicken_doll_center"/>
+    <touch name="dog_touch" site="dog_center"/>
+    <touch name="yellow_brush_touch" site="yellow_brush_center"/>
+    <touch name="transparent_tape_paper_touch" site="transparent_tape_paper_center"/>
+  </sensor>
+
+
+  <keyframe>
+    <key name="home" 
+        qpos="-0.0246302 -1.16358 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642
+            0.025934 0.026237 0.0265545 0.0261839 0.0264856 0.0268017 
+            0.462899 0.295108 0.0997878 0.441244 0.887357 0.133104 0.0136058 
+            0.617959 0.299861 0.0989501 0.456175 0.436101 -0.68681 0.360573
+            0.583247 -0.300219 0.178636 0.996659 -0.0147268 0.0131517 0.0792487
+            0.582006 -0.20156 0.151185 0.999678 0.00110203 -0.000465486 0.0253507 
+            0.597517 -0.117931 0.100882 0.359153 -0.901677 0.212907 0.112504 
+            0.509399 0.12302 0.103802 0.0748275 -0.189198 0.919101 -0.337429"
+        ctrl="-0.0246302 -1.16358 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
+    />
+  </keyframe>
+</mujoco>
