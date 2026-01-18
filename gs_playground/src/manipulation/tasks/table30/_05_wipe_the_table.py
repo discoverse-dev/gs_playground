@@ -187,6 +187,8 @@ class WipeTheTableEnv(TaskEnv):
 
         already = self.placed_mask[np.arange(self.num_envs), cur_idx]
         place_now = self.is_grasped & inside & grip_open & (~already)
+        print("rel",rel)
+        print("place_now",place_now)
 
         self._dbg_print_ctr += 1
         if np.any(place_now):

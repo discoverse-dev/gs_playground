@@ -277,7 +277,6 @@
 
     <body name="chicken_doll" pos="0.6182 0.3000 0.1" quat="0.4607 0.4366 -0.6836 0.3604">
       <joint type="free" frictionloss="0.0001"/>
-      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
       <geom name="chicken_doll_geom_part_000" type="mesh" mesh="chicken_doll_part_000" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
       <geom name="chicken_doll_geom_part_001" type="mesh" mesh="chicken_doll_part_001" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
       <geom name="chicken_doll_geom_part_002" type="mesh" mesh="chicken_doll_part_002" material="chicken_doll_mat"  contype="1" conaffinity="1"/>
@@ -313,48 +312,45 @@
     </body>
 
     <body name="dog" pos="0.5820 -0.3015 0.2" quat="0.9968 -0.0083 0.0054 0.0797">
-      <joint type="free" frictionloss="0.0001"/>
-      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
-      <geom name="dog_geom_part_000" type="mesh" mesh="dog_part_000" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_001" type="mesh" mesh="dog_part_001" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_002" type="mesh" mesh="dog_part_002" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_003" type="mesh" mesh="dog_part_003" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_004" type="mesh" mesh="dog_part_004" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_005" type="mesh" mesh="dog_part_005" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_006" type="mesh" mesh="dog_part_006" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_007" type="mesh" mesh="dog_part_007" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_008" type="mesh" mesh="dog_part_008" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_009" type="mesh" mesh="dog_part_009" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_010" type="mesh" mesh="dog_part_010" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_011" type="mesh" mesh="dog_part_011" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_012" type="mesh" mesh="dog_part_012" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_013" type="mesh" mesh="dog_part_013" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_014" type="mesh" mesh="dog_part_014" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_015" type="mesh" mesh="dog_part_015" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_016" type="mesh" mesh="dog_part_016" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_017" type="mesh" mesh="dog_part_017" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_018" type="mesh" mesh="dog_part_018" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_019" type="mesh" mesh="dog_part_019" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_020" type="mesh" mesh="dog_part_020" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_021" type="mesh" mesh="dog_part_021" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_022" type="mesh" mesh="dog_part_022" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_023" type="mesh" mesh="dog_part_023" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_024" type="mesh" mesh="dog_part_024" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_025" type="mesh" mesh="dog_part_025" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_026" type="mesh" mesh="dog_part_026" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_027" type="mesh" mesh="dog_part_027" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_028" type="mesh" mesh="dog_part_028" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_029" type="mesh" mesh="dog_part_029" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_030" type="mesh" mesh="dog_part_030" material="dog_mat"  contype="1" conaffinity="1"/>
-      <geom name="dog_geom_part_031" type="mesh" mesh="dog_part_031" material="dog_mat"  contype="1" conaffinity="1"/>
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
+      <geom name="dog_geom_part_000" type="mesh" mesh="dog_part_000" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_001" type="mesh" mesh="dog_part_001" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_002" type="mesh" mesh="dog_part_002" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_003" type="mesh" mesh="dog_part_003" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_004" type="mesh" mesh="dog_part_004" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_005" type="mesh" mesh="dog_part_005" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_006" type="mesh" mesh="dog_part_006" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_007" type="mesh" mesh="dog_part_007" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_008" type="mesh" mesh="dog_part_008" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_009" type="mesh" mesh="dog_part_009" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_010" type="mesh" mesh="dog_part_010" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_011" type="mesh" mesh="dog_part_011" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_012" type="mesh" mesh="dog_part_012" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_013" type="mesh" mesh="dog_part_013" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_014" type="mesh" mesh="dog_part_014" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_015" type="mesh" mesh="dog_part_015" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_016" type="mesh" mesh="dog_part_016" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_017" type="mesh" mesh="dog_part_017" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_018" type="mesh" mesh="dog_part_018" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_019" type="mesh" mesh="dog_part_019" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_020" type="mesh" mesh="dog_part_020" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_021" type="mesh" mesh="dog_part_021" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_022" type="mesh" mesh="dog_part_022" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_023" type="mesh" mesh="dog_part_023" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_024" type="mesh" mesh="dog_part_024" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_025" type="mesh" mesh="dog_part_025" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_026" type="mesh" mesh="dog_part_026" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_027" type="mesh" mesh="dog_part_027" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_028" type="mesh" mesh="dog_part_028" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_029" type="mesh" mesh="dog_part_029" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_030" type="mesh" mesh="dog_part_030" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
+      <geom name="dog_geom_part_031" type="mesh" mesh="dog_part_031" material="dog_mat"  contype="1" conaffinity="1" density = "1"/>
       <site name="dog_center" type="box" size="0.0503 0.0503 0.09" pos="0 0 0" rgba="1 0 0 0.2" group ="4" />
-      <geom name="dog_collision" type="box" size="0.035 0.035 0.02" pos="0 0 0" rgba="1 1 1 0.2" friction="1 0.005 0.0001" contype="1" conaffinity="1"/>
     </body>
 
 
-    <body name="box" pos="0.5820 -0.2015 0.15" quat="0.9997 0.0010 -0.0005 0.0251">
-      <joint type="free" frictionloss="0.0001"/>
-      <!-- <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/> -->
+    <body name="box" pos="0.582006 -0.20156 0.151185" quat="0.9997 0.0010 -0.0005 0.0251">
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
       <site group="4" name="box_site" type="box" size="0.14 0.14 0.01" rgba="0 1 0 0.8"/>
 
       <geom name="box_geom_part_000" type="mesh" mesh="white_box_part_000" material="white_box_mat" contype="1" conaffinity="1" solref="0.002 1" solimp="0.9 0.95 0.001"/>
@@ -392,47 +388,45 @@
       <site name="box_center" pos="0 0 0" size="0.004" type="sphere" rgba="1 1 1 0.2" group="4"/>
     </body>
 
-    <body name="yellow_brush" pos="0.6220 -0.1215 0.2" quat="0.2239 -0.8204 0.2995 0.4325">
-      <joint type="free" frictionloss="0.0001"/>
-      <inertial pos="0 0 0" mass="0.05" diaginertia="0.003 0.003 0.003"/>
-      <geom name="yellow_brush_geom_part_000" type="mesh" mesh="yellow_brush_part_000" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_001" type="mesh" mesh="yellow_brush_part_001" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_002" type="mesh" mesh="yellow_brush_part_002" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_003" type="mesh" mesh="yellow_brush_part_003" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_004" type="mesh" mesh="yellow_brush_part_004" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_005" type="mesh" mesh="yellow_brush_part_005" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_006" type="mesh" mesh="yellow_brush_part_006" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_007" type="mesh" mesh="yellow_brush_part_007" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_008" type="mesh" mesh="yellow_brush_part_008" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_009" type="mesh" mesh="yellow_brush_part_009" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_010" type="mesh" mesh="yellow_brush_part_010" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_011" type="mesh" mesh="yellow_brush_part_011" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_012" type="mesh" mesh="yellow_brush_part_012" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_013" type="mesh" mesh="yellow_brush_part_013" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_014" type="mesh" mesh="yellow_brush_part_014" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_015" type="mesh" mesh="yellow_brush_part_015" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_016" type="mesh" mesh="yellow_brush_part_016" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_017" type="mesh" mesh="yellow_brush_part_017" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_018" type="mesh" mesh="yellow_brush_part_018" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_019" type="mesh" mesh="yellow_brush_part_019" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_020" type="mesh" mesh="yellow_brush_part_020" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_021" type="mesh" mesh="yellow_brush_part_021" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_022" type="mesh" mesh="yellow_brush_part_022" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_023" type="mesh" mesh="yellow_brush_part_023" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_024" type="mesh" mesh="yellow_brush_part_024" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_025" type="mesh" mesh="yellow_brush_part_025" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_026" type="mesh" mesh="yellow_brush_part_026" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_027" type="mesh" mesh="yellow_brush_part_027" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_028" type="mesh" mesh="yellow_brush_part_028" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_029" type="mesh" mesh="yellow_brush_part_029" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_030" type="mesh" mesh="yellow_brush_part_030" material="yellow_brush_mat" contype="1" conaffinity="1"  />
-      <geom name="yellow_brush_geom_part_031" type="mesh" mesh="yellow_brush_part_031" material="yellow_brush_mat" contype="1" conaffinity="1"  />
+    <body name="yellow_brush" pos="0.597517 -0.117931 0.100882" quat="0.359153 -0.901677 0.212907 0.112504 ">
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
+      <geom name="yellow_brush_geom_part_000" type="mesh" mesh="yellow_brush_part_000" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_001" type="mesh" mesh="yellow_brush_part_001" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_002" type="mesh" mesh="yellow_brush_part_002" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_003" type="mesh" mesh="yellow_brush_part_003" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_004" type="mesh" mesh="yellow_brush_part_004" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_005" type="mesh" mesh="yellow_brush_part_005" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_006" type="mesh" mesh="yellow_brush_part_006" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_007" type="mesh" mesh="yellow_brush_part_007" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_008" type="mesh" mesh="yellow_brush_part_008" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_009" type="mesh" mesh="yellow_brush_part_009" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_010" type="mesh" mesh="yellow_brush_part_010" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_011" type="mesh" mesh="yellow_brush_part_011" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_012" type="mesh" mesh="yellow_brush_part_012" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_013" type="mesh" mesh="yellow_brush_part_013" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_014" type="mesh" mesh="yellow_brush_part_014" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_015" type="mesh" mesh="yellow_brush_part_015" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_016" type="mesh" mesh="yellow_brush_part_016" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_017" type="mesh" mesh="yellow_brush_part_017" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_018" type="mesh" mesh="yellow_brush_part_018" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_019" type="mesh" mesh="yellow_brush_part_019" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_020" type="mesh" mesh="yellow_brush_part_020" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_021" type="mesh" mesh="yellow_brush_part_021" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_022" type="mesh" mesh="yellow_brush_part_022" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_023" type="mesh" mesh="yellow_brush_part_023" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_024" type="mesh" mesh="yellow_brush_part_024" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_025" type="mesh" mesh="yellow_brush_part_025" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_026" type="mesh" mesh="yellow_brush_part_026" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_027" type="mesh" mesh="yellow_brush_part_027" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_028" type="mesh" mesh="yellow_brush_part_028" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_029" type="mesh" mesh="yellow_brush_part_029" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_030" type="mesh" mesh="yellow_brush_part_030" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
+      <geom name="yellow_brush_geom_part_031" type="mesh" mesh="yellow_brush_part_031" material="yellow_brush_mat" contype="1" conaffinity="1" density = "1"  />
       <site name="yellow_brush_center" type="box" size="0.1 0.02 0.01" pos="0 0 0" rgba="1 0 0 0"  quat="0.464092 0.791924 0.368404 -0.147488"/>
     </body>
 
     <body name="transparent_tape_paper" pos="0.3094 0.1863 0.1" quat="0.0748 -0.1892 0.9191 -0.3374">
       <joint type="free" frictionloss="0.0001"/>
-      <inertial pos="0 0 0" mass="0.35" diaginertia="0.003 0.003 0.003"/>
       <geom name="transparent_tape_paper_geom_part_000" type="mesh" mesh="transparent_tape_paper_part_000" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
       <geom name="transparent_tape_paper_geom_part_001" type="mesh" mesh="transparent_tape_paper_part_001" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
       <geom name="transparent_tape_paper_geom_part_002" type="mesh" mesh="transparent_tape_paper_part_002" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
@@ -485,15 +479,13 @@
 
   <keyframe>
     <key name="home" 
-        qpos="-0.0246302 -1.16358 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642
+        qpos="0.43455 -0.24682 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 
             0.025934 0.026237 0.0265545 0.0261839 0.0264856 0.0268017 
-            0.462899 0.295108 0.0997878 0.441244 0.887357 0.133104 0.0136058 
-            0.617959 0.299861 0.0989501 0.456175 0.436101 -0.68681 0.360573
-            0.583247 -0.300219 0.178636 0.996659 -0.0147268 0.0131517 0.0792487
-            0.582006 -0.20156 0.151185 0.999678 0.00110203 -0.000465486 0.0253507 
-            0.597517 -0.117931 0.100882 0.359153 -0.901677 0.212907 0.112504 
-            0.509399 0.12302 0.103802 0.0748275 -0.189198 0.919101 -0.337429"
-        ctrl="-0.0246302 -1.16358 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
+            0.462898 0.295108 0.0997878 0.441243 0.887355 0.133118 0.013612 
+            0.410603 0.143326 0.105242 0.489886 0.684493 -0.392919 0.370265 
+            0.577499 0.187555 0.115864 0.884719 -0.420518 -0.0333871 0.198297"
+        ctrl="0.43455 -0.24682 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642  0"
     />
   </keyframe>
 </mujoco>
+
