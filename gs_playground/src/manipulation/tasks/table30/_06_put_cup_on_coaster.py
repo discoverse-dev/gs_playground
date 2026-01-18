@@ -15,8 +15,7 @@ from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 # -----------------------------------------------------------------------------
 # Asset Paths
 # -----------------------------------------------------------------------------
-_ASSETS_FRANKA_DIR = ROOT_PATH.parent / "models" / "robots" / "manipulation" / "franka_robotiq"
-_ASSETS_TASK_DIR = ROOT_PATH.parent / "models" / "tasks" / "table30" / "_06_put_cup_on_coaster"
+_ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_06_put_cup_on_coaster"
 
 TASK_GAUSSIANS = {
     "cup": _ASSETS_TASK_DIR / "3dgs" / "cup.ply",
@@ -29,11 +28,12 @@ TASK_GAUSSIANS = {
 class CupOnCoasterEnvCfg(TaskEnvCfg):
     # model / sim
     robot_name: str = "franka_robotiq"
-    model_file: str = str((_ASSETS_FRANKA_DIR / "xmls" / "cup_on_coaster.xml").as_posix())
+    model_file: str = str((ROOT_PATH / "models" / "robots" / 
+                           "manipulation" / "franka_emika_panda_robotiq" / 
+                           "xmls" / "table30_06_put_cup_on_coaster.xml").as_posix())
 
     # control
-    # 推荐使用 "eef" (绝对位姿控制) 配合 Runner 的 IK 求解器
-    action_mode: str = "eef" 
+    action_mode: str = "eef_relative" 
 
     # rendering
     img_width: int = 320
@@ -52,12 +52,12 @@ class CupOnCoasterEnvCfg(TaskEnvCfg):
     gripper_close_thresh: float = 0.2
     grasp_dist_thresh: float = 0.05
     
-    # Sensors (Important for this task)
+    # Sensors
     touch_name_cup: str = "cup_touch"
     touch_name_coaster: str = "coaster_touch"
     touch_thresh: float = 1e-3
 
-    # Randomization range
+    # Randomization
     rand_xy_range: float = 0.15
 
 
@@ -74,6 +74,9 @@ class CupOnCoasterEnv(TaskEnv):
 
         self.cup_body = self.model.get_body(self.model.get_body_index(cfg.cup_name))
         self.coaster_body = self.model.get_body(self.model.get_body_index(cfg.coaster_name))
+        
+        # Helper list for iteration
+        self.task_bodies = [self.cup_body, self.coaster_body]
 
         # State trackers
         self.grasp_latched = np.zeros((self.num_envs,), dtype=bool)
@@ -85,85 +88,69 @@ class CupOnCoasterEnv(TaskEnv):
 
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
         """
-        Randomize Cup and Coaster positions on the XY plane.
+        Randomize Cup and Coaster positions ensuring no overlap.
+        Uses rejection sampling logic similar to StackColorBlocksEnv.
         """
         if data.shape[0] == 0:
             return
 
-        # Bodies to randomize
-        bodies = [self.cup_body, self.coaster_body]
-        min_dist = 0.10 # Minimum distance between cup and coaster to avoid overlap
+        num_objs = len(self.task_bodies)
+        # Coaster radius ~6cm, Cup radius ~3cm, margin ~2cm -> min dist ~0.11m
+        min_xy_dist = 0.12 
 
-        # Get current poses (B_subset, 2, 7)
-        # 0: cup, 1: coaster
-        current_poses = np.stack(
-            [np.asarray(b.get_pose(data), dtype=np.float32) for b in bodies],
-            axis=1
+        # 1. Get current poses for the subset: (B_subset, num_objs, 7)
+        obj_pose = np.stack(
+            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.task_bodies],
+            axis=1,
         )
-        base_xy = current_poses[..., :2].copy() # Store original positions
-        
-        # We want to randomize around the original position (or a generic center)
-        # Assuming original position is the center of workspace
-        
-        new_xy = np.zeros_like(base_xy)
+
+        base_xy = obj_pose[..., :2]
+        new_pose = obj_pose.copy()
+
         remaining = np.ones((data.shape[0],), dtype=bool)
-        
-        # Simple Rejection Sampling for collision free placement
+        eye_mask = np.eye(num_objs, dtype=np.float32) * 1e6  # ignore self-distance
+
+        # 2. Try a few times to satisfy min distance
         for _ in range(10):
             if not remaining.any():
                 break
-            
+                
             n_rem = remaining.sum()
+            # Sample jitters only for remaining envs
             jitter = self._rng.uniform(
                 -self._cfg.rand_xy_range, 
                 self._cfg.rand_xy_range, 
-                size=(n_rem, 2, 2)
+                size=(n_rem, num_objs, 2)
             ).astype(np.float32)
             
-            # Candidate positions: Base + Jitter
-            candidates = base_xy[remaining] + jitter
+            candidate_xy = base_xy[remaining] + jitter
+
+            # Calculate pairwise distances: (N, n_obj, n_obj)
+            diff = candidate_xy[:, :, None, :] - candidate_xy[:, None, :, :]
+            dist = np.linalg.norm(diff, axis=-1) + eye_mask[None]
             
-            # Check distance between Cup (0) and Coaster (1)
-            diff = candidates[:, 0, :] - candidates[:, 1, :]
-            dist = np.linalg.norm(diff, axis=-1)
-            
-            ok = dist > min_dist
-            
+            # Check if all mutual distances are valid
+            ok = dist.min(axis=(1, 2)) >= min_xy_dist
+
             if ok.any():
-                # Update valid positions
                 rem_indices = np.where(remaining)[0]
-                valid_indices = rem_indices[ok]
                 
-                # Assign only the valid ones
-                # We need to map back to the subset index logic
-                # Since 'candidates' corresponds to 'remaining', and 'ok' corresponds to 'candidates'
+                # Update pose buffer for successful samples
+                new_pose_view = new_pose[remaining]
+                new_pose_view[ok, :, :2] = candidate_xy[ok]
+                new_pose[remaining] = new_pose_view
                 
-                # Specifically update the 'new_xy' buffer at the correct indices
-                # Note: This logic is slightly complex due to masking. 
-                # Simpler approach: update new_xy for the OK ones, update mask.
-                
-                # Fill the buffer rows corresponding to valid_indices
-                # Since 'remaining' tracks indices in 'data', we iterate carefully or use boolean indexing
-                
-                # Let's use boolean indexing on the full subset array 'new_xy'
-                # Create a mask for the FULL subset based on 'remaining' AND 'ok'
-                full_ok_mask = np.zeros_like(remaining)
-                full_ok_mask[remaining] = ok
-                
-                new_xy[full_ok_mask] = candidates[ok]
-                remaining[full_ok_mask] = False
+                # Update remaining mask
+                remaining[rem_indices[ok]] = False
 
-        # Apply positions (fallback to original base_xy if sampling failed)
-        # If remaining is True, it means we didn't find a valid spot, use base_xy + small noise or just base
-        if remaining.any():
-             new_xy[remaining] = base_xy[remaining]
-
-        # Set DoF Pos
-        for env_i in range(data.shape[0]):
-            # Set Cup
-            self.cup_body.set_translation(data[env_i], np.append(new_xy[env_i, 0], current_poses[env_i, 0, 2]), include_floatingbase=True)
-            # Set Coaster
-            self.coaster_body.set_translation(data[env_i], np.append(new_xy[env_i, 1], current_poses[env_i, 1, 2]), include_floatingbase=True)
+        # 3. Write back poses using set_dof_pos
+        for env_idx in range(data.shape[0]):
+            for i, body in enumerate(self.task_bodies):
+                body.set_dof_pos(
+                    data[env_idx],
+                    new_pose[env_idx, i],
+                    include_floatingbase=True,
+                )
 
     def _reset_task_state(self, done: np.ndarray):
         """Reset latches."""
@@ -176,7 +163,6 @@ class CupOnCoasterEnv(TaskEnv):
             cup_touch = np.asarray(self.model.get_sensor_value(self._cfg.touch_name_cup, data), dtype=np.float32)
             coaster_touch = np.asarray(self.model.get_sensor_value(self._cfg.touch_name_coaster, data), dtype=np.float32)
             
-            # Handle shape (B, 1) or (B,)
             if cup_touch.ndim > 1: cup_touch = cup_touch[..., 0]
             if coaster_touch.ndim > 1: coaster_touch = coaster_touch[..., 0]
             
@@ -191,7 +177,7 @@ class CupOnCoasterEnv(TaskEnv):
         # 1. Robot State
         ee_pos = self.robot.get_ee_pose(data)[:, :3]
         grip_cmd = np.asarray(data.actuator_ctrls)[:, self.robot.gripper_act_id]
-        grip_closed = grip_cmd > float(self._cfg.gripper_close_thresh) # 0.82 is close usually
+        grip_closed = grip_cmd > float(self._cfg.gripper_close_thresh)
 
         # 2. Object States
         cup_pos = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)[:, :3]
@@ -200,29 +186,26 @@ class CupOnCoasterEnv(TaskEnv):
         # 3. Sensors
         cup_touch_val, coaster_touch_val = self._read_sensors(data)
         is_touching_cup = cup_touch_val > self._cfg.touch_thresh
-        is_touching_coaster = coaster_touch_val > self._cfg.touch_thresh # Coaster touching implies cup is on it (if physics is stable)
+        is_touching_coaster = coaster_touch_val > self._cfg.touch_thresh 
 
         # 4. Distances
         dist_ee_cup = np.linalg.norm(ee_pos - cup_pos, axis=1)
-        dist_cup_coaster = np.linalg.norm(cup_pos - coaster_pos, axis=1) # 3D distance
+        dist_cup_coaster = np.linalg.norm(cup_pos - coaster_pos, axis=1)
         dist_xy_cup_coaster = np.linalg.norm(cup_pos[:, :2] - coaster_pos[:, :2], axis=1)
 
         # 5. Logic
-        # Grasp: EE close to Cup AND Gripper Closed AND Sensor Active
         is_grasp_dist = dist_ee_cup < self._cfg.grasp_dist_thresh
         is_grasped = is_grasp_dist & grip_closed & is_touching_cup
         self.grasp_latched = self.grasp_latched | is_grasped
 
-        # Success: Cup on Coaster (XY align) AND Cup released AND Coaster sensor active
         is_aligned = dist_xy_cup_coaster < self._cfg.success_dist_xy
         is_released = ~grip_closed
-        # We check coaster sensor to confirm physical contact between cup and coaster
         is_success = is_aligned & is_released & is_touching_coaster
         self.success_latched = self.success_latched | is_success
 
         # 6. Rewards
         reach_r = -dist_ee_cup
-        place_r = -dist_cup_coaster # Guide cup to coaster
+        place_r = -dist_cup_coaster 
         grasp_r = 2.0 * self.grasp_latched.astype(np.float32)
         success_r = 5.0 * self.success_latched.astype(np.float32)
 
