@@ -12,7 +12,7 @@ from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
 from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
 
-ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "05_wipe_the_table"
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_05_wipe_the_table"
 TASK_GAUSSIANS = {
     "blue_duck": (ASSETS_TASK_DIR / "3dgs" / "blue_duck.ply"),
     "chicken_doll": (ASSETS_TASK_DIR / "3dgs" / "chicken_doll.ply"),

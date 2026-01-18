@@ -16,15 +16,15 @@
     <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
 
-    <mesh name="banana_mesh_0"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_000.obj"/>
-    <mesh name="banana_mesh_1"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_001.obj"/>
-    <mesh name="banana_mesh_2"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_002.obj"/>
-    <mesh name="banana_mesh_3"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/banana/part_003.obj"/>
+    <mesh name="banana_mesh_0"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/banana/part_000.obj"/>
+    <mesh name="banana_mesh_1"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/banana/part_001.obj"/>
+    <mesh name="banana_mesh_2"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/banana/part_002.obj"/>
+    <mesh name="banana_mesh_3"    scale="0.89 0.89 0.89" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/banana/part_003.obj"/>
     
-    <mesh name="avocado_mesh"     scale="0.9 0.9 0.9"    file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/avocado/avocado.obj"/>
+    <mesh name="avocado_mesh"     scale="0.9 0.9 0.9"    file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/avocado/avocado.obj"/>
     
-    <mesh name="carambola_mesh"   file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/carambola/carambola.obj"/>
-    <mesh name="mangosteen_mesh"  file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/fruit/mangosteen/mangosteen.obj"/>
+    <mesh name="carambola_mesh"   file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/carambola/carambola.obj"/>
+    <mesh name="mangosteen_mesh"  file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/fruit/mangosteen/mangosteen.obj"/>
     
     <material name="banana_yellow" rgba="0.8 0.8 0 1"/>
     <material name="banana_brown" rgba="0.3 0.2 0 1"/>
@@ -33,38 +33,38 @@
     <material name="mangosteen_mat"    rgba="0.45 0.10 0.55 1" reflectance="0.10"/>
 
     <material name="basket_mat" rgba="0.7 0.2 0.2 1" reflectance="0.1"/>
-    <mesh name="basket_part_000" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_000.obj"/>
-    <mesh name="basket_part_001" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_001.obj"/>
-    <mesh name="basket_part_002" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_002.obj"/>
-    <mesh name="basket_part_003" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_003.obj"/>
-    <mesh name="basket_part_004" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_004.obj"/>
-    <mesh name="basket_part_005" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_005.obj"/>
-    <mesh name="basket_part_006" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_006.obj"/>
-    <mesh name="basket_part_007" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_007.obj"/>
-    <mesh name="basket_part_008" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_008.obj"/>
-    <mesh name="basket_part_009" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_009.obj"/>
-    <mesh name="basket_part_010" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_010.obj"/>
-    <mesh name="basket_part_011" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_011.obj"/>
-    <mesh name="basket_part_012" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_012.obj"/>
-    <mesh name="basket_part_013" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_013.obj"/>
-    <mesh name="basket_part_014" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_014.obj"/>
-    <mesh name="basket_part_015" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_015.obj"/>
-    <mesh name="basket_part_016" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_016.obj"/>
-    <mesh name="basket_part_017" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_017.obj"/>
-    <mesh name="basket_part_018" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_018.obj"/>
-    <mesh name="basket_part_019" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_019.obj"/>
-    <mesh name="basket_part_020" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_020.obj"/>
-    <mesh name="basket_part_021" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_021.obj"/>
-    <mesh name="basket_part_022" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_022.obj"/>
-    <mesh name="basket_part_023" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_023.obj"/>
-    <mesh name="basket_part_024" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_024.obj"/>
-    <mesh name="basket_part_025" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_025.obj"/>
-    <mesh name="basket_part_026" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_026.obj"/>
-    <mesh name="basket_part_027" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_027.obj"/>
-    <mesh name="basket_part_028" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_028.obj"/>
-    <mesh name="basket_part_029" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_029.obj"/>
-    <mesh name="basket_part_030" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_030.obj"/>
-    <mesh name="basket_part_031" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/03_arrange_fruits_in_basket/meshes/basket/part_031.obj"/>
+    <mesh name="basket_part_000" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_000.obj"/>
+    <mesh name="basket_part_001" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_001.obj"/>
+    <mesh name="basket_part_002" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_002.obj"/>
+    <mesh name="basket_part_003" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_003.obj"/>
+    <mesh name="basket_part_004" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_004.obj"/>
+    <mesh name="basket_part_005" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_005.obj"/>
+    <mesh name="basket_part_006" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_006.obj"/>
+    <mesh name="basket_part_007" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_007.obj"/>
+    <mesh name="basket_part_008" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_008.obj"/>
+    <mesh name="basket_part_009" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_009.obj"/>
+    <mesh name="basket_part_010" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_010.obj"/>
+    <mesh name="basket_part_011" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_011.obj"/>
+    <mesh name="basket_part_012" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_012.obj"/>
+    <mesh name="basket_part_013" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_013.obj"/>
+    <mesh name="basket_part_014" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_014.obj"/>
+    <mesh name="basket_part_015" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_015.obj"/>
+    <mesh name="basket_part_016" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_016.obj"/>
+    <mesh name="basket_part_017" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_017.obj"/>
+    <mesh name="basket_part_018" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_018.obj"/>
+    <mesh name="basket_part_019" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_019.obj"/>
+    <mesh name="basket_part_020" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_020.obj"/>
+    <mesh name="basket_part_021" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_021.obj"/>
+    <mesh name="basket_part_022" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_022.obj"/>
+    <mesh name="basket_part_023" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_023.obj"/>
+    <mesh name="basket_part_024" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_024.obj"/>
+    <mesh name="basket_part_025" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_025.obj"/>
+    <mesh name="basket_part_026" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_026.obj"/>
+    <mesh name="basket_part_027" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_027.obj"/>
+    <mesh name="basket_part_028" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_028.obj"/>
+    <mesh name="basket_part_029" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_029.obj"/>
+    <mesh name="basket_part_030" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_030.obj"/>
+    <mesh name="basket_part_031" scale="0.688 0.688 0.688" file="../../../../../tasks/table30/_03_arrange_fruits_in_basket/meshes/basket/part_031.obj"/>
   </asset>
 
   <worldbody>
