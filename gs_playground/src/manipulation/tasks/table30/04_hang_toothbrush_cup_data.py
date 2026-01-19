@@ -59,10 +59,10 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 10
+    data_size: int = 20
     num_envs: int = 10
     seed: int = 300
-    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_full_manhattan" # Updated dir name
+    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_20" # Updated dir name
 
     # env control
     max_ctrl_steps: int = 1000 # 增加步数以容纳两段曼哈顿路径
@@ -94,8 +94,8 @@ class CollectorCfg:
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 320
-    video_h: int = 240
+    video_w: int = 640
+    video_h: int = 480
     cam_view_key: Optional[str] = None
 
     # text fields
@@ -373,8 +373,8 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
         tmp_path = self._tmp_video_paths[env_id]
-        # if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
-        if True :
+        if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        # if True :
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"

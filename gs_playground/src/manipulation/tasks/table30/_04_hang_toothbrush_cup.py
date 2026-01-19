@@ -12,7 +12,6 @@ from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
 from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
 ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_04_hang_toothbrush_cup" / "3dgs"
-print(ASSETS_TASK_DIR / "toothbrush_cup.ply")
 TASK_GAUSSIANS = {
     "toothbrush_cup": ASSETS_TASK_DIR / "toothbrush_cup.ply",
     "rack": ASSETS_TASK_DIR / "rack.ply",
@@ -32,8 +31,8 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     action_mode: str = "eef_relative"  # "joint" or "eef"
 
     # rendering
-    img_width: int = 320
-    img_height: int = 240
+    img_width: int = 640
+    img_height: int = 480
  
     # instruction
     instruction: str = "Hang the orange toothbrush cup on the cup holder"
@@ -224,7 +223,6 @@ class HangToothbrushCupEnv(TaskEnv):
             & (~self.is_hung)
         )
 
-        print("d_cup_hang",d_cup_hang)
 
         self.is_hung = self.is_hung | hung_now
         r_hang_sparse = self.is_hung.astype(np.float32) * cfg.hang_reward_bonus
