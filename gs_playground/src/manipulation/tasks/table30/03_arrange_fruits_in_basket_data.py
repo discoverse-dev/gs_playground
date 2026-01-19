@@ -69,8 +69,8 @@ class StageOffsets:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 0
     save_dir: str = "./data/table30_arrange_fruits_collect_1k_5"
 
