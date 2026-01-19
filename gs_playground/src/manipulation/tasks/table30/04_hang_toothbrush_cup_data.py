@@ -59,25 +59,25 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 10
+    num_envs: int = 10
     seed: int = 300
-    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_refined"
+    save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_full_manhattan" # Updated dir name
 
     # env control
-    max_ctrl_steps: int = 500 # 稍微增加一点，因为中间停顿多了
+    max_ctrl_steps: int = 1000 # 增加步数以容纳两段曼哈顿路径
 
     # motion
     max_dp: float = 0.005
-    pos_tol: float = 0.001
+    pos_tol: float = 0.001 # 提高精度
 
     # keypoints offsets (world frame offsets)
     grasp_offset: Tuple[float, float, float] = (0.0, -0.04, 0.02)
-    pre_grasp_z: float = 0.05
-    # lift_height: float = 0.20 # Deprecated in favor of pre-hang alignment logic
+    # 这个高度将作为 Approach 阶段的安全平面高度
+    pre_grasp_z: float = 0.05 
 
-    pre_hang_offset: Tuple[float, float, float] = (-0.047, -0.15, 0.03)
-    hang_offset: Tuple[float, float, float] = (-0.047, -0.02 , 0.03)
+    pre_hang_offset: Tuple[float, float, float] = (-0.046, -0.15, 0.03)
+    hang_offset: Tuple[float, float, float] = (-0.046, -0.02 , 0.03)
     retreat_dx: float = 0.10
 
     # gripper
@@ -87,7 +87,7 @@ class CollectorCfg:
     # timing / dwell
     close_hold_steps: int = 25
     release_hold_steps: int = 25
-    waypoint_dwell_steps: int = 30  # NEW: 每个中间点停顿的帧数
+    waypoint_dwell_steps: int = 30  # 每个中间点停顿的帧数
 
     # sampling / render
     sample_every_steps: int = 1
@@ -107,18 +107,28 @@ class CollectorCfg:
 # Collector
 # -----------------------------------------------------------------------------
 class HangToothbrushCupCollector:
-    # 状态机定义更新
-    ST_GO_PRE_GRASP = 0
-    ST_GO_GRASP = 1
-    ST_CLOSE = 2
-    ST_LIFT_ALIGN_Z = 3   # NEW: 提升至与 Pre-Hang 等高
-    ST_ALIGN_X = 4        # NEW: 平移 X 轴对齐
-    ST_GO_PRE_HANG = 5    # NEW: 平移 Y 轴到达 Pre-Hang (X,Z已对齐)
-    ST_HANG_DOWN = 6
-    ST_RELEASE = 7
-    ST_RETREAT = 8
-    ST_GO_RESET = 9
-    ST_DONE = 10
+    # --- FSM States (Full Manhattan Path) ---
+    
+    # Phase 1: Approach (Grasp) - Manhattan [New]
+    ST_APP_LIFT_Z = 0   # 初始位置垂直抬升到安全高度
+    ST_APP_ALIGN_X = 1  # 移动 X 对齐杯子
+    ST_APP_ALIGN_Y = 2  # 移动 Y 对齐杯子
+    ST_APP_DESCEND = 3  # 下降到抓取点
+
+    # Phase 2: Grasp
+    ST_CLOSE = 4
+
+    # Phase 3: Transport (Hang) - Manhattan [Renamed for consistency]
+    ST_TRP_LIFT_Z = 5   # (Was ST_LIFT_ALIGN_Z) 垂直提起对齐挂钩高度
+    ST_TRP_ALIGN_X = 6  # (Was ST_ALIGN_X) 平移 X 对齐挂钩
+    ST_TRP_ALIGN_Y = 7  # (Was ST_GO_PRE_HANG) 平移 Y 到达 Pre-Hang
+    ST_HANG_DOWN = 8
+
+    # Phase 4: Release & End
+    ST_RELEASE = 9
+    ST_RETREAT = 10
+    ST_GO_RESET = 11
+    ST_DONE = 12
 
     def __init__(self, cfg: CollectorCfg, env_cfg: Optional[HangToothbrushCupEnvCfg] = None):
         self.cfg = cfg
@@ -147,12 +157,17 @@ class HangToothbrushCupCollector:
 
         self.states = np.zeros(B, dtype=np.int32)
         self.state_enter_step = np.zeros(B, dtype=np.int32)
+        
+        # [Dwell Timer]
+        self.state_reach_step = np.full(B, -1, dtype=np.int32)
 
         self.fixed_rpy = np.zeros((B, 3), dtype=np.float32)
         self.exec_pos = np.zeros((B, 3), dtype=np.float32)
         self.home_pos = np.zeros((B, 3), dtype=np.float32)
         self.hung_latched = np.zeros(B, dtype=bool)
 
+        # Latch positions
+        self.latched_start_pos = np.zeros((B, 3), dtype=np.float32) # [New]
         self.latched_grasp_pos = np.zeros((B, 3), dtype=np.float32)
         self.latched_hook_pos = np.zeros((B, 3), dtype=np.float32)
 
@@ -229,14 +244,19 @@ class HangToothbrushCupCollector:
         self.done[env_ids] = False
         self.success[env_ids] = False
         self.ctrl_step[env_ids] = 0
-        self.states[env_ids] = self.ST_GO_PRE_GRASP
         self.state_enter_step[env_ids] = 0
+        
+        # [Reset Dwell Timer]
+        self.state_reach_step[env_ids] = -1
 
         obs = self.env._state.obs
         ee6_all = np.asarray(obs["ee_pose"], dtype=np.float32).reshape(self.B, -1)
         self.exec_pos[env_ids] = ee6_all[env_ids, :3]
         self.fixed_rpy[env_ids] = ee6_all[env_ids, 3:6]
         self.home_pos[env_ids] = ee6_all[env_ids, :3]
+        
+        # [New] 记录初始位置，用于规划 Approach 的起点
+        self.latched_start_pos[env_ids] = ee6_all[env_ids, :3]
 
         data = self.env._state.data
         self.env.robot.reset_envs(data, done_mask)
@@ -247,6 +267,9 @@ class HangToothbrushCupCollector:
 
         self.latched_grasp_pos[env_ids] = grasp_pose7[env_ids, :3]
         self.latched_hook_pos[env_ids]  = hook_pose7[env_ids, :3]
+        
+        # Start State
+        self.states[env_ids] = self.ST_APP_LIFT_Z
 
         for env_id in env_ids.tolist():
             self.buffers[env_id] = self._new_buffer()
@@ -306,6 +329,7 @@ class HangToothbrushCupCollector:
         buf["is_grasped"].append(is_grasped)
         buf["is_hung"].append(is_hung)
         buf["is_success"].append(is_success)
+        buf["is_success"].append(is_success) # Duplicate in original, keeping consistent
         buf["success_now"].append(success_now)
 
     def _write_video_frame(self, env_id: int) -> None:
@@ -349,8 +373,8 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
         tmp_path = self._tmp_video_paths[env_id]
-        if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
-        # if True :
+        # if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        if True :
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -386,6 +410,9 @@ class HangToothbrushCupCollector:
             return
         self.states[mask] = int(new_state)
         self.state_enter_step[mask] = self.ctrl_step[mask].copy()
+        
+        # [Reset reach timer]
+        self.state_reach_step[mask] = -1
 
     def _step_logic(self) -> None:
         cfg = self.cfg
@@ -394,97 +421,98 @@ class HangToothbrushCupCollector:
         running = self.active & (~self.done)
         if not np.any(running):
             return
-
-        # --- Keypoints Calculation ---
-        # 1. Grasp
+        
+        start_p = self.latched_start_pos
         grasp_p = self.latched_grasp_pos + np.asarray(cfg.grasp_offset, dtype=np.float32).reshape(1, 3)
-        pre_grasp_p = grasp_p.copy()
-        pre_grasp_p[:, 2] += float(cfg.pre_grasp_z)
-
-        # 2. Pre-Hang & Hang
         hook_p = self.latched_hook_pos
+
+        # --- 1. 定义关键点 (Full Manhattan Path) ---
+        
+        # 安全平面高度: 抓取位置 + pre_grasp_z
+        safe_z = grasp_p[:, 2] + float(cfg.pre_grasp_z)
+        
+        # Phase 1: Approach Sequence
+        # 1. Lift Z: 保持 Start 的 XY，提升 Z 到 safe_z
+        p_app_lift_z = start_p.copy()
+        p_app_lift_z[:, 2] = safe_z
+        
+        # 2. Align X: 移动 X 到 Grasp X，保持 Start Y，保持 safe_z
+        p_app_align_x = p_app_lift_z.copy()
+        p_app_align_x[:, 0] = grasp_p[:, 0]
+        
+        # 3. Align Y: 移动 Y 到 Grasp Y，此时 X 已对齐，Z 保持 safe_z
+        # 此时正好位于 grasp_p 的正上方 (即原 pre_grasp_p)
+        p_app_align_y = grasp_p.copy()
+        p_app_align_y[:, 2] = safe_z
+        
+        # 4. Descend: 垂直下降到 Grasp Position
+        p_app_descend = grasp_p
+        
+        # Phase 3: Transport Sequence
+        # Targets for Hang
         pre_hang_p = hook_p + np.asarray(cfg.pre_hang_offset, dtype=np.float32).reshape(1, 3)
         hang_p = hook_p + np.asarray(cfg.hang_offset, dtype=np.float32).reshape(1, 3)
 
-        # 3. Intermediate Waypoints (Manhattan Path)
-        # ST_LIFT_ALIGN_Z: 保持 Grasp 的 X,Y，只提升 Z 到 Pre-Hang 的高度
-        lift_z_tgt = grasp_p.copy()
-        lift_z_tgt[:, 2] = pre_hang_p[:, 2] 
+        # 5. Lift Z (Transport): 保持 Grasp 的 XY，只提升 Z 到 Pre-Hang 的高度
+        # 这里用 pre_hang_p.z 作为运输层高度
+        p_trp_lift_z = grasp_p.copy()
+        p_trp_lift_z[:, 2] = pre_hang_p[:, 2] 
 
-        # ST_ALIGN_X: 保持 Grasp 的 Y，保持 Pre-Hang 的 Z，只移动 X 到 Pre-Hang 的 X
-        align_x_tgt = lift_z_tgt.copy()
-        align_x_tgt[:, 0] = pre_hang_p[:, 0]
+        # 6. Align X (Transport): 保持 Grasp 的 Y，只移动 X 到 Pre-Hang 的 X
+        p_trp_align_x = p_trp_lift_z.copy()
+        p_trp_align_x[:, 0] = pre_hang_p[:, 0]
 
-        # ST_GO_PRE_HANG: 移动 Y 到 Pre-Hang 的 Y (X, Z 已经对齐)
+        # 7. Align Y (Transport): 移动 Y 到 Pre-Hang 的 Y
         # 实际上这个点就是 pre_hang_p
-
+        p_trp_align_y = pre_hang_p
+        
+        # Phase 4: End
         retreat_p = hang_p.copy()
         retreat_p[:, 0] -= float(cfg.retreat_dx)
         reset_p = self.home_pos
 
+        # --- 2. 目标分配 ---
         tgt_pos = self.exec_pos.copy()
         grip_cmd = np.full((B,), float(cfg.gripper_open), dtype=np.float32)
 
         s = self.states
         
-        # State Masks
-        m0 = running & (s == self.ST_GO_PRE_GRASP)
-        m1 = running & (s == self.ST_GO_GRASP)
-        m2 = running & (s == self.ST_CLOSE)
-        m3 = running & (s == self.ST_LIFT_ALIGN_Z)  
-        m4 = running & (s == self.ST_ALIGN_X)       
-        m5 = running & (s == self.ST_GO_PRE_HANG)   
-        m6 = running & (s == self.ST_HANG_DOWN)
-        m7 = running & (s == self.ST_RELEASE)
-        m8 = running & (s == self.ST_RETREAT)
-        m9 = running & (s == self.ST_GO_RESET)
+        # Helper to set target
+        def set_target(state_id, pos, grip):
+            mask = running & (s == state_id)
+            if np.any(mask):
+                tgt_pos[mask] = pos[mask]
+                grip_cmd[mask] = grip
 
-        # Target Assignment
-        if np.any(m0):
-            tgt_pos[m0] = pre_grasp_p[m0]
-            grip_cmd[m0] = float(cfg.gripper_open)
-        if np.any(m1):
-            tgt_pos[m1] = grasp_p[m1]
-            grip_cmd[m1] = float(cfg.gripper_open)
-        if np.any(m2):
-            tgt_pos[m2] = grasp_p[m2]
-            grip_cmd[m2] = float(cfg.gripper_close)
+        # Phase 1: Approach
+        set_target(self.ST_APP_LIFT_Z,  p_app_lift_z,  cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_X, p_app_align_x, cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_Y, p_app_align_y, cfg.gripper_open)
+        set_target(self.ST_APP_DESCEND, p_app_descend, cfg.gripper_open)
         
-        # --- New Sequence Targets ---
-        if np.any(m3): # LIFT Z
-            tgt_pos[m3] = lift_z_tgt[m3]
-            grip_cmd[m3] = float(cfg.gripper_close)
-        if np.any(m4): # ALIGN X
-            tgt_pos[m4] = align_x_tgt[m4]
-            grip_cmd[m4] = float(cfg.gripper_close)
-        if np.any(m5): # ALIGN Y (GO PRE HANG)
-            tgt_pos[m5] = pre_hang_p[m5]
-            grip_cmd[m5] = float(cfg.gripper_close)
-        # ----------------------------
-
-        if np.any(m6):
-            tgt_pos[m6] = hang_p[m6]
-            grip_cmd[m6] = float(cfg.gripper_close)
-        if np.any(m7):
-            tgt_pos[m7] = hang_p[m7]
-            grip_cmd[m7] = float(cfg.gripper_open)
-        if np.any(m8):
-            tgt_pos[m8] = retreat_p[m8]
-            grip_cmd[m8] = float(cfg.gripper_open)
-        if np.any(m9):
-            tgt_pos[m9] = reset_p[m9]
-            grip_cmd[m9] = float(cfg.gripper_open)
+        # Phase 2: Close
+        set_target(self.ST_CLOSE,       p_app_descend, cfg.gripper_close)
+        
+        # Phase 3: Transport
+        set_target(self.ST_TRP_LIFT_Z,  p_trp_lift_z,  cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_X, p_trp_align_x, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_Y, p_trp_align_y, cfg.gripper_close)
+        set_target(self.ST_HANG_DOWN,   hang_p,        cfg.gripper_close)
+        
+        # Phase 4: Release & End
+        set_target(self.ST_RELEASE,     hang_p,        cfg.gripper_open)
+        set_target(self.ST_RETREAT,     retreat_p,     cfg.gripper_open)
+        set_target(self.ST_GO_RESET,    reset_p,       cfg.gripper_open)
 
         # Action Execution
         ref_pose_6d = self.env.robot.ref_ee_pose
         ref_pos = ref_pose_6d[:, :3]
         self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, float(cfg.max_dp))
 
-
         action = np.zeros((B, 7), dtype=np.float32)
         action[:, :3] = self.exec_pos - ref_pos
-        action[:, :2] *= 0.5 # gain for XY
-        action[:, 2] *= 0.5    # gain for Z
+        action[:, :2] *= 0.5  # gain for XY
+        action[:, 2] *= 0.5   # gain for Z
         action[:, 3:6] = 0 
         action[:, 6] = grip_cmd
         self._last_action[:] = action
@@ -492,58 +520,78 @@ class HangToothbrushCupCollector:
         self.env.step(action)
 
         # Reach Check Helper
-        def _reach(p: np.ndarray) -> np.ndarray:
+        def is_reached(p: np.ndarray) -> np.ndarray:
             return np.linalg.norm(self.exec_pos - p, axis=1) < float(cfg.pos_tol)
         
         # Dwell Check Helper
-        def _dwell_done(state_idx: int) -> np.ndarray:
-            # Check if we have stayed in this state long enough
+        def _check_reach_and_dwell(state_idx: int, target_p: np.ndarray) -> np.ndarray:
             in_state = running & (self.states == state_idx)
-            steps_passed = self.ctrl_step - self.state_enter_step
-            return in_state & (steps_passed >= int(cfg.waypoint_dwell_steps))
+            reached = is_reached(target_p)
+            
+            # Record first reach time
+            just_reached = in_state & reached & (self.state_reach_step == -1)
+            if np.any(just_reached):
+                self.state_reach_step[just_reached] = self.ctrl_step[just_reached]
+            
+            has_reached_before = (self.state_reach_step != -1)
+            dwell_pass = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
+            
+            return in_state & has_reached_before & dwell_pass & reached
 
-        reach_pre_grasp = _reach(pre_grasp_p)
-        reach_grasp = _reach(grasp_p)
+        # --- Phase 1: Approach Sequence ---
+        # 1. Lift Z -> Align X
+        done_app_lift = _check_reach_and_dwell(self.ST_APP_LIFT_Z, p_app_lift_z)
+        self._enter_state(done_app_lift, self.ST_APP_ALIGN_X)
         
-        reach_lift_z = _reach(lift_z_tgt)
-        reach_align_x = _reach(align_x_tgt)
-        reach_pre_hang = _reach(pre_hang_p)
+        # 2. Align X -> Align Y
+        done_app_x = _check_reach_and_dwell(self.ST_APP_ALIGN_X, p_app_align_x)
+        self._enter_state(done_app_x, self.ST_APP_ALIGN_Y)
         
-        reach_hang = _reach(hang_p)
-        reach_retreat = _reach(retreat_p)
-        reach_reset = _reach(reset_p)
+        # 3. Align Y -> Descend
+        done_app_y = _check_reach_and_dwell(self.ST_APP_ALIGN_Y, p_app_align_y)
+        self._enter_state(done_app_y, self.ST_APP_DESCEND)
+        
+        # 4. Descend -> Close
+        done_app_descend = _check_reach_and_dwell(self.ST_APP_DESCEND, p_app_descend)
+        self._enter_state(done_app_descend, self.ST_CLOSE)
+        
+        # --- Phase 2: Close (Timer based) ---
+        mask = running & (s == self.ST_CLOSE)
+        if np.any(mask):
+            time_in_state = self.ctrl_step - self.state_enter_step
+            close_done = time_in_state >= int(cfg.close_hold_steps)
+            self._enter_state(mask & close_done, self.ST_TRP_LIFT_Z)
 
-        # Transitions
-        # 1. Grasp Sequence
-        self._enter_state(running & (s == self.ST_GO_PRE_GRASP) & reach_pre_grasp, self.ST_GO_GRASP)
-        self._enter_state(running & (s == self.ST_GO_GRASP) & reach_grasp, self.ST_CLOSE)
+        # --- Phase 3: Transport Sequence ---
+        # 5. Lift Z -> Align X
+        done_trp_lift = _check_reach_and_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z)
+        self._enter_state(done_trp_lift, self.ST_TRP_ALIGN_X)
         
-        # Close dwell
-        in_close = running & (self.states == self.ST_CLOSE)
-        close_done = in_close & ((self.ctrl_step - self.state_enter_step) >= int(cfg.close_hold_steps))
-        self._enter_state(close_done, self.ST_LIFT_ALIGN_Z) # Jump to Lift Z
-
-        # 2. Manhattan Move Sequence (with dwells)
-        # Lift Z -> dwell -> Align X
-        self._enter_state(running & (s == self.ST_LIFT_ALIGN_Z) & reach_lift_z & _dwell_done(self.ST_LIFT_ALIGN_Z), self.ST_ALIGN_X)
+        # 6. Align X -> Align Y
+        done_trp_x = _check_reach_and_dwell(self.ST_TRP_ALIGN_X, p_trp_align_x)
+        self._enter_state(done_trp_x, self.ST_TRP_ALIGN_Y)
         
-        # Align X -> dwell -> Align Y (Pre Hang)
-        self._enter_state(running & (s == self.ST_ALIGN_X) & reach_align_x & _dwell_done(self.ST_ALIGN_X), self.ST_GO_PRE_HANG)
+        # 7. Align Y -> Hang Down
+        done_trp_y = _check_reach_and_dwell(self.ST_TRP_ALIGN_Y, p_trp_align_y)
+        self._enter_state(done_trp_y, self.ST_HANG_DOWN)
         
-        # Pre Hang -> dwell -> Hang Down
-        self._enter_state(running & (s == self.ST_GO_PRE_HANG) & reach_pre_hang & _dwell_done(self.ST_GO_PRE_HANG), self.ST_HANG_DOWN)
+        # 8. Hang Down -> Release
+        done_hang = _check_reach_and_dwell(self.ST_HANG_DOWN, hang_p)
+        self._enter_state(done_hang, self.ST_RELEASE)
 
-        # 3. Hang & Release Sequence
-        # Hang Down -> dwell (reuse same logic or immediate? Using immediate for now, usually hang needs contact)
-        # If you want hang dwell, add _dwell_done(self.ST_HANG_DOWN)
-        self._enter_state(running & (s == self.ST_HANG_DOWN) & reach_hang, self.ST_RELEASE)
-
+        # --- Phase 4: Release & End ---
+        # 9. Release -> Retreat (Timer based)
         in_rel = running & (self.states == self.ST_RELEASE)
         rel_done = in_rel & ((self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps))
         self._enter_state(rel_done, self.ST_RETREAT)
 
-        self._enter_state(running & (self.states == self.ST_RETREAT) & reach_retreat, self.ST_GO_RESET)
-        self._enter_state(running & (self.states == self.ST_GO_RESET) & reach_reset, self.ST_DONE)
+        # 10. Retreat -> Reset
+        done_retreat = is_reached(retreat_p) # Simple reach is fine for retreat
+        self._enter_state(running & (s == self.ST_RETREAT) & done_retreat, self.ST_GO_RESET)
+        
+        # 11. Reset -> Done
+        done_reset = is_reached(reset_p)
+        self._enter_state(running & (s == self.ST_GO_RESET) & done_reset, self.ST_DONE)
 
         # Success Check
         info = self.env._state.info
@@ -583,7 +631,7 @@ class HangToothbrushCupCollector:
                 dtype=np.bool_,
             ).reshape(-1)
 
-              # 6) mark done/success (per-env)
+            # 6) mark done/success (per-env)
             for i in range(self.B):
                 if (not self.active[i]) or self.done[i]:
                     continue
@@ -611,7 +659,6 @@ class HangToothbrushCupCollector:
                     batch_seed = int(cfg.seed + self.attempted)
                     self.done[restart_ids] = False
                     self.start_episodes(restart_ids, seed=batch_seed)
-
 
             now = time.perf_counter()
             if (now - self._last_log_t) >= 2.0:

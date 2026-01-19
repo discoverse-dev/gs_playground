@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan" # [Modified Name]
 
@@ -93,8 +93,8 @@ class CollectorCfg:
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 320
-    video_h: int = 240
+    video_w: int = 1280
+    video_h: int = 720
     cam_view_key: Optional[str] = "pixels/view_0"
 
     # text fields

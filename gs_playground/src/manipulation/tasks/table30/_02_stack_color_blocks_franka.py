@@ -33,8 +33,8 @@ class StackColorBlocksEnvCfg(TaskEnvCfg):
     action_mode: str = "eef_relative"  # "joint" or "eef"
 
     # rendering
-    img_width: int = 320
-    img_height: int = 240
+    img_width: int = 1280
+    img_height: int = 720
  
     # observation / prompt
     instruction: str = "Stack the yellow block on top of the orange block."
