@@ -1,0 +1,106 @@
+<mujoco model="go2 feetonly flat terrain scene">
+  <include file="go2_mjx.xml"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <default>
+    <default class="terrain_box">
+      <geom group="2" condim="3" friction="1 0.005 0.0001" type="box"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="terrain_body" pos="0.0 0.0 -0.79">
+      <geom name="ground_plane" type="plane" size="16.464000000000002 16.464000000000002 0.1" pos="0 0 0" rgba="0.3 0.3 0.3 1"/>
+      <geom class="terrain_box" pos="-0.0000 -7.8354 0.0471" size="10.9920 3.1566 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="-7.8354 3.1566 0.0471" size="3.1566 7.8354 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="3.8296 -0.6730 0.0471" size="7.1624 4.0058 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="-4.0058 3.8296 0.0471" size="0.6730 7.1624 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="-0.0000 7.1624 0.0471" size="3.3329 3.8296 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="7.8354 7.1624 0.0471" size="3.1566 3.8296 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="4.0058 7.8354 0.0471" size="0.6730 3.1566 0.0471" rgba="0.282 0.090 0.412 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.0277 0.1443" size="10.9920 2.9643 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="-8.0277 2.9643 0.1443" size="2.9643 8.0277 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="4.0219 -1.0575 0.1443" size="6.9702 4.0058 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0219 0.1443" size="1.0575 6.9702 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.9702 0.1443" size="2.9483 4.0219 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="8.0277 6.9702 0.1443" size="2.9643 4.0219 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="4.0058 8.0277 0.1443" size="1.0575 2.9643 0.0502" rgba="0.280 0.171 0.480 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.2200 0.2447" size="10.9920 2.7720 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="-8.2200 2.7720 0.2447" size="2.7720 8.2200 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="4.2141 -1.4421 0.2447" size="6.7779 4.0058 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.2141 0.2447" size="1.4421 6.7779 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.7779 0.2447" size="2.5637 4.2141 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="8.2200 6.7779 0.2447" size="2.7720 4.2141 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="4.0058 8.2200 0.2447" size="1.4421 2.7720 0.0502" rgba="0.261 0.247 0.523 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.4123 0.3451" size="10.9920 2.5798 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="-8.4123 2.5798 0.3451" size="2.5798 8.4123 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="4.4064 -1.8267 0.3451" size="6.5856 4.0058 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.4064 0.3451" size="1.8267 6.5856 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.5856 0.3451" size="2.1792 4.4064 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="8.4123 6.5856 0.3451" size="2.5798 4.4064 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="4.0058 8.4123 0.3451" size="1.8267 2.5798 0.0502" rgba="0.232 0.318 0.545 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.6045 0.4455" size="10.9920 2.3875 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="-8.6045 2.3875 0.4455" size="2.3875 8.6045 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="4.5987 -2.2112 0.4455" size="6.3933 4.0058 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.5987 0.4455" size="2.2112 6.3933 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.3933 0.4455" size="1.7946 4.5987 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="8.6045 6.3933 0.4455" size="2.3875 4.5987 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="4.0058 8.6045 0.4455" size="2.2112 2.3875 0.0502" rgba="0.201 0.384 0.554 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.7968 0.5459" size="10.9920 2.1952 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="-8.7968 2.1952 0.5459" size="2.1952 8.7968 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="4.7910 -2.5958 0.5459" size="6.2010 4.0058 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.7910 0.5459" size="2.5958 6.2010 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.2010 0.5459" size="1.4101 4.7910 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="8.7968 6.2010 0.5459" size="2.1952 4.7910 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="4.0058 8.7968 0.5459" size="2.5958 2.1952 0.0502" rgba="0.174 0.445 0.558 1"/>
+      <geom class="terrain_box" pos="-0.0000 -8.9891 0.6463" size="10.9920 2.0029 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="-8.9891 2.0029 0.6463" size="2.0029 8.9891 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="4.9833 -2.9803 0.6463" size="6.0088 4.0058 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.9833 0.6463" size="2.9803 6.0088 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="-0.0000 6.0088 0.6463" size="1.0255 4.9833 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="8.9891 6.0088 0.6463" size="2.0029 4.9833 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="4.0058 8.9891 0.6463" size="2.9803 2.0029 0.0502" rgba="0.150 0.504 0.557 1"/>
+      <geom class="terrain_box" pos="-0.0000 -9.1814 0.7467" size="10.9920 1.8106 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="-9.1814 1.8106 0.7467" size="1.8106 9.1814 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="5.1755 -3.3649 0.7467" size="5.8165 4.0058 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="-4.0058 5.1755 0.7467" size="3.3649 5.8165 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="-0.0000 5.8165 0.7467" size="0.6409 5.1755 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="9.1814 5.8165 0.7467" size="1.8106 5.1755 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="4.0058 9.1814 0.7467" size="3.3649 1.8106 0.0502" rgba="0.129 0.563 0.551 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 0.8471" size="3.3649 3.3649 0.0502" rgba="0.120 0.622 0.535 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 0.8471" size="3.3649 3.3649 0.0502" rgba="0.120 0.622 0.535 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 0.9475" size="2.9803 2.9803 0.0502" rgba="0.154 0.680 0.504 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 0.9475" size="2.9803 2.9803 0.0502" rgba="0.154 0.680 0.504 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.0478" size="2.5958 2.5958 0.0502" rgba="0.239 0.736 0.456 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.0478" size="2.5958 2.5958 0.0502" rgba="0.239 0.736 0.456 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.1482" size="2.2112 2.2112 0.0502" rgba="0.361 0.786 0.388 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.1482" size="2.2112 2.2112 0.0502" rgba="0.361 0.786 0.388 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.2486" size="1.8267 1.8267 0.0502" rgba="0.506 0.829 0.300 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.2486" size="1.8267 1.8267 0.0502" rgba="0.506 0.829 0.300 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.3490" size="1.4421 1.4421 0.0502" rgba="0.668 0.862 0.196 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.3490" size="1.4421 1.4421 0.0502" rgba="0.668 0.862 0.196 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.4494" size="1.0575 1.0575 0.0502" rgba="0.835 0.886 0.103 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.4494" size="1.0575 1.0575 0.0502" rgba="0.835 0.886 0.103 1"/>
+      <geom class="terrain_box" pos="4.0058 -4.0058 1.5498" size="0.6730 0.6730 0.0502" rgba="0.993 0.906 0.144 1"/>
+      <geom class="terrain_box" pos="-4.0058 4.0058 1.5498" size="0.6730 0.6730 0.0502" rgba="0.993 0.906 0.144 1"/>
+    </body>
+  </worldbody>
+
+  <keyframe>
+    <key name="home"
+      qpos="
+      0 0 0.278
+      1 0 0 0
+      0.1 0.9 -1.8
+      -0.1 0.9 -1.8
+      0.1 0.9 -1.8
+      -0.1 0.9 -1.8"
+      ctrl="0.1 0.9 -1.8 -0.1 0.9 -1.8 0.1 0.9 -1.8 -0.1 0.9 -1.8"/>
+  </keyframe>
+
+</mujoco>

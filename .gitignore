@@ -20,6 +20,8 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+*.lock
+*.ipynb
 
 # IDEs
 .vscode/
@@ -39,3 +41,4 @@ data/
 output/
 third-party
 agent.md
+rsl_rl/
