@@ -73,62 +73,86 @@ class StackColorBlocksEnv(TaskEnv):
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
 
-    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
-        """
-        Example randomization: jitter cube xy positions for the envs being reset.
 
-        Args:
-            data: SceneData view for the subset of envs being reset (len == sum(done_mask)).
-            done_mask: boolean mask over all envs (not used directly here).
-            phase: "reset" or "auto_reset" for potential differentiated logic.
-        """
+    # -----------------------------------------------------------------------------
+    # In your env task file: StackColorBlocksEnv._randomize
+    # Change yaw sampling range from [-pi, pi] to [-pi/2, pi/2].
+    # -----------------------------------------------------------------------------
+
+    def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
         if data.shape[0] == 0:
             return
 
-        num_cubes = len(self.cube_bodies)
-        min_xy_dist = 0.08
+        import numpy as np
+        from scipy.spatial.transform import Rotation as R
 
-        # Get current poses for the subset: (B_subset, num_cubes, 7)
+        B = data.shape[0]
+        C = len(self.cube_bodies)
+
+        min_xy_dist = 0.08
+        jitter_range = 0.08
+        max_tries = 10
+
         cube_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
             axis=1,
         )
 
-        base_xy = cube_pose[..., :2]
         new_pose = cube_pose.copy()
+        base_xy = cube_pose[..., :2]
 
-        remaining = np.ones((data.shape[0],), dtype=bool)
-        eye_mask = np.eye(num_cubes, dtype=np.float32) * 1e6  # ignore self-distance
+        remaining = np.ones((B,), dtype=bool)
+        eye_mask = (np.eye(C, dtype=np.float32) * 1e6)[None, :, :]
 
-        # Try a few times to satisfy min distance; fallback to base if not achieved
-        for _ in range(10):
+        # ---- 1) jitter XY with min-distance constraint ----
+        for _ in range(max_tries):
             if not remaining.any():
                 break
-            # Sample jitters only for remaining envs
-            jitter = self._rng.uniform(-0.08, 0.08, size=(remaining.sum(), num_cubes, 2)).astype(np.float32)
-            candidate_xy = base_xy[remaining] + jitter
 
-            diff = candidate_xy[:, :, None, :] - candidate_xy[:, None, :, :]
-            dist = np.linalg.norm(diff, axis=-1) + eye_mask[None]
-            ok = dist.min(axis=(1, 2)) >= min_xy_dist
+            n = int(remaining.sum())
+            jitter = self._rng.uniform(-jitter_range, jitter_range, size=(n, C, 2)).astype(np.float32)
+            cand_xy = base_xy[remaining] + jitter
+
+            diff = cand_xy[:, :, None, :] - cand_xy[:, None, :, :]
+            dist = np.linalg.norm(diff, axis=-1) + eye_mask
+            ok = dist.min(axis=(1, 2)) >= float(min_xy_dist)
 
             if ok.any():
-                # Assign successful candidates back into new_pose
-                rem_indices = np.where(remaining)[0]
-                new_pose_view = new_pose[remaining]
-                new_pose_view[ok, :, :2] = candidate_xy[ok]
-                new_pose[remaining] = new_pose_view
-                # Update remaining mask
-                remaining[rem_indices[ok]] = False
+                rem_idx = np.where(remaining)[0]
+                good_envs = rem_idx[ok]
+                new_pose[good_envs, :, :2] = cand_xy[ok]
+                remaining[good_envs] = False
 
-        # Write back poses using set_dof_pos (include floating base)
-        for env_idx in range(data.shape[0]):
+        # ---- 2) add random yaw around Z in [-90deg, 90deg] ----
+        # pose assumed: [x,y,z,qx,qy,qz,qw] (xyzw for scipy)
+        yaw = self._rng.uniform(-0.25 * np.pi, 0.25 * np.pi, size=(B, C)).astype(np.float32)
+
+        q_old = new_pose[..., 3:7].reshape(-1, 4)  # xyzw assumed
+        # If your sim uses wxyz ([qw,qx,qy,qz]), replace with:
+        # q_old = new_pose[..., 3:7][..., [1,2,3,0]].reshape(-1, 4)
+
+        r_old = R.from_quat(q_old)
+        r_yaw = R.from_euler("z", yaw.reshape(-1), degrees=False)
+        r_new = r_yaw * r_old
+
+        q_new = r_new.as_quat().astype(np.float32).reshape(B, C, 4)  # xyzw
+        new_pose[..., 3:7] = q_new
+        # If wxyz, write back with:
+        # new_pose[..., 3:7] = q_new[..., [3,0,1,2]]
+
+        # ---- 3) permute cube poses within each env ----
+        perm = np.argsort(self._rng.random((B, C)).astype(np.float32), axis=1)
+        new_pose = np.take_along_axis(new_pose, perm[:, :, None], axis=1)
+
+        # ---- write back ----
+        for env_idx in range(B):
             for cube_idx, body in enumerate(self.cube_bodies):
                 body.set_dof_pos(
                     data[env_idx],
                     new_pose[env_idx, cube_idx],
                     include_floatingbase=True,
                 )
+
 
     def _reset_task_state(self, done: np.ndarray):
         """Reset internal task state variables for done environments."""

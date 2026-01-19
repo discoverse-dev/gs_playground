@@ -69,7 +69,7 @@ class CollectorCfg:
 
     # motion params
     max_dp: float = 0.005 # 慢速移动，保证稳定
-    pos_tol: float = 0.005
+    pos_tol: float = 0.001
     
     # task specific offsets
     above_z: float = 0.00

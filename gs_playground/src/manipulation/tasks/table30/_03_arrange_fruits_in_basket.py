@@ -11,7 +11,7 @@ from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
 from gs_playground.src.env.motrix_env.render_env import RenderEnvState
 
-ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "03_arrange_fruits_in_basket"
+ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_03_arrange_fruits_in_basket"
 TASK_GAUSSIANS = {
     "fruit_avocado":    ASSETS_TASK_DIR / "3dgs" / "fruit_avocado.ply",
     "fruit_banana":     ASSETS_TASK_DIR / "3dgs" / "fruit_banana.ply",
