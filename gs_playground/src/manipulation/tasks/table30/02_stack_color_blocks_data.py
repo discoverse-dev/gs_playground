@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan" # [Modified Name]
 

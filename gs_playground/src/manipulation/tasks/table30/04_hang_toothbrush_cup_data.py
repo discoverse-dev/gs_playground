@@ -349,7 +349,8 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
         tmp_path = self._tmp_video_paths[env_id]
-        if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        # if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        if True :
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -483,7 +484,7 @@ class HangToothbrushCupCollector:
         action = np.zeros((B, 7), dtype=np.float32)
         action[:, :3] = self.exec_pos - ref_pos
         action[:, :2] *= 0.5 # gain for XY
-        action[:, 2] *= 1     # gain for Z
+        action[:, 2] *= 0.5    # gain for Z
         action[:, 3:6] = 0 
         action[:, 6] = grip_cmd
         self._last_action[:] = action
