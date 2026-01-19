@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 20
-    num_envs: int = 10
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 300
     save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_20" # Updated dir name
 
@@ -82,7 +82,7 @@ class CollectorCfg:
 
     # gripper
     gripper_open: float = 0.0
-    gripper_close: float = 0.82
+    gripper_close: float = 0.75
     
     # timing / dwell
     close_hold_steps: int = 25
@@ -373,8 +373,8 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
         tmp_path = self._tmp_video_paths[env_id]
-        if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
-        # if True :
+        # if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        if True :
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"

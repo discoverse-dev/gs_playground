@@ -17,6 +17,12 @@
     <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
   </visual>
 
+  <default>
+      <default class="cup">
+        <geom density="200"/>
+      </default>
+  </default>
+
   <asset>
     <!-- Environment -->
     <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
@@ -135,84 +141,84 @@
       <geom name="rack_geom_7" type ="mesh" mesh="rack_mesh_7" material="rack_mat" contype="1" conaffinity="1"/>
       <!-- define a hook target site for reward/IK guidance -->
       <!-- <geom name="rack_hook_geom" pos="0.00 -0.06 0.115" type="cylinder" size="0.01 0.05" rgba="0.8 0.1 0.1 1 " contype="0" conaffinity="0" euler="1.307 0 0"/> -->
-      <site name="rack_hook_site" pos="0.05 0.0 0.2" type="cylinder" size="0.01 0.05" rgba="0.8 0.1 0.1 1 " euler="0 1.407 0" />
+      <site name="rack_hook_site" pos="0.05 0.0 0.2" type="cylinder" size="0.01 0.05" rgba="0.8 0.1 0.1 1 " euler="0 1.407 0" group="3"/>
     </body>
 
     <!-- Red bottle: dynamic free body -->
     <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="1 0 0 0">    
-      <joint type="free" frictionloss="0.0001"/>
-      <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" />
-      <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_2" type="mesh" mesh="toothbrush_cup_mesh_2" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_3" type="mesh" mesh="toothbrush_cup_mesh_3" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_4" type="mesh" mesh="toothbrush_cup_mesh_4" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_5" type="mesh" mesh="toothbrush_cup_mesh_5" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_6" type="mesh" mesh="toothbrush_cup_mesh_6" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_7" type="mesh" mesh="toothbrush_cup_mesh_7" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_8" type="mesh" mesh="toothbrush_cup_mesh_8" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_9" type="mesh" mesh="toothbrush_cup_mesh_9" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <joint type="free"/>
+      <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_2" type="mesh" mesh="toothbrush_cup_mesh_2" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_3" type="mesh" mesh="toothbrush_cup_mesh_3" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_4" type="mesh" mesh="toothbrush_cup_mesh_4" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_5" type="mesh" mesh="toothbrush_cup_mesh_5" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_6" type="mesh" mesh="toothbrush_cup_mesh_6" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_7" type="mesh" mesh="toothbrush_cup_mesh_7" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_8" type="mesh" mesh="toothbrush_cup_mesh_8" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_9" type="mesh" mesh="toothbrush_cup_mesh_9" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_10" type="mesh" mesh="toothbrush_cup_mesh_10" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_11" type="mesh" mesh="toothbrush_cup_mesh_11" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_12" type="mesh" mesh="toothbrush_cup_mesh_12" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_13" type="mesh" mesh="toothbrush_cup_mesh_13" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_14" type="mesh" mesh="toothbrush_cup_mesh_14" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_15" type="mesh" mesh="toothbrush_cup_mesh_15" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_16" type="mesh" mesh="toothbrush_cup_mesh_16" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_17" type="mesh" mesh="toothbrush_cup_mesh_17" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_18" type="mesh" mesh="toothbrush_cup_mesh_18" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_19" type="mesh" mesh="toothbrush_cup_mesh_19" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_10" type="mesh" mesh="toothbrush_cup_mesh_10" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_11" type="mesh" mesh="toothbrush_cup_mesh_11" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_12" type="mesh" mesh="toothbrush_cup_mesh_12" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_13" type="mesh" mesh="toothbrush_cup_mesh_13" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_14" type="mesh" mesh="toothbrush_cup_mesh_14" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_15" type="mesh" mesh="toothbrush_cup_mesh_15" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_16" type="mesh" mesh="toothbrush_cup_mesh_16" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_17" type="mesh" mesh="toothbrush_cup_mesh_17" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_18" type="mesh" mesh="toothbrush_cup_mesh_18" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_19" type="mesh" mesh="toothbrush_cup_mesh_19" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_20" type="mesh" mesh="toothbrush_cup_mesh_20" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_21" type="mesh" mesh="toothbrush_cup_mesh_21" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_22" type="mesh" mesh="toothbrush_cup_mesh_22" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_23" type="mesh" mesh="toothbrush_cup_mesh_23" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_24" type="mesh" mesh="toothbrush_cup_mesh_24" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_25" type="mesh" mesh="toothbrush_cup_mesh_25" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_26" type="mesh" mesh="toothbrush_cup_mesh_26" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_27" type="mesh" mesh="toothbrush_cup_mesh_27" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_28" type="mesh" mesh="toothbrush_cup_mesh_28" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_29" type="mesh" mesh="toothbrush_cup_mesh_29" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_20" type="mesh" mesh="toothbrush_cup_mesh_20" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_21" type="mesh" mesh="toothbrush_cup_mesh_21" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_22" type="mesh" mesh="toothbrush_cup_mesh_22" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_23" type="mesh" mesh="toothbrush_cup_mesh_23" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_24" type="mesh" mesh="toothbrush_cup_mesh_24" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_25" type="mesh" mesh="toothbrush_cup_mesh_25" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_26" type="mesh" mesh="toothbrush_cup_mesh_26" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_27" type="mesh" mesh="toothbrush_cup_mesh_27" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_28" type="mesh" mesh="toothbrush_cup_mesh_28" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_29" type="mesh" mesh="toothbrush_cup_mesh_29" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_30" type="mesh" mesh="toothbrush_cup_mesh_30" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_31" type="mesh" mesh="toothbrush_cup_mesh_31" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_32" type="mesh" mesh="toothbrush_cup_mesh_32" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_33" type="mesh" mesh="toothbrush_cup_mesh_33" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_34" type="mesh" mesh="toothbrush_cup_mesh_34" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_35" type="mesh" mesh="toothbrush_cup_mesh_35" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_36" type="mesh" mesh="toothbrush_cup_mesh_36" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_37" type="mesh" mesh="toothbrush_cup_mesh_37" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_38" type="mesh" mesh="toothbrush_cup_mesh_38" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_39" type="mesh" mesh="toothbrush_cup_mesh_39" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_30" type="mesh" mesh="toothbrush_cup_mesh_30" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_31" type="mesh" mesh="toothbrush_cup_mesh_31" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_32" type="mesh" mesh="toothbrush_cup_mesh_32" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_33" type="mesh" mesh="toothbrush_cup_mesh_33" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_34" type="mesh" mesh="toothbrush_cup_mesh_34" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_35" type="mesh" mesh="toothbrush_cup_mesh_35" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_36" type="mesh" mesh="toothbrush_cup_mesh_36" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_37" type="mesh" mesh="toothbrush_cup_mesh_37" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_38" type="mesh" mesh="toothbrush_cup_mesh_38" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_39" type="mesh" mesh="toothbrush_cup_mesh_39" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_40" type="mesh" mesh="toothbrush_cup_mesh_40" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_41" type="mesh" mesh="toothbrush_cup_mesh_41" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_42" type="mesh" mesh="toothbrush_cup_mesh_42" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_43" type="mesh" mesh="toothbrush_cup_mesh_43" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_44" type="mesh" mesh="toothbrush_cup_mesh_44" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_45" type="mesh" mesh="toothbrush_cup_mesh_45" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_46" type="mesh" mesh="toothbrush_cup_mesh_46" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_47" type="mesh" mesh="toothbrush_cup_mesh_47" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_48" type="mesh" mesh="toothbrush_cup_mesh_48" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_49" type="mesh" mesh="toothbrush_cup_mesh_49" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_40" type="mesh" mesh="toothbrush_cup_mesh_40" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_41" type="mesh" mesh="toothbrush_cup_mesh_41" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_42" type="mesh" mesh="toothbrush_cup_mesh_42" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_43" type="mesh" mesh="toothbrush_cup_mesh_43" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_44" type="mesh" mesh="toothbrush_cup_mesh_44" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_45" type="mesh" mesh="toothbrush_cup_mesh_45" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_46" type="mesh" mesh="toothbrush_cup_mesh_46" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_47" type="mesh" mesh="toothbrush_cup_mesh_47" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_48" type="mesh" mesh="toothbrush_cup_mesh_48" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_49" type="mesh" mesh="toothbrush_cup_mesh_49" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_50" type="mesh" mesh="toothbrush_cup_mesh_50" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_51" type="mesh" mesh="toothbrush_cup_mesh_51" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_52" type="mesh" mesh="toothbrush_cup_mesh_52" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_53" type="mesh" mesh="toothbrush_cup_mesh_53" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_54" type="mesh" mesh="toothbrush_cup_mesh_54" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_55" type="mesh" mesh="toothbrush_cup_mesh_55" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_56" type="mesh" mesh="toothbrush_cup_mesh_56" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_57" type="mesh" mesh="toothbrush_cup_mesh_57" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_58" type="mesh" mesh="toothbrush_cup_mesh_58" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_59" type="mesh" mesh="toothbrush_cup_mesh_59" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_50" type="mesh" mesh="toothbrush_cup_mesh_50" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_51" type="mesh" mesh="toothbrush_cup_mesh_51" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_52" type="mesh" mesh="toothbrush_cup_mesh_52" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_53" type="mesh" mesh="toothbrush_cup_mesh_53" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_54" type="mesh" mesh="toothbrush_cup_mesh_54" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_55" type="mesh" mesh="toothbrush_cup_mesh_55" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_56" type="mesh" mesh="toothbrush_cup_mesh_56" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_57" type="mesh" mesh="toothbrush_cup_mesh_57" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_58" type="mesh" mesh="toothbrush_cup_mesh_58" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_59" type="mesh" mesh="toothbrush_cup_mesh_59" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
 
-      <geom name="toothbrush_cup_geom_60" type="mesh" mesh="toothbrush_cup_mesh_60" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_61" type="mesh" mesh="toothbrush_cup_mesh_61" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
-      <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
+      <geom name="toothbrush_cup_geom_60" type="mesh" mesh="toothbrush_cup_mesh_60" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_61" type="mesh" mesh="toothbrush_cup_mesh_61" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
+      <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <!-- site for detecting bottle grasping -->
-      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 0.3" />
+      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 1" group="3"/>
     </body>
 
     <!-- Mocap target -->
