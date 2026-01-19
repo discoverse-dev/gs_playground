@@ -194,7 +194,6 @@ class StackColorBlocksCollector:
         # [FIX] Added latched_start_quat and latched_start_yaw here
         self.latched_start_quat = np.zeros((self.B, 4), dtype=np.float32)
         self.latched_start_yaw = np.zeros((self.B,), dtype=np.float32) 
-        print("Robot Start Yaw (deg):", np.degrees(self.latched_start_yaw))
         
         self.latched_top_yaw = np.zeros((self.B,), dtype=np.float32)     # cube top yaw
         self.latched_base_yaw = np.zeros((self.B,), dtype=np.float32)    # cube base yaw
