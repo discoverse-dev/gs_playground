@@ -24,88 +24,88 @@
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
 
     <!-- Task4: Bottle + rack/hook meshes 0-63-->
-    <mesh name="toothbrush_cup_mesh_0" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_000.obj"/>
-    <mesh name="toothbrush_cup_mesh_1" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_001.obj"/>
-    <mesh name="toothbrush_cup_mesh_2" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_002.obj"/>
-    <mesh name="toothbrush_cup_mesh_3" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_003.obj"/>
-    <mesh name="toothbrush_cup_mesh_4" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_004.obj"/>
-    <mesh name="toothbrush_cup_mesh_5" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_005.obj"/>
-    <mesh name="toothbrush_cup_mesh_6" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_006.obj"/>
-    <mesh name="toothbrush_cup_mesh_7" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_007.obj"/>
-    <mesh name="toothbrush_cup_mesh_8" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_008.obj"/>
-    <mesh name="toothbrush_cup_mesh_9" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_009.obj"/>
+    <mesh name="toothbrush_cup_mesh_0" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_000.obj"/>
+    <mesh name="toothbrush_cup_mesh_1" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_001.obj"/>
+    <mesh name="toothbrush_cup_mesh_2" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_002.obj"/>
+    <mesh name="toothbrush_cup_mesh_3" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_003.obj"/>
+    <mesh name="toothbrush_cup_mesh_4" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_004.obj"/>
+    <mesh name="toothbrush_cup_mesh_5" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_005.obj"/>
+    <mesh name="toothbrush_cup_mesh_6" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_006.obj"/>
+    <mesh name="toothbrush_cup_mesh_7" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_007.obj"/>
+    <mesh name="toothbrush_cup_mesh_8" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_008.obj"/>
+    <mesh name="toothbrush_cup_mesh_9" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_009.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_10" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_010.obj"/>
-    <mesh name="toothbrush_cup_mesh_11" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_011.obj"/>
-    <mesh name="toothbrush_cup_mesh_12" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_012.obj"/>
-    <mesh name="toothbrush_cup_mesh_13" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_013.obj"/>
-    <mesh name="toothbrush_cup_mesh_14" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_014.obj"/>
-    <mesh name="toothbrush_cup_mesh_15" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_015.obj"/>
-    <mesh name="toothbrush_cup_mesh_16" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_016.obj"/>
-    <mesh name="toothbrush_cup_mesh_17" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_017.obj"/>
-    <mesh name="toothbrush_cup_mesh_18" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_018.obj"/>
-    <mesh name="toothbrush_cup_mesh_19" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_019.obj"/>
+    <mesh name="toothbrush_cup_mesh_10" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_010.obj"/>
+    <mesh name="toothbrush_cup_mesh_11" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_011.obj"/>
+    <mesh name="toothbrush_cup_mesh_12" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_012.obj"/>
+    <mesh name="toothbrush_cup_mesh_13" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_013.obj"/>
+    <mesh name="toothbrush_cup_mesh_14" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_014.obj"/>
+    <mesh name="toothbrush_cup_mesh_15" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_015.obj"/>
+    <mesh name="toothbrush_cup_mesh_16" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_016.obj"/>
+    <mesh name="toothbrush_cup_mesh_17" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_017.obj"/>
+    <mesh name="toothbrush_cup_mesh_18" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_018.obj"/>
+    <mesh name="toothbrush_cup_mesh_19" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_019.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_20" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_020.obj"/>
-    <mesh name="toothbrush_cup_mesh_21" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_021.obj"/>
-    <mesh name="toothbrush_cup_mesh_22" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_022.obj"/>
-    <mesh name="toothbrush_cup_mesh_23" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_023.obj"/>
-    <mesh name="toothbrush_cup_mesh_24" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_024.obj"/>
-    <mesh name="toothbrush_cup_mesh_25" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_025.obj"/>
-    <mesh name="toothbrush_cup_mesh_26" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_026.obj"/>
-    <mesh name="toothbrush_cup_mesh_27" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_027.obj"/>
-    <mesh name="toothbrush_cup_mesh_28" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_028.obj"/>
-    <mesh name="toothbrush_cup_mesh_29" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_029.obj"/>
+    <mesh name="toothbrush_cup_mesh_20" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_020.obj"/>
+    <mesh name="toothbrush_cup_mesh_21" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_021.obj"/>
+    <mesh name="toothbrush_cup_mesh_22" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_022.obj"/>
+    <mesh name="toothbrush_cup_mesh_23" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_023.obj"/>
+    <mesh name="toothbrush_cup_mesh_24" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_024.obj"/>
+    <mesh name="toothbrush_cup_mesh_25" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_025.obj"/>
+    <mesh name="toothbrush_cup_mesh_26" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_026.obj"/>
+    <mesh name="toothbrush_cup_mesh_27" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_027.obj"/>
+    <mesh name="toothbrush_cup_mesh_28" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_028.obj"/>
+    <mesh name="toothbrush_cup_mesh_29" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_029.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_30" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_030.obj"/>
-    <mesh name="toothbrush_cup_mesh_31" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_031.obj"/>
-    <mesh name="toothbrush_cup_mesh_32" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_032.obj"/>
-    <mesh name="toothbrush_cup_mesh_33" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_033.obj"/>
-    <mesh name="toothbrush_cup_mesh_34" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_034.obj"/>
-    <mesh name="toothbrush_cup_mesh_35" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_035.obj"/>
-    <mesh name="toothbrush_cup_mesh_36" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_036.obj"/>
-    <mesh name="toothbrush_cup_mesh_37" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_037.obj"/>
-    <mesh name="toothbrush_cup_mesh_38" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_038.obj"/>
-    <mesh name="toothbrush_cup_mesh_39" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_039.obj"/>
+    <mesh name="toothbrush_cup_mesh_30" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_030.obj"/>
+    <mesh name="toothbrush_cup_mesh_31" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_031.obj"/>
+    <mesh name="toothbrush_cup_mesh_32" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_032.obj"/>
+    <mesh name="toothbrush_cup_mesh_33" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_033.obj"/>
+    <mesh name="toothbrush_cup_mesh_34" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_034.obj"/>
+    <mesh name="toothbrush_cup_mesh_35" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_035.obj"/>
+    <mesh name="toothbrush_cup_mesh_36" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_036.obj"/>
+    <mesh name="toothbrush_cup_mesh_37" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_037.obj"/>
+    <mesh name="toothbrush_cup_mesh_38" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_038.obj"/>
+    <mesh name="toothbrush_cup_mesh_39" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_039.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_40" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_040.obj"/>
-    <mesh name="toothbrush_cup_mesh_41" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_041.obj"/>
-    <mesh name="toothbrush_cup_mesh_42" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_042.obj"/>
-    <mesh name="toothbrush_cup_mesh_43" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_043.obj"/>
-    <mesh name="toothbrush_cup_mesh_44" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_044.obj"/>
-    <mesh name="toothbrush_cup_mesh_45" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_045.obj"/>
-    <mesh name="toothbrush_cup_mesh_46" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_046.obj"/>
-    <mesh name="toothbrush_cup_mesh_47" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_047.obj"/>
-    <mesh name="toothbrush_cup_mesh_48" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_048.obj"/>
-    <mesh name="toothbrush_cup_mesh_49" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_049.obj"/>
+    <mesh name="toothbrush_cup_mesh_40" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_040.obj"/>
+    <mesh name="toothbrush_cup_mesh_41" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_041.obj"/>
+    <mesh name="toothbrush_cup_mesh_42" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_042.obj"/>
+    <mesh name="toothbrush_cup_mesh_43" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_043.obj"/>
+    <mesh name="toothbrush_cup_mesh_44" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_044.obj"/>
+    <mesh name="toothbrush_cup_mesh_45" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_045.obj"/>
+    <mesh name="toothbrush_cup_mesh_46" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_046.obj"/>
+    <mesh name="toothbrush_cup_mesh_47" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_047.obj"/>
+    <mesh name="toothbrush_cup_mesh_48" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_048.obj"/>
+    <mesh name="toothbrush_cup_mesh_49" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_049.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_50" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_050.obj"/>
-    <mesh name="toothbrush_cup_mesh_51" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_051.obj"/>
-    <mesh name="toothbrush_cup_mesh_52" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_052.obj"/>
-    <mesh name="toothbrush_cup_mesh_53" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_053.obj"/>
-    <mesh name="toothbrush_cup_mesh_54" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_054.obj"/>
-    <mesh name="toothbrush_cup_mesh_55" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_055.obj"/>
-    <mesh name="toothbrush_cup_mesh_56" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_056.obj"/>
-    <mesh name="toothbrush_cup_mesh_57" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_057.obj"/>
-    <mesh name="toothbrush_cup_mesh_58" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_058.obj"/>
-    <mesh name="toothbrush_cup_mesh_59" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_059.obj"/>
+    <mesh name="toothbrush_cup_mesh_50" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_050.obj"/>
+    <mesh name="toothbrush_cup_mesh_51" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_051.obj"/>
+    <mesh name="toothbrush_cup_mesh_52" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_052.obj"/>
+    <mesh name="toothbrush_cup_mesh_53" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_053.obj"/>
+    <mesh name="toothbrush_cup_mesh_54" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_054.obj"/>
+    <mesh name="toothbrush_cup_mesh_55" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_055.obj"/>
+    <mesh name="toothbrush_cup_mesh_56" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_056.obj"/>
+    <mesh name="toothbrush_cup_mesh_57" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_057.obj"/>
+    <mesh name="toothbrush_cup_mesh_58" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_058.obj"/>
+    <mesh name="toothbrush_cup_mesh_59" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_059.obj"/>
 
-    <mesh name="toothbrush_cup_mesh_60" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_060.obj"/>
-    <mesh name="toothbrush_cup_mesh_61" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_061.obj"/>
-    <mesh name="toothbrush_cup_mesh_62" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_062.obj"/>
-    <mesh name="toothbrush_cup_mesh_63" file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/toothbrush_cup/part_063.obj"/>
-
-
+    <mesh name="toothbrush_cup_mesh_60" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_060.obj"/>
+    <mesh name="toothbrush_cup_mesh_61" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_061.obj"/>
+    <mesh name="toothbrush_cup_mesh_62" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_062.obj"/>
+    <mesh name="toothbrush_cup_mesh_63" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_063.obj"/>
 
 
-    <mesh name="rack_mesh_0"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_000.obj"/>
-    <mesh name="rack_mesh_1"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_001.obj"/>
-    <mesh name="rack_mesh_2"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_002.obj"/>
-    <mesh name="rack_mesh_3"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_003.obj"/>
-    <mesh name="rack_mesh_4"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_004.obj"/>
-    <mesh name="rack_mesh_5"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_005.obj"/>
-    <mesh name="rack_mesh_6"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_006.obj"/>
-    <mesh name="rack_mesh_7"       file="../../../../../tasks/table30/04_hang_toothbrush_cup/meshes/rack/part_007.obj"/>
+
+
+    <mesh name="rack_mesh_0"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_000.obj"/>
+    <mesh name="rack_mesh_1"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_001.obj"/>
+    <mesh name="rack_mesh_2"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_002.obj"/>
+    <mesh name="rack_mesh_3"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_003.obj"/>
+    <mesh name="rack_mesh_4"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_004.obj"/>
+    <mesh name="rack_mesh_5"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_005.obj"/>
+    <mesh name="rack_mesh_6"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_006.obj"/>
+    <mesh name="rack_mesh_7"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_007.obj"/>
 
     <material name="toothbrush_cup_mat" rgba="0.85 0.10 0.10 1" reflectance="0.2"/>
     <material name="rack_mat"       rgba="0.20 0.20 0.20 1" reflectance="0.1"/>
@@ -122,7 +122,7 @@
 
     <!-- Rack/Hooks: static body -->
     <body name="rack" pos="0.539524 0.323790 0.174200" quat="0.721105 0 0 -0.692826">
-      <joint type="free" frictionloss="0.0001"/>
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
 
       <!-- collision + visual. If your rack mesh is non-convex, prefer primitive colliders in code. -->
       <geom name="rack_geom_0" type="mesh" mesh="rack_mesh_0" material="rack_mat" contype="1" conaffinity="1"/>
@@ -139,9 +139,8 @@
     </body>
 
     <!-- Red bottle: dynamic free body -->
-    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="-0.849358 0.215527 0.422472 -0.231636">    
+    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="1 0 0 0">    
       <joint type="free" frictionloss="0.0001"/>
-      <!-- approximate bottle collision (tune to match mesh) -->
       <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" />
       <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <geom name="toothbrush_cup_geom_2" type="mesh" mesh="toothbrush_cup_mesh_2" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
@@ -213,17 +212,17 @@
       <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <!-- site for detecting bottle grasping -->
-      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.04 0.02" quat="-0.849358 -0.215527 -0.422472 0.231636" rgba="0.1 0.1 0.8 0.3" />
+      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 0.3" />
     </body>
 
     <!-- Mocap target -->
-    <body mocap="true" name="mocap_target">
+    <!-- <body mocap="true" name="mocap_target">
       <site name="mocap_target_site" size="0.001" type="sphere"/>
       <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
       <geom type="cylinder" pos="0.02 0 0" euler="0 1.5708 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="1 0 0 .2"/>
       <geom type="cylinder" pos="0 0.02 0" euler="1.5708 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 1 0 .2"/>
       <geom type="cylinder" pos="0 0 0.02" euler="0 0 0" size=".003 0.02" density="0" contype="0" conaffinity="0" rgba="0 0 1 .2"/>
-    </body>
+    </body> -->
   </worldbody>
 
   <sensor>
@@ -235,21 +234,18 @@
   <keyframe>
     <key name="home"
       qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
-      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
-        0.515367 0.056162 0.105959 -0.881827 0.304215 0.359299 -0.0271738"
+        0.515367 0.056162 0.105959 -0.725325 -0.00304526 0.00311753 0.688392"
       ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
     />
-    <key name ="pick"
+    <!-- <key name ="pick"
       qpos="0.144298 -0.0181929 -0.0260173 -2.69614 -0.00500998 2.73329 -0.0455701 
       0.753394 0.752039 0.757078 0.75296 0.75216 0.753854 
-      0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
-      0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
+\      0.515367 0.056162 0.105959 -0.849358 0.215527 0.422472 -0.231636"
       ctrl="0.14485 -0.01763 -0.0252932 -2.69673 -0.00471172 2.7329 -0.0455642 0.82"
     />
     <key name ="hang"
         qpos="-0.0445106 -0.36456 -0.169781 -2.28542 -0.0480373 1.9759 -0.355341
          0.756043 0.755244 0.75823 0.755676 0.754789 0.758494
-        0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
         0.496940 0.203481 0.383664 -0.884311 0.334280 0.325413 -0.018881"
 
         ctrl="-0.0445136 -0.364917 -0.169742 -2.28489 -0.0481067 1.97619 -0.355346 0.8"
@@ -260,6 +256,6 @@
       0.539524 0.323790 0.174200 0.721105 0 0 -0.692826
       0.544401 0.274831 0.334977 -0.405661 0.141917 0.902931 -0.003535"
       ctrl="-0.0289854 -0.407101 -0.157445 -2.32209 -0.0516258 1.97132 -0.324822 0"
-    />
+    /> -->
   </keyframe>
 </mujoco>

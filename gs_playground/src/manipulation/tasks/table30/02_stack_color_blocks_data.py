@@ -59,38 +59,42 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1000
-    num_envs: int = 50
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 42
-    save_dir: str = "./data/table30_stack_color_blocks_collect"
+    save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan" # [Modified Name]
 
     # env control
-    # [修改] 增加步数上限，给复位动作留出时间
-    max_ctrl_steps: int = 500
+    max_ctrl_steps: int = 500 # 再次增加步数，因为抓取和堆叠都变慢了
 
     # motion params
-    max_dp: float = 0.01 
+    max_dp: float = 0.005 # 慢速移动，保证稳定
     pos_tol: float = 0.005
     
-    # task specific offsets (Task Logic Params)
+    # task specific offsets
     above_z: float = 0.00
     grasp_down_z: float = 0.00
-    lift_dz: float = 0.05
+    
+    # 提升高度：作为所有水平移动的安全平面的相对高度
+    lift_dz: float = 0.10 
     cube_half: float = 0.025
     
     # gripper
     gripper_open: float = 0.0
     gripper_close: float = 0.82
+    
+    # timing / dwell
     close_hold_steps: int = 15
     stack_hold_steps: int = 10 
+    waypoint_dwell_steps: int = 20 # 关键：每个拐点停顿
 
     # sampling / render
     sample_every_steps: int = 1
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 320
-    video_h: int = 240
+    video_w: int = 1280
+    video_h: int = 720
     cam_view_key: Optional[str] = "pixels/view_0"
 
     # text fields
@@ -100,18 +104,28 @@ class CollectorCfg:
 # Collector
 # -----------------------------------------------------------------------------
 class StackColorBlocksCollector:
-    # FSM States
-    ST_TO_ABOVE_TOP = 0
-    ST_TO_GRASP = 1
-    ST_CLOSE = 2
-    ST_LIFT = 3
-    ST_TO_ABOVE_BASE = 4
-    ST_TO_STACK = 5
-    ST_OPEN_HOLD = 6
-    ST_RETREAT = 7
-    # [新增] 回家状态
-    ST_TO_HOME = 8 
-    ST_DONE = 9
+    # --- FSM States (Full Manhattan Path) ---
+    
+    # Phase 1: Approach (Grasp) - Manhattan
+    ST_APP_LIFT_Z = 0   # 初始提升到安全高度
+    ST_APP_ALIGN_X = 1  # 移动 X 对齐目标方块
+    ST_APP_ALIGN_Y = 2  # 移动 Y 对齐目标方块
+    ST_APP_DESCEND = 3  # 下降到抓取点
+    
+    # Phase 2: Grasping
+    ST_CLOSE = 4
+    
+    # Phase 3: Transport (Stack) - Manhattan
+    ST_TRP_LIFT_Z = 5   # 垂直提起
+    ST_TRP_ALIGN_X = 6  # 移动 X 对齐底座
+    ST_TRP_ALIGN_Y = 7  # 移动 Y 对齐底座
+    ST_TO_STACK = 8     # 下降堆叠
+    
+    # Phase 4: Release & Retreat
+    ST_OPEN_HOLD = 9
+    ST_RETREAT = 10
+    ST_TO_HOME = 11
+    ST_DONE = 12
 
     def __init__(self, cfg: CollectorCfg, env_cfg: Optional[StackColorBlocksEnvCfg] = None):
         self.cfg = cfg
@@ -131,10 +145,7 @@ class StackColorBlocksCollector:
         self.cube_names = self.env_cfg.cube_names 
         self.cube_bodies = self.env.cube_bodies
 
-        # Cam view key
         self.cam_view_key = cfg.cam_view_key or "pixels/view_0"
-
-        # Metadata
         self.ep_subtask = np.array([cfg.subtask] * self.B, dtype=object)
 
         # --- Lifecycle ---
@@ -142,12 +153,16 @@ class StackColorBlocksCollector:
         self.done = np.zeros(self.B, dtype=bool)
         self.success = np.zeros(self.B, dtype=bool)
         self.ctrl_step = np.zeros(self.B, dtype=np.int32)
-        self._attempt_id = np.zeros(self.B, dtype=np.int64)
-
+        
         # --- FSM State ---
         self.states = np.zeros(self.B, dtype=np.int32)
         self.state_enter_step = np.zeros(self.B, dtype=np.int32)
         
+        # [Dwell Timer]
+        self.state_reach_step = np.full(self.B, -1, dtype=np.int32)
+        
+        self._attempt_id = np.zeros(self.B, dtype=np.int64)
+
         # Logic specific vars
         self.top_idx = np.zeros(self.B, dtype=np.int32)
         self.base_idx = np.zeros(self.B, dtype=np.int32)
@@ -155,9 +170,10 @@ class StackColorBlocksCollector:
 
         # Control Targets
         self.exec_pos = np.zeros((self.B, 3), dtype=np.float32)
-        self.exec_quat = np.zeros((self.B, 4), dtype=np.float32) # xyzw
+        self.exec_quat = np.zeros((self.B, 4), dtype=np.float32) 
         
         # Latch positions
+        self.latched_start_pos = np.zeros((self.B, 3), dtype=np.float32) # [New] 记录每集初始位置
         self.latched_top_pos = np.zeros((self.B, 3), dtype=np.float32)
         self.latched_base_pos = np.zeros((self.B, 3), dtype=np.float32)
 
@@ -166,12 +182,9 @@ class StackColorBlocksCollector:
         self.video_writers: List[Optional[EpisodeVideoWriter]] = [None] * self.B
         self._tmp_video_paths: List[str] = [os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(self.B)]
 
-        # Stats
         self.saved_count = 0
         self.attempted = 0
         self._last_log_t = time.perf_counter()
-
-        # Cache last action for log
         self._last_action = np.zeros((self.B, 7), dtype=np.float32)
 
     @staticmethod
@@ -195,7 +208,6 @@ class StackColorBlocksCollector:
         if env_ids.size == 0:
             return
 
-        # 1. Reset Env
         try:
             self.env._rng = np.random.default_rng(int(seed))
         except Exception:
@@ -205,15 +217,16 @@ class StackColorBlocksCollector:
         done_mask[env_ids] = True
         self.env.reset(done=done_mask)
 
-        # 2. Lifecycle
         self.active[env_ids] = True
         self.done[env_ids] = False
         self.success[env_ids] = False
         self.ctrl_step[env_ids] = 0
         self.state_enter_step[env_ids] = 0
         self.stack_hold_counter[env_ids] = 0
+        
+        # [Reset Dwell Timer]
+        self.state_reach_step[env_ids] = -1
 
-        # 3. Init Control Refs from Observation
         data = self.env._state.data
         self.env.robot.reset_envs(data, done_mask)
         self.env.robot.update_reference(data) 
@@ -223,14 +236,15 @@ class StackColorBlocksCollector:
         for idx in env_ids:
             pose = all_poses[idx]
             self.exec_pos[idx] = pose[:3]
-
+            # [New] 记录初始位置，用于规划 Approach 路径
+            self.latched_start_pos[idx] = pose[:3]
+            
             if len(pose) == 7:
                 self.exec_quat[idx] = pose[3:]
             elif len(pose) == 6:
                 euler = pose[3:]
                 self.exec_quat[idx] = Rotation.from_euler('xyz', euler).as_quat()
 
-        # 4. Logic: Sync with Env's hardcoded indices
         self.top_idx[env_ids] = self.env.top_idx[env_ids]
         self.base_idx[env_ids] = self.env.base_idx[env_ids]
         
@@ -242,18 +256,16 @@ class StackColorBlocksCollector:
         self.latched_top_pos[env_ids] = cube_pose[env_ids, self.top_idx[env_ids], :3]
         self.latched_base_pos[env_ids] = cube_pose[env_ids, self.base_idx[env_ids], :3]
         
-        self.states[env_ids] = self.ST_TO_ABOVE_TOP
+        # Start state
+        self.states[env_ids] = self.ST_APP_LIFT_Z
 
-        # 5. Reset IO
         for env_id in env_ids.tolist():
             self.buffers[env_id] = self._new_buffer()
             if self.video_writers[env_id] is not None:
                 self.video_writers[env_id].close()
                 self.video_writers[env_id] = None
-            
             if self.cfg.save_video:
                 self._reset_video_writer(env_id)
-
             self._attempt_id[env_id] += 1
             self.attempted += 1
 
@@ -266,9 +278,6 @@ class StackColorBlocksCollector:
             tmp_path, int(self.cfg.video_fps), (int(self.cfg.video_w), int(self.cfg.video_h))
         )
 
-    # ----------------------------
-    # Capture / Write
-    # ----------------------------
     def _capture_step(self, env_id: int) -> None:
         obs = self.env._state.obs
         buf = self.buffers[env_id]
@@ -280,7 +289,6 @@ class StackColorBlocksCollector:
         buf["gripper"].append(obs["gripper"][env_id].tolist())
         buf["ctrl"].append(self._last_action[env_id].tolist())
         
-        info = self.env._state.info
         is_success = bool(self.success[env_id])
         buf["is_success"].append(is_success)
         buf["reward"].append(float(1.0 if is_success else 0.0))
@@ -302,9 +310,8 @@ class StackColorBlocksCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
-        # [修改] 只有成功的 episode 才保存
-        # 失败的 episode 会在 collect 循环中被丢弃并重置
         if self.success[env_id]:
+        # if True :
             if self.saved_count < self.cfg.data_size:
                 ep_idx = int(self.saved_count)
                 final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -316,14 +323,10 @@ class StackColorBlocksCollector:
                 self._flush_jsonl(env_id, ep_idx, final_video_path)
                 self.saved_count += 1
                 print(f"[Success] Saved episode {ep_idx}. Total saved: {self.saved_count}")
-        else:
-            # 调试信息：失败则跳过
-            pass
         
         if os.path.exists(self._tmp_video_paths[env_id]):
             try: os.remove(self._tmp_video_paths[env_id])
             except: pass
-            
         self.buffers[env_id] = self._new_buffer()
 
     def _flush_jsonl(self, env_id: int, ep_idx: int, vid_path: str):
@@ -333,7 +336,6 @@ class StackColorBlocksCollector:
         
         t_raw = self.cube_names[self.top_idx[env_id]]
         b_raw = self.cube_names[self.base_idx[env_id]]
-        
         t_name = t_raw.replace("cube_", "").lower()
         b_name = b_raw.replace("cube_", "").lower()
         prompt = f"Stack the {t_name} block on top of the {b_name} block."
@@ -342,19 +344,12 @@ class StackColorBlocksCollector:
             for i in range(n):
                 rec = {
                     "images_1": {"url": vid_path, "type": "video", "frame_idx": i},
-                    # "subtask": str(self.ep_subtask[env_id]),
                     "prompt": prompt,
                     "qpos": buf["qpos"][i],
                     "ee_pose": buf["ee_pose"][i],
                     "gripper": buf["gripper"][i],
                     "ctrl": buf["ctrl"][i],
-                    # "reward": buf["reward"][i],
-                    # "logic_state": buf["logic_states"][i],
-                    # "time": buf["times"][i],
                     "is_robot": True,
-                    # "success": bool(self.success[env_id]),
-                    # "latched_top_pos": self.latched_top_pos[env_id].tolist() if i == 0 else [],
-                    # "latched_base_pos": self.latched_base_pos[env_id].tolist() if i == 0 else [],
                 }
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
@@ -365,6 +360,8 @@ class StackColorBlocksCollector:
         if not np.any(mask): return
         self.states[mask] = new_state
         self.state_enter_step[mask] = self.ctrl_step[mask].copy()
+        # [Reset reach timer]
+        self.state_reach_step[mask] = -1
 
     def _step_logic(self) -> None:
         cfg = self.cfg
@@ -373,123 +370,171 @@ class StackColorBlocksCollector:
         running = self.active & (~self.done)
         if not np.any(running): return
 
+        start_p = self.latched_start_pos
         top_p = self.latched_top_pos
         base_p = self.latched_base_pos
         
-        # 1. 定义所有关键点
-        p_above_top = top_p + np.array([0, 0, cfg.above_z])
-        p_grasp     = top_p + np.array([0, 0, cfg.grasp_down_z])
-        p_lift      = top_p + np.array([0, 0, cfg.lift_dz])
-        p_above_base= base_p + np.array([0, 0, cfg.above_z + 0.05])
-        p_stack     = base_p + np.array([0, 0, 2.0 * cfg.cube_half + 0.005])
-        p_retreat   = base_p + np.array([0, 0, cfg.lift_dz])
+        # --- 1. 定义关键点 (Full Manhattan Path) ---
         
-        # [新增] Home Position: 桌面中央偏上 (0.4, 0.0, 0.5)
-        p_home      = np.tile(np.array([0.4, 0.0, 0.5], dtype=np.float32), (B, 1))
+        # 安全高度 (Z plane)
+        # 统一使用 top block 上方一定距离作为安全平面
+        safe_z = top_p[:, 2] + cfg.lift_dz
+        
+        # A. 抓取阶段 (Approach Phase)
+        # 1. Lift Z: 在当前(Start)位置垂直升到 safe_z
+        p_app_lift_z = start_p.copy()
+        p_app_lift_z[:, 2] = safe_z
+        
+        # 2. Align X: 移动 X 到目标 (top_p.x)，Y 保持 Start 的，Z 保持 safe_z
+        p_app_align_x = p_app_lift_z.copy()
+        p_app_align_x[:, 0] = top_p[:, 0]
+        
+        # 3. Align Y: 移动 Y 到目标 (top_p.y)，X 已对齐，Z 保持 safe_z
+        # 此时应该位于 top block 正上方
+        p_app_align_y = top_p.copy()
+        p_app_align_y[:, 2] = safe_z 
+        
+        # 4. Descend: 垂直下降到抓取点
+        p_grasp = top_p + np.array([0, 0, cfg.grasp_down_z])
+        
+        # B. 搬运阶段 (Transport Phase)
+        # 5. Lift Z (Transport): 垂直提起
+        p_trp_lift_z = top_p.copy()
+        p_trp_lift_z[:, 2] = safe_z
+        
+        # 6. Align X (Transport): X 对齐 Base，Y 保持 Top 的，Z 保持 safe_z
+        p_trp_align_x = p_trp_lift_z.copy()
+        p_trp_align_x[:, 0] = base_p[:, 0]-0.015
+        
+        # 7. Align Y (Transport): Y 对齐 Base，X 已对齐，Z 保持 safe_z
+        # 此时位于 Base 正上方
+        p_trp_align_y = base_p.copy()
+        p_trp_align_y[:, 2] = safe_z
+        p_trp_align_y[:, 0] = base_p[:, 0]-0.015
 
-        # 2. 根据当前状态确定 目标位置(tgt_pos_curr) 和 夹爪命令(grip_cmd)
-        tgt_pos_curr = self.exec_pos.copy() # 默认不动
+        # 8. Stack: 下降堆叠
+        p_stack = base_p + np.array([0, 0, 2.0 * cfg.cube_half + 0.005])
+        p_stack[:, 0] = base_p[:, 0]-0.015
+ 
+        
+        # C. 结束阶段
+        # 9. Retreat: 垂直抬起一点
+        p_retreat = base_p + np.array([0, 0, cfg.lift_dz + 0.05])
+        
+        # 10. Home
+        p_home = np.tile(np.array([0.4, 0.0, 0.5], dtype=np.float32), (B, 1))
+
+        # --- 2. 目标分配 ---
+        tgt_pos_curr = self.exec_pos.copy()
         grip_cmd = np.full((B,), cfg.gripper_open, dtype=np.float32)
         s = self.states
 
-        # 使用掩码批量赋值
-        mask_above = running & (s == self.ST_TO_ABOVE_TOP)
-        if np.any(mask_above): tgt_pos_curr[mask_above] = p_above_top[mask_above]
-            
-        mask_grasp = running & (s == self.ST_TO_GRASP)
-        if np.any(mask_grasp): tgt_pos_curr[mask_grasp] = p_grasp[mask_grasp]
+        # Helper to set target
+        def set_target(state_id, pos, grip):
+            mask = running & (s == state_id)
+            if np.any(mask):
+                tgt_pos_curr[mask] = pos[mask]
+                grip_cmd[mask] = grip
 
-        mask_close = running & (s == self.ST_CLOSE)
-        if np.any(mask_close): 
-            tgt_pos_curr[mask_close] = p_grasp[mask_close] # 闭合时维持在抓取点
-            grip_cmd[mask_close] = cfg.gripper_close
+        # Phase 1: Approach
+        set_target(self.ST_APP_LIFT_Z,  p_app_lift_z,  cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_X, p_app_align_x, cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_Y, p_app_align_y, cfg.gripper_open)
+        set_target(self.ST_APP_DESCEND, p_grasp,       cfg.gripper_open)
+        
+        # Phase 2: Close
+        set_target(self.ST_CLOSE,       p_grasp,       cfg.gripper_close)
+        
+        # Phase 3: Transport
+        set_target(self.ST_TRP_LIFT_Z,  p_trp_lift_z,  cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_X, p_trp_align_x, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_Y, p_trp_align_y, cfg.gripper_close)
+        set_target(self.ST_TO_STACK,    p_stack,       cfg.gripper_close)
+        
+        # Phase 4: Release & Home
+        set_target(self.ST_OPEN_HOLD,   p_stack,       cfg.gripper_open)
+        set_target(self.ST_RETREAT,     p_retreat,     cfg.gripper_open)
+        set_target(self.ST_TO_HOME,     p_home,        cfg.gripper_open)
 
-        mask_lift = running & (s == self.ST_LIFT)
-        if np.any(mask_lift):
-            tgt_pos_curr[mask_lift] = p_lift[mask_lift]
-            grip_cmd[mask_lift] = cfg.gripper_close
-
-        mask_base = running & (s == self.ST_TO_ABOVE_BASE)
-        if np.any(mask_base):
-            tgt_pos_curr[mask_base] = p_above_base[mask_base]
-            grip_cmd[mask_base] = cfg.gripper_close
-            
-        mask_stack = running & (s == self.ST_TO_STACK)
-        if np.any(mask_stack):
-            tgt_pos_curr[mask_stack] = p_stack[mask_stack]
-            grip_cmd[mask_stack] = cfg.gripper_close
-            
-        mask_open = running & (s == self.ST_OPEN_HOLD)
-        if np.any(mask_open):
-            tgt_pos_curr[mask_open] = p_stack[mask_open] # 保持在堆叠点张开
-            grip_cmd[mask_open] = cfg.gripper_open
-            
-        mask_retreat = running & (s == self.ST_RETREAT)
-        if np.any(mask_retreat):
-            tgt_pos_curr[mask_retreat] = p_retreat[mask_retreat]
-            grip_cmd[mask_retreat] = cfg.gripper_open
-
-        # [新增] Home 状态的目标设定
-        mask_home = running & (s == self.ST_TO_HOME)
-        if np.any(mask_home):
-            tgt_pos_curr[mask_home] = p_home[mask_home]
-            grip_cmd[mask_home] = cfg.gripper_open
-
-        # 3. 更新虚拟轨迹 (exec_pos)
+        # --- 3. 执行控制 ---
         self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos_curr, cfg.max_dp)
         
-        # 4. 下发控制 (Action)
         ref_pose_6d = self.env.robot.ref_ee_pose 
-        ref_pos = ref_pose_6d[:, :3] # 真实位置
-
-
-        # 映射状态 -> 目标
+        ref_pos = ref_pose_6d[:, :3]
 
         action = np.zeros((B, 7), dtype=np.float32)
-        action[:, :3] = (self.exec_pos - ref_pos) * 1.0 # P-Control
-        action[:, 3:6] = 0 # 保持姿态
+        action[:, :3] = (self.exec_pos - ref_pos) * 0.5 # P gain
+        action[:, 3:6] = 0 
         action[:, 6] = grip_cmd
         
         self._last_action[:] = action
         self.env.step(action)
 
-        # 5. 状态跳转逻辑
+        # --- 4. 状态跳转 (with Dwell) ---
         def is_reached(target_p):
             return np.linalg.norm(self.exec_pos - target_p, axis=1) < cfg.pos_tol
 
-        # ST_TO_ABOVE_TOP -> ST_TO_GRASP
-        mask = running & (s == self.ST_TO_ABOVE_TOP)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_above_top), self.ST_TO_GRASP)
+        # Dwell Check Helper
+        def _check_reach_and_dwell(state_idx: int, target_p: np.ndarray) -> np.ndarray:
+            in_state = running & (self.states == state_idx)
+            reached = is_reached(target_p)
+            
+            # Record first reach time
+            just_reached = in_state & reached & (self.state_reach_step == -1)
+            if np.any(just_reached):
+                self.state_reach_step[just_reached] = self.ctrl_step[just_reached]
+            
+            has_reached_before = (self.state_reach_step != -1)
+            dwell_pass = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
+            
+            return in_state & has_reached_before & dwell_pass & reached
 
-        # ST_TO_GRASP -> ST_CLOSE
-        mask = running & (s == self.ST_TO_GRASP)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_grasp), self.ST_CLOSE)
+        # --- Phase 1: Approach Sequence ---
         
-        # ST_CLOSE -> ST_LIFT (时间判定)
+        # 1. Start -> Lift Z
+        done_app_lift = _check_reach_and_dwell(self.ST_APP_LIFT_Z, p_app_lift_z)
+        self._enter_state(done_app_lift, self.ST_APP_ALIGN_X)
+        
+        # 2. Lift Z -> Align X
+        done_app_x = _check_reach_and_dwell(self.ST_APP_ALIGN_X, p_app_align_x)
+        self._enter_state(done_app_x, self.ST_APP_ALIGN_Y)
+        
+        # 3. Align X -> Align Y
+        done_app_y = _check_reach_and_dwell(self.ST_APP_ALIGN_Y, p_app_align_y)
+        self._enter_state(done_app_y, self.ST_APP_DESCEND)
+        
+        # 4. Align Y -> Descend (Grasp)
+        done_app_down = _check_reach_and_dwell(self.ST_APP_DESCEND, p_grasp)
+        self._enter_state(done_app_down, self.ST_CLOSE)
+        
+        # --- Phase 2: Close ---
         mask = running & (s == self.ST_CLOSE)
         if np.any(mask):
             time_in_state = self.ctrl_step - self.state_enter_step
             closed_done = time_in_state >= cfg.close_hold_steps
-            self._enter_state(mask & closed_done, self.ST_LIFT)
+            self._enter_state(mask & closed_done, self.ST_TRP_LIFT_Z)
         
-        # ST_LIFT -> ST_TO_ABOVE_BASE
-        mask = running & (s == self.ST_LIFT)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_lift), self.ST_TO_ABOVE_BASE)
+        # --- Phase 3: Transport Sequence ---
         
-        # ST_TO_ABOVE_BASE -> ST_TO_STACK
-        mask = running & (s == self.ST_TO_ABOVE_BASE)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_above_base), self.ST_TO_STACK)
+        # 5. Close -> Lift Z
+        done_trp_lift = _check_reach_and_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z)
+        self._enter_state(done_trp_lift, self.ST_TRP_ALIGN_X)
+        
+        # 6. Lift Z -> Align X
+        done_trp_x = _check_reach_and_dwell(self.ST_TRP_ALIGN_X, p_trp_align_x)
+        self._enter_state(done_trp_x, self.ST_TRP_ALIGN_Y)
+        
+        # 7. Align X -> Align Y
+        done_trp_y = _check_reach_and_dwell(self.ST_TRP_ALIGN_Y, p_trp_align_y)
+        self._enter_state(done_trp_y, self.ST_TO_STACK)
 
-        # ST_TO_STACK -> ST_OPEN_HOLD
-        mask = running & (s == self.ST_TO_STACK)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_stack), self.ST_OPEN_HOLD)
+        # --- Phase 4: Stack & End ---
+
+        # 8. Align Y -> Stack Down
+        done_stack = _check_reach_and_dwell(self.ST_TO_STACK, p_stack)
+        self._enter_state(done_stack, self.ST_OPEN_HOLD)
         
-        # ST_OPEN_HOLD -> ST_RETREAT
+        # 9. Open (Wait) -> Retreat
         mask = running & (s == self.ST_OPEN_HOLD)
         if np.any(mask):
             m_open = mask
@@ -500,12 +545,12 @@ class StackColorBlocksCollector:
             ready_retreat = (self.stack_hold_counter >= cfg.stack_hold_steps)
             self._enter_state(m_open & ready_retreat, self.ST_RETREAT)
             
-        # [修改] ST_RETREAT -> ST_TO_HOME (不是直接DONE)
+        # 10. Retreat -> Home
         mask = running & (s == self.ST_RETREAT)
         if np.any(mask):
             self._enter_state(mask & is_reached(p_retreat), self.ST_TO_HOME)
 
-        # [新增] ST_TO_HOME -> ST_DONE
+        # 11. Home -> Done
         mask = running & (s == self.ST_TO_HOME)
         if np.any(mask):
             self._enter_state(mask & is_reached(p_home), self.ST_DONE)
@@ -540,7 +585,7 @@ class StackColorBlocksCollector:
         all_ids = np.arange(self.B, dtype=np.int64)
         self.start_episodes(all_ids, seed=cfg.seed)
         
-        print(f"Starting Collection. Target (Total): {target_n}")
+        print(f"Starting Collection (Full Manhattan). Target: {target_n}")
         
         while self.saved_count < target_n:
             self._step_logic()
@@ -563,12 +608,10 @@ class StackColorBlocksCollector:
                 
                 fsm_done = (self.states[i] == self.ST_DONE)
                 timeout = (self.ctrl_step[i] >= cfg.max_ctrl_steps)
-                
                 is_stacked = self._check_stack_success(np.eye(self.B, dtype=bool)[i])[i]
                 
                 if fsm_done or timeout:
                     self.done[i] = True
-                    # [关键] 流程走完 + 堆叠成功 才算最终成功
                     self.success[i] = bool(fsm_done and is_stacked)
             
             for i in range(self.B):

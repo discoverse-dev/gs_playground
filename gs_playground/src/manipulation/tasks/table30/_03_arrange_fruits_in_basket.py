@@ -60,9 +60,9 @@ class ArrangeFruitsEnvCfg(TaskEnvCfg):
     grasp_dist_thresh: float = 0.10
     gripper_close_thresh: float = 0.2
 
-    basket_xy_thresh: float = 0.15
-    basket_z_thresh: float = 0.10
-    place_dist_thresh: float = 0.10
+    basket_xy_thresh: float = 0.25
+    basket_z_thresh: float = 0.05
+    place_dist_thresh: float = 0.2
 
     # stage reward: 4 fruits * 2.5 = 10
     stage_reward: float = 2.5
@@ -96,6 +96,7 @@ class ArrangeFruitsEnv(TaskEnv):
         self.fruit_placed_mask = np.zeros((self.num_envs, N), dtype=bool)   # per-fruit placed
         self.is_grasped = np.zeros((self.num_envs,), dtype=bool)            # current fruit grasp latch
         self.success_latched = np.zeros((self.num_envs,), dtype=bool)       # terminal latch
+        self._dbg_print_ctr = 0
 
     # ---- Task hooks ----
     def task_gaussians(self) -> Dict[str, str]:
@@ -110,8 +111,8 @@ class ArrangeFruitsEnv(TaskEnv):
             return
 
         num_fruits = len(self.fruit_bodies)
-        min_xy_dist = 0.05
-        jitter_scale = 0.03
+        min_xy_dist = 0.01
+        jitter_scale = 0.02
         # Current poses (Bsub, N, 7)
         fruit_pose = np.stack(
             [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.fruit_bodies],
@@ -216,17 +217,32 @@ class ArrangeFruitsEnv(TaskEnv):
         already_placed = self.fruit_placed_mask[np.arange(self.num_envs), cur_idx]
         place_now = (
             self.is_grasped
-            & in_basket
-            & (dist_fruit_basket < float(cfg.place_dist_thresh))
+            &  (dist_fruit_basket < float(cfg.place_dist_thresh))
+             
             & grip_open
             & (~already_placed)
         )
+        self._dbg_print_ctr += 1
 
         if np.any(place_now):
             envs = np.where(place_now)[0]
             self.fruit_placed_mask[envs, cur_idx[envs]] = True
             self.current_obj_idx[envs] += 1
             self.is_grasped[envs] = False
+
+        # if (self._dbg_print_ctr % 10) == 0:
+        #     print("    is_grasped      :", self.is_grasped.astype(int))
+        #     print("    in_basket       :", in_basket.astype(int))
+        #     print("    in_basket_xy    :", in_basket_xy.astype(int))
+        #     print("    in_basket_z     :", in_basket_z.astype(int))
+        #     print("    dist_ok         :", (dist_fruit_basket < float(cfg.place_dist_thresh)).astype(int))
+        #     print("    grip_open       :", grip_open.astype(int))
+        #     print("    not_placed      :", (~already_placed).astype(int))
+        #     print("    place_now       :", place_now.astype(int))
+        #     print("    dist_fruit_bask :", np.round(dist_fruit_basket, 4))
+        #     print("    touch_val       :", np.round(touch_val, 4))
+        #     print("    grip_cmd        :", np.round(grip_cmd, 4))
+        #     print("fruit_placed_mask",self.fruit_placed_mask)
 
         completed = np.sum(self.fruit_placed_mask, axis=1).astype(np.int32)
         all_done = completed >= N
