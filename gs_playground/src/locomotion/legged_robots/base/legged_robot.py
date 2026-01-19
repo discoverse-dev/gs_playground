@@ -182,7 +182,6 @@ class Legged_Robot_Torch:
             if i == None:
                 break
             for j in self.config.asset.terminate_after_contacts_on:
-
                 if j in i:
                     self.termination_contact_name.append(i)
                     break

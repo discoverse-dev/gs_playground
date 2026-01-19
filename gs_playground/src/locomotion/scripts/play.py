@@ -1,6 +1,6 @@
-from gs_playground.src.locomotion.legged_robots.go1.go1_config import Go1TrainCfg, Go1TrainCfgPPO
-from gs_playground.src.locomotion.legged_robots.go1.go1 import Go1_train_env
 from rsl_rl.runners import OnPolicyRunner
+from gs_playground.src.locomotion.task_registry import task_registry
+import gs_playground.src.locomotion.legged_robots.registered_tasks
 
 import torch
 import argparse
@@ -41,8 +41,10 @@ def play(env, cfg, train_cfg, resume_path, num_envs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=str, default='go1', help='Task name')
     parser.add_argument('--resume_path', type=str, required=True, help='Path to the model to resume from')
     parser.add_argument('--num_envs', type=int, default=10, help='Number of environments')
     args = parser.parse_args()
 
-    play(Go1_train_env, Go1TrainCfg, Go1TrainCfgPPO, args.resume_path, args.num_envs)
+    env_cls, env_cfg, train_cfg = task_registry.get_task(args.task)
+    play(env_cls, env_cfg, train_cfg, args.resume_path, args.num_envs)

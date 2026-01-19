@@ -23,7 +23,14 @@
       <geom name="floor" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="0" priority="1"
         friction="0.6" condim="3"/>
   </worldbody>
-  
+
+  <sensor>
+    <contact name="FL_foot_contact" geom1="FL_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
+    <contact name="FR_foot_contact" geom1="FR_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
+    <contact name="RL_foot_contact" geom1="RL_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
+    <contact name="RR_foot_contact" geom1="RR_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
+  </sensor>
+
   <keyframe>
     <key name="home"
       qpos="

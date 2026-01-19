@@ -1,10 +1,11 @@
 from gs_playground import ROOT_PATH
-from gs_playground.src.locomotion.legged_robots.go1.go1_config import Go1TrainCfg, Go1TrainCfgPPO
-from gs_playground.src.locomotion.legged_robots.go1.go1 import Go1_train_env
 from datetime import datetime
 from rsl_rl.runners import OnPolicyRunner
+from gs_playground.src.locomotion.task_registry import task_registry
+import gs_playground.src.locomotion.legged_robots.registered_tasks
 
 import os
+import argparse
 def class_to_dict(obj) -> dict:
     if not hasattr(obj, "__dict__"):
         return obj
@@ -36,4 +37,13 @@ def train(env, cfg, train_cfg, headless):
     ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations)
 
 if __name__ == "__main__":
-    train(Go1_train_env, Go1TrainCfg, Go1TrainCfgPPO, True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=str, default='go1', help='Task name')
+    parser.add_argument('--run_name', type=str, default='', help='Run name')
+    args = parser.parse_args()
+
+    env_cls, env_cfg, train_cfg = task_registry.get_task(args.task)
+    if args.run_name:
+        train_cfg.runner.run_name = args.run_name
+        
+    train(env_cls, env_cfg, train_cfg, True)
