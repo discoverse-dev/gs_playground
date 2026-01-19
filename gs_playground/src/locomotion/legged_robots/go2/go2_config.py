@@ -85,6 +85,11 @@ class Go2TrainCfg(LeggedRobotTorchCfg):
 
             feet_air_time = 1.
             swing_feet_z = -40
+    
+    class lidarcfg:
+        lidartype: str = "mid360"
+        downsample: int = 1
+        dynamic_lidar: bool = False
 
 class Go2TrainCfgPPO(LeggedRobotCfgPPO):
     class policy(LeggedRobotCfgPPO.policy):

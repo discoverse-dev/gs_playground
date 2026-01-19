@@ -11,3 +11,8 @@ from gs_playground.src.locomotion.legged_robots.go2.go2_flat import Go2_train_en
 from gs_playground.src.locomotion.legged_robots.go2.go2_config import Go2TrainCfg, Go2TrainCfgPPO
 
 task_registry.register("go2_flat", Go2_train_env, Go2TrainCfg, Go2TrainCfgPPO)
+    
+from gs_playground.src.locomotion.legged_robots.go2.go2_lidar import Go2_lidar_train_env
+task_registry.register("go2_lidar", Go2_lidar_train_env, Go2TrainCfg, Go2TrainCfgPPO)
+
+# Register G1
