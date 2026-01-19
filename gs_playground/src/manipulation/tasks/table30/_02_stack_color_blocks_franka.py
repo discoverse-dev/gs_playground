@@ -86,7 +86,7 @@ class StackColorBlocksEnv(TaskEnv):
             return
 
         num_cubes = len(self.cube_bodies)
-        min_xy_dist = 0.05
+        min_xy_dist = 0.08
 
         # Get current poses for the subset: (B_subset, num_cubes, 7)
         cube_pose = np.stack(
