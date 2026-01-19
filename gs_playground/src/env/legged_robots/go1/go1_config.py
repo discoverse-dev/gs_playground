@@ -1,8 +1,4 @@
-# from legged_gym.addr import LEGGED_GYM_ENVS_DIR
 from gs_playground.addr import GS_GYM_ENVS_DIR
-
-
-# from legged_gym.envs.base.legged_robot_config_torch import LeggedRobotCfgPPO, LeggedRobotTorchCfg
 from gs_playground.src.env.legged_robots.base.legged_robot_cfg import LeggedRobotTorchCfg, LeggedRobotCfgPPO
 
 

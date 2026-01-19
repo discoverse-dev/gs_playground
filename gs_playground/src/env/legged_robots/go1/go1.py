@@ -1,24 +1,8 @@
-
-
 import torch
 import numpy as np
-# from legged_gym.envs.base.legged_robot_torch import Legged_Robot_Torch
 from gs_playground.src.env.legged_robots.base.legged_robot import Legged_Robot_Torch
-# from legged_gym.addr import LEGGED_GYM_ENVS_DIR
 from gs_playground.addr import GS_GYM_ENVS_DIR
 from motrixsim.render import Color
-# GAIT_PHASES = {
-#     # trot (diagonals together).
-#     "trot": np.array([0, 0.5, 0.5, 0]),
-#     # walk (staggered diagonals).
-#     "walk": np.array([0, 0.5 * np.pi, np.pi, 1.5 * np.pi]),
-#     # pace (same side legs together).
-#     "pace": np.array([0, np.pi, 0, np.pi]),
-#     # bound (front and back legs together).
-#     "bound": np.array([0, 0, np.pi, np.pi]),
-#     # pronk (all legs together).
-#     "pronk": np.array([0, 0, 0, 0]),
-# }
 def quat_apply_yaw(quat, vec):
     quat_yaw = quat.clone().view(-1, 4)
     quat_yaw[:, :2] = 0.
@@ -98,28 +82,9 @@ class Go1_train_env(Legged_Robot_Torch):
             self.points = torch.zeros(self.num_envs, self.num_height_points, 3, device=self.device, requires_grad=False)
             self.points[:, :, 0] = grid_x.flatten()
             self.points[:, :, 1] = grid_y.flatten()
-            # gridx, gridy = np.meshgrid(measured_points_x, measured_points_y)
-            # num_height_points = len(measured_points_x) * len(measured_points_y)
-            # self.points = np.zeros([num_height_points, 3])
-            # self.points[:, 0] = gridx.flatten()
-            # self.points[:, 1] = gridy.flatten()
-    # def draw_target(self):
-    #         # target_points = np.array([0,0])
-            
-    #         # print(self.select)
-    #         px = int(self.select[0]*10)
-    #         py = int(self.select[1]*10)
-    #         heights = (self.height_data[450-py, 450+px]-0.5)*4
-    #         self._render.gizmos.draw_sphere(0.2, np.array([self.select[0], self.select[1], heights+0.1]), color=Color.rgb(0, 0, 1))
-    #         # points1 = (points*10).long()
-    #         # print(points1)
-    #         px = int(self.target[0]*10)
-    #         py = int(self.target[1]*10)
-            
-    #         heights = (self.height_data[450-py, 450+px]-0.5)*4
     def draw_point(self, a, b):
         self._render.gizmos.draw_sphere(0.5, ([a, b, (self.height_data[int(self.nrows/2-10*a), int(self.ncols/2+10*b)]-0.5)*3.78]), color=Color.rgb(0, 0, 1))
-        # self._render.gizmos.draw_sphere(0.5, ([a, b, (self.height_data[int(self.nrows/2-10*a), int(self.ncols/2+10*b)]-0.5)*3.78]), color=Color.rgb(0, 0, 1))
+    
     def get_heights(self):
         points = quat_apply_yaw(self.base_quat.repeat(1, self.num_height_points), self.points) + (self.pose[:, :3]).unsqueeze(1)
         points1 = (10*points).to(torch.int)
@@ -129,35 +94,12 @@ class Go1_train_env(Legged_Robot_Torch):
         heights = (self.height_data[int(self.nrows/2)-py, int(self.ncols/2)+px]) * 0.005
         heights = heights.view(self.num_envs, -1)
         heights2 = heights2.view(self.num_envs, -1)
-        # print(heights.shape)
-        # points1[:, :, 2] = (self.height_data[(self.nrows/2-10*points[:, :, 0]).to(torch.int), (self.ncols/2+10*points[:, :, 1]).to(torch.int)]-0.5)*3.78#(self.height_data[int(self.nrows/2)-points1[:, :, 0], int(self.ncols/2)+points1[:, :, 0]]-0.5)*3.78
-        # print(np.array([points[0, 0, 0], points[0, 0, 1], points1[0, 0, 2]+0.1]))
         print(heights[0].min())
         print(heights2[0].min())
         print(self.feet_pos[0, 0, 2])
         for i in range(170):
-            # self.draw_point(points[0,i,0], points[0,i,1])
             self._render.gizmos.draw_sphere(0.01, np.array([points[0, i, 0], points[0, i, 1], heights[0, i]]), color=Color.rgb(0, 0, 1))
-        # a = 0
-        # b = 10
-        # self._render.gizmos.draw_sphere(0.5, ([a, b, (self.height_data[int(self.nrows/2-10*a), int(self.ncols/2+10*b)]-0.5)*3.78]), color=Color.rgb(0, 0, 1))
-        # self.draw_point(0, 0)
-        # self.draw_point(2,2)
-        # self.draw_point(-2,-2)
-        # self.draw_point(points[0,0,0], points[0,0,1])
-        # print(points[0,0])
-        # points += self.terrain.cfg.border_size
-        # points = (points/self.terrain.cfg.horizontal_scale).long()
-        # px = points[:, :, 0].view(-1)
-        # py = points[:, :, 1].view(-1)
-        # px = torch.clip(px, 0, self.height_samples.shape[0]-2)
-        # py = torch.clip(py, 0, self.height_samples.shape[1]-2)
-
-        # heights1 = self.height_samples[px, py]
-        # heights2 = self.height_samples[px+1, py]
-        # heights3 = self.height_samples[px, py+1]
-        # heights = torch.min(heights1, heights2)
-        # heights = torch.min(heights, heights3)
+  
     def feet_site_init(self):
         self.feet_site = []
         for j in self.config.asset.foot_site:
@@ -169,18 +111,9 @@ class Go1_train_env(Legged_Robot_Torch):
     # 
 
     def _sync_dof_data(self):
-        # contact_datas = []
-        # contact_data = self.model.get_sensor_value("fr1", self.datas)
-        # contact_data = self.model.get_sensor_value("fr1", self.datas)
-        # contact_data = self.model.get_sensor_value("fr1", self.datas)
-        # contact_data = self.model.get_sensor_value("fr1", self.datas)
-        # print(contact_data[0, 0])
         super()._sync_dof_data()
-
-        
         for i in range(len(self.config.asset.foot_site)):
             self.feet_pos[:, i] = torch.from_numpy(self.feet_site[i].get_pose(self.datas))[:, :3]
-        # print(self.feet_pos[0, 0, 2])
 
     def post_physics_step(self):
         period = 0.6
@@ -191,13 +124,10 @@ class Go1_train_env(Legged_Robot_Torch):
         self.feet_phase[:, 1] = (self.phase + 0.5) % 1
         self.feet_phase[:, 2] = (self.phase + 0.5) % 1
         super().post_physics_step()
-        # print(self.pose[0,:3])
-        # self.get_heights()
 
     def compute_obs(self):
         # raise NotImplementedError("compute_obs() must be implemented for env")
         diff = self.dof_pos - self.default_angles
-        # self.obs[:, :3] = self.linear_vel * self.config.normalization.obs_scales.lin_vel
         self.obs[:, :3] = self.gyro * self.config.normalization.obs_scales.ang_vel
         self.obs[:, 3:6] = self.gravity
         self.obs[:, 6:18] = diff * self.config.normalization.obs_scales.dof_pos
@@ -205,13 +135,6 @@ class Go1_train_env(Legged_Robot_Torch):
         self.obs[:, 30:42] = self.actions
         self.obs[:, 42:45] = self.commands * self.commands_scale
         self.obs[:, 45:49] = self.feet_phase
-        # self.obs[:, :3] = self.linear_vel * self.config.normalization.obs_scales.lin_vel
-        # self.obs[:, 3:6] = self.gyro * self.config.normalization.obs_scales.ang_vel
-        # self.obs[:, 6:9] = self.gravity
-        # self.obs[:, 9:21] = diff * self.config.normalization.obs_scales.dof_pos
-        # self.obs[:, 21:33] = self.dof_vel * self.config.normalization.obs_scales.dof_vel
-        # self.obs[:, 33:45] = self.actions
-        # self.obs[:, 45:48] = self.commands * self.commands_scale
         if self.config.env.num_privileged_obs is not None:
             self.privileged_obs_buf[:, :3] = self.linear_vel * self.config.normalization.obs_scales.lin_vel
             self.privileged_obs_buf[:, 3:6] = self.gyro * self.config.normalization.obs_scales.ang_vel
@@ -227,9 +150,7 @@ class Go1_train_env(Legged_Robot_Torch):
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
         # contact = self.contact_forces[:, self.feet_indices, 2] > 1.0
         contact = self.foot_force[:, :, 0] > 1.
-        # print(contact)
         contact_filt = torch.logical_or(contact, self.last_contacts) 
-        # contact_filt = torch.logical_or(self.contacts, self.last_contacts)
         self.last_contacts = contact
         first_contact = (self.feet_air_time > 0.25) * contact_filt
         self.feet_air_time += self.dt
@@ -251,5 +172,4 @@ class Go1_train_env(Legged_Robot_Torch):
     def _reward_swing_feet_z(self):
         contact = self.foot_force[:, :, 0] > 1.
         pos_error = torch.square((self.feet_pos[:, :, 2] - 0.08)) * ~contact
-        # print (torch.sum(pos_error, dim=1))
         return torch.sum(pos_error, dim=1)

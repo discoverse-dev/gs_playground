@@ -63,9 +63,7 @@ def play(env, cfg, train_cfg):
     env = env(Cfg=cfg, headless=False)
     # env.headless = False
     log_dir = None
-    # ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=task)
     ppo_runner = OnPolicyRunner(env, class_to_dict(train_cfg), log_dir, device=train_cfg.device)
-    # ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations)
     resume_path = "/home/motphys/train/136jdx/gs_playground/src/env/logs/rough_go1/Jan19_13-56-22_/model_1500.pt"
     ppo_runner.load(resume_path)
     obs = env.get_observations()
@@ -78,7 +76,4 @@ def play(env, cfg, train_cfg):
             obs, _, rews, dones, infos = env.step(actions)
 
 if __name__ == "__main__":
-    # task = "T1"
     play(Go1_train_env, Go1TrainCfg, Go1TrainCfgPPO)
-
-    # /home/motphys/train/136jdx/gs_playground/gs_playground/src/env/resources/robots/go1/scene.xml

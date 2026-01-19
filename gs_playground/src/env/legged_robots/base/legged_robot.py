@@ -1,27 +1,7 @@
 from gs_playground.src.env.motrix_env.mtx_env import ABEnv
-
-# Copyright (C) 2020-2025 Motphys Technology Co., Ltd. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
-
 import time
-
 import numpy as np
 import torch
-
-# from legged_gym.envs.base.legged_robot_config_torch import LeggedRobotTorchCfg
 from gs_playground.src.env.legged_robots.base.legged_robot_cfg import LeggedRobotTorchCfg
 from motrixsim import SceneData, load_model
 from motrixsim.render import RenderApp
@@ -213,9 +193,6 @@ class Legged_Robot_Torch:
         self.last_contacts = torch.zeros(
             self.num_envs, self.foot_check_num, dtype=torch.bool, device=self.device, requires_grad=False
         )
-        # self.contacts = torch.zeros(
-        #     self.num_envs, self.foot_check_num, dtype=torch.bool, device=self.device, requires_grad=False
-        # )
         self.foot_force = torch.zeros(self.num_envs, self.foot_check_num, 3, dtype=torch.float32, device=self.device, requires_grad=False)
         self.floating_base = self.body.floatingbase
         if self.config.sensor.contact_sensor:
@@ -334,13 +311,7 @@ class Legged_Robot_Torch:
     def check_termination(self):
         """Check if environments need to be reset"""
         check = self.cquerys.is_colliding(self.termination_check)
-        # foot_contact = self.cquerys.is_colliding(self.foot_check)
-        # # print(check)
-        # # print(foot_contact)
         check.reshape((self.num_envs, self.num_check))
-        # foot_contact = foot_contact.reshape((self.num_envs, self.foot_check_num))
-        # self.contacts = torch.from_numpy(foot_contact)
-        # print(self.contacts[0])
         self.reset_buf = check.any(axis=1)
         self.time_out_buf = self.episode_length_buf >= self.max_episode_length
         self.reset_buf = self.time_out_buf | self.reset_buf
@@ -362,18 +333,6 @@ class Legged_Robot_Torch:
         self.floating_base.set_translation(self.datas[bool_mask], self.render_offset[env_ids])
         self.floating_base.set_global_linear_velocity(self.datas[bool_mask], vel)
         self.floating_base.set_local_angular_velocity(self.datas[bool_mask], ang_v)
-        # for i in range(self.config.env.num_actions):##############2026.1.14  bug? should be joint reset
-        #     self.floating_base.set_global_linear_velocity(self.datas[bool_mask], vel)
-        #     self.floating_base.set_local_angular_velocity(self.datas[bool_mask], ang_v)
-        #     self.floating_base#.#set_dof_pos(self.datas[bool_mask], len(env_ids) * [self.default_angles[i]])
-        #####################################################
-        # set_global_linear_velocity
-        # set_translation
-        # set_rotation
-        # set_local_angular_velocity
-        #### add noise
-        # self.floating_base
-        pass
 
     def reset_ids(self, env_ids):
         if len(env_ids) == 0:
@@ -452,9 +411,6 @@ class Legged_Robot_Torch:
         ).squeeze(1)
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.1).unsqueeze(1)
-        # low filter
-        # self.commands = self.commands * 0.0
-        # self.commands = 0.8 * commands + self.commands * 0.2
 
     def _compute_torques(self, actions):
         # Compute torques from actions.
@@ -472,18 +428,6 @@ class Legged_Robot_Torch:
         for i in range(self.config.sensor.num_contact):
             offset = 1 + i * 12
             self.foot_force += self.contact_data[:, :, offset: offset+3]
-        # print(self.foot_force[0])
-        # for j in range(len(self.foot_check_num)):
-        #     num_contacts = int(self.contact_data[:, j, 0])
-        #     # contact_data = self.contact_data[:, 0, :].numpy()
-        #     for i in range(num_contacts):
-        #         # Each contact has 12 values
-        #         offset = 1 + i * 12
-
-        #         # Extract force components (scalars, not vectors!)
-        #         force_normal_mag = contact_data[0, offset + 0]  # Normal force magnitude
-        #         force_tangent0_mag = contact_data[0, offset + 1]  # Tangent 0 force magnitude
-        #         force_tangent1_mag = contact_data[0, offset + 2]  # Tangent 1 force magnitude
 
     def _sync_dof_data(self):
         if self.config.sensor.contact_sensor:
@@ -551,11 +495,6 @@ class Legged_Robot_Torch:
         # Penalize non flat base orientation
         return torch.sum(torch.square(self.gravity[:, :2]), dim=1)
 
-    # def _reward_base_height(self):
-    #     # Penalize base height away from target
-    #     base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
-    #     return torch.square(base_height - self.cfg.rewards.base_height_target)
-
     def _reward_torques(self):
         # Penalize torques
         return torch.sum(torch.square(self.torques), dim=1)
@@ -572,37 +511,9 @@ class Legged_Robot_Torch:
         # Penalize changes in actions
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
 
-    # def _reward_collision(self):
-    #     # Penalize collisions on selected bodies
-    #     return torch.sum(
-    #         1.0 * (torch.norm(self.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 0.1), dim=1
-    #     )
-
     def _reward_termination(self):
         # Terminal reward / penalty
         return self.reset_buf * ~self.time_out_buf
-
-    # def _reward_dof_pos_limits(self):
-    #     # Penalize dof positions too close to the limit
-    #     out_of_limits = -(self.dof_pos - self.dof_pos_limits[:, 0]).clip(max=0.0)  # lower limit
-    #     out_of_limits += (self.dof_pos - self.dof_pos_limits[:, 1]).clip(min=0.0)
-    #     return torch.sum(out_of_limits, dim=1)
-
-    # def _reward_dof_vel_limits(self):
-    #     # Penalize dof velocities too close to the limit
-    #     # clip to max error = 1 rad/s per joint to avoid huge penalties
-    #     return torch.sum(
-    #         (torch.abs(self.dof_vel) - self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit).clip(
-    #             min=0.0, max=1.0
-    #         ),
-    #         dim=1,
-    #     )
-
-    # def _reward_torque_limits(self):
-    #     # penalize torques too close to the limit
-    #     return torch.sum(
-    #         (torch.abs(self.torques) - self.torque_limits * self.cfg.rewards.soft_torque_limit).clip(min=0.0), dim=1
-    #     )
 
     def _reward_tracking_lin_vel(self):
         # Tracking of linear velocity commands (xy axes)
@@ -632,28 +543,12 @@ class Legged_Robot_Torch:
         self.feet_air_time *= ~contact_filt
         return rew_airTime
 
-    # def _reward_stumble(self):
-    #     # Penalize feet hitting vertical surfaces
-    #     return torch.any(
-    #         torch.norm(self.contact_forces[:, self.feet_indices, :2], dim=2)
-    #         > 5 * torch.abs(self.contact_forces[:, self.feet_indices, 2]),
-    #         dim=1,
-    #     )
-
     def _reward_stand_still(self):
         # Penalize motion at zero commands
         return torch.sum(torch.abs(self.dof_pos - self.default_angles), dim=1) * (
             torch.norm(self.commands[:, :2], dim=1) < 0.1
         )
 
-    # def _reward_feet_contact_forces(self):
-    #     # penalize high contact forces
-    #     return torch.sum(
-    #         (
-    #             torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) - self.cfg.rewards.max_contact_force
-    #         ).clip(min=0.0),
-    #         dim=1,
-    #     )
     def _reward_hip_pos(self):
         # return torch.sum(torch.square(self.dof_pos[:, [0, 3, 6, 9]] - self.default_dof_pos[:, [0, 3, 6, 9]]), dim=1)
         return (0.8 - torch.abs(self.commands[:, 1])) * torch.sum(

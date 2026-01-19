@@ -1,5 +1,4 @@
-# from legged_gym.addr import LEGGED_GYM_ENVS_DIR
-from gs_playground.addr import GS_GYM_ENVS_DIR
+from gs_playground.addr import GS_GYM_ENVS_DIR, GS_GYM_ROOT_DIR
 
 
 class LeggedRobotTorchCfg:
@@ -62,7 +61,7 @@ class LeggedRobotTorchCfg:
         clip_actions = 100.0
 
     class asset:
-        file = "/home/motphys/train/136jdx/gs_playground/gs_playground/src/env/resources/robots/go1/scene.xml"#GS_GYM_ENVS_DIR + "/resources/robots/go1/scene.xml"
+        file = GS_GYM_ROOT_DIR + "/gs_playground/models/robots/locomotion/go1/scene.xml"
         body_name = "trunk"
         # foot_name = "foot"
         penalize_contacts_on = ["thigh", "calf"]
