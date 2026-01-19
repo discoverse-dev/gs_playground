@@ -1,10 +1,10 @@
 from gs_playground.src.locomotion.legged_robots.go1.go1_config import Go1TrainCfg, Go1TrainCfgPPO
 from gs_playground.src.locomotion.legged_robots.go1.go1 import Go1_train_env
-from datetime import datetime
-from gs_playground.addr import GS_GYM_ENVS_DIR
 from rsl_rl.runners import OnPolicyRunner
 
 import torch
+import argparse
+
 def class_to_dict(obj) -> dict:
     if not hasattr(obj, "__dict__"):
         return obj
@@ -22,14 +22,13 @@ def class_to_dict(obj) -> dict:
         result[key] = element
     return result
 
-def play(env, cfg, train_cfg):
+def play(env, cfg, train_cfg, resume_path, num_envs):
     # env = task_registry.make_env(name=task, headless=True)
-    cfg.env.num_envs = 10
+    cfg.env.num_envs = num_envs
     env = env(Cfg=cfg, headless=False)
     # env.headless = False
     log_dir = None
     ppo_runner = OnPolicyRunner(env, class_to_dict(train_cfg), log_dir, device=train_cfg.device)
-    resume_path = "/home/motphys/train/136jdx/gs_playground/src/env/logs/rough_go1/Jan19_13-56-22_/model_1500.pt"
     ppo_runner.load(resume_path)
     obs = env.get_observations()
 
@@ -41,4 +40,9 @@ def play(env, cfg, train_cfg):
             obs, _, rews, dones, infos = env.step(actions)
 
 if __name__ == "__main__":
-    play(Go1_train_env, Go1TrainCfg, Go1TrainCfgPPO)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resume_path', type=str, required=True, help='Path to the model to resume from')
+    parser.add_argument('--num_envs', type=int, default=10, help='Number of environments')
+    args = parser.parse_args()
+
+    play(Go1_train_env, Go1TrainCfg, Go1TrainCfgPPO, args.resume_path, args.num_envs)

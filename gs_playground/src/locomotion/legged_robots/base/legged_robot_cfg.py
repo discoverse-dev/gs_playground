@@ -1,5 +1,4 @@
-from gs_playground.addr import GS_GYM_ENVS_DIR, GS_GYM_ROOT_DIR
-
+from gs_playground import ROOT_PATH
 
 class LeggedRobotTorchCfg:
     class sim:
@@ -61,7 +60,7 @@ class LeggedRobotTorchCfg:
         clip_actions = 100.0
 
     class asset:
-        file = GS_GYM_ROOT_DIR + "/gs_playground/models/robots/locomotion/go1/scene.xml"
+        file = (ROOT_PATH / "models/robots/locomotion/go1/scene.xml").as_posix()
         body_name = "trunk"
         # foot_name = "foot"
         penalize_contacts_on = ["thigh", "calf"]

@@ -3,7 +3,7 @@ import numpy as np
 from gs_playground.src.locomotion.legged_robots.base.legged_robot import (
     Legged_Robot_Torch,
 )
-from gs_playground.addr import GS_GYM_ENVS_DIR
+from gs_playground import GS_GYM_ENVS_PATH
 from motrixsim.render import Color
 
 
@@ -63,7 +63,7 @@ class Go1_train_env(Legged_Robot_Torch):
         )
         if self.config.terrain.measure_heights:
             self.nrows, self.ncols, self.height_data = load_hfield_with_header(
-                GS_GYM_ENVS_DIR + self.config.terrain.hfield_path
+                (GS_GYM_ENVS_PATH / self.config.terrain.hfield_path).as_posix()
             )
             min = np.min(self.height_data)
             max = np.max(self.height_data)
