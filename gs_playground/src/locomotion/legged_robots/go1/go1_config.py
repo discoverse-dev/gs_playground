@@ -1,5 +1,7 @@
-from gs_playground.addr import GS_GYM_ENVS_DIR
-from gs_playground.src.env.legged_robots.base.legged_robot_cfg import LeggedRobotTorchCfg, LeggedRobotCfgPPO
+from gs_playground.src.locomotion.legged_robots.base.legged_robot_cfg import (
+    LeggedRobotTorchCfg,
+    LeggedRobotCfgPPO,
+)
 
 
 class Go1TrainCfg(LeggedRobotTorchCfg):
@@ -11,10 +13,12 @@ class Go1TrainCfg(LeggedRobotTorchCfg):
         num_observations = 49
         space = 1
         num_privileged_obs = 52
+
     class terrain(LeggedRobotTorchCfg.terrain):
         measure_heights = False
         type = "hfield"
         hfield_path = "/resources/terrain/heightmap_train.hfield"
+
     class control(LeggedRobotTorchCfg.control):
         action_scale = 0.25
         decimation = 4
@@ -64,7 +68,7 @@ class Go1TrainCfg(LeggedRobotTorchCfg):
             dof_acc = -2.5e-7
             tracking_lin_vel = 1
             contact = 0.18
-            feet_air_time = 1 
+            feet_air_time = 1
             swing_feet_z = -40
             stand_still = -0.15
             dof_vel = -0.001

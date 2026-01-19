@@ -1,0 +1,58 @@
+<mujoco model="go2 feetonly flat terrain scene">
+  <include file="go2_mjx.xml"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <default>
+    <default class="terrain_box">
+      <geom group="2" condim="3" friction="1 0.005 0.0001" type="box"/>
+    </default>
+  </default>
+
+  <worldbody>
+      <body name="terrain_body" pos="0 0 -0.2" quat="1 0 0 0">
+        <geom group="2" name="ground_plane" type="plane" size="11.232 11.232 0.1" pos="0 0 0" rgba="0.3 0.3 0.3 1"/>
+        <geom group="2" class="terrain_box" pos="0.0000 -3.1851 0.0494" size="7.5000 4.3149 0.0494" rgba="0.232 0.318 0.545 1"/>
+        <geom group="2" class="terrain_box" pos="-3.1851 4.3149 0.0494" size="4.3149 3.1851 0.0494" rgba="0.232 0.318 0.545 1"/>
+        <geom group="2" class="terrain_box" pos="6.1899 4.3149 0.0494" size="1.3101 3.1851 0.0494" rgba="0.232 0.318 0.545 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 6.1899 0.0494" size="1.8750 1.3101 0.0494" rgba="0.232 0.318 0.545 1"/>
+        <geom group="2" class="terrain_box" pos="0.0000 -3.3053 0.1239" size="7.5000 4.1947 0.0251" rgba="0.174 0.445 0.558 1"/>
+        <geom group="2" class="terrain_box" pos="-3.3053 4.1947 0.1239" size="4.1947 3.3053 0.0251" rgba="0.174 0.445 0.558 1"/>
+        <geom group="2" class="terrain_box" pos="6.3101 4.1947 0.1239" size="1.1899 3.3053 0.0251" rgba="0.174 0.445 0.558 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 6.3101 0.1239" size="2.1154 1.1899 0.0251" rgba="0.174 0.445 0.558 1"/>
+        <geom group="2" class="terrain_box" pos="0.0000 -3.4255 0.1741" size="7.5000 4.0745 0.0251" rgba="0.129 0.563 0.551 1"/>
+        <geom group="2" class="terrain_box" pos="-3.4255 4.0745 0.1741" size="4.0745 3.4255 0.0251" rgba="0.129 0.563 0.551 1"/>
+        <geom group="2" class="terrain_box" pos="6.4303 4.0745 0.1741" size="1.0697 3.4255 0.0251" rgba="0.129 0.563 0.551 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 6.4303 0.1741" size="2.3558 1.0697 0.0251" rgba="0.129 0.563 0.551 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 -3.0048 0.2243" size="2.3558 2.3558 0.0251" rgba="0.154 0.680 0.504 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 -3.0048 0.2243" size="2.3558 2.3558 0.0251" rgba="0.154 0.680 0.504 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 3.0048 0.2243" size="2.3558 2.3558 0.0251" rgba="0.154 0.680 0.504 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 -3.0048 0.2745" size="2.1154 2.1154 0.0251" rgba="0.361 0.786 0.388 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 -3.0048 0.2745" size="2.1154 2.1154 0.0251" rgba="0.361 0.786 0.388 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 3.0048 0.2745" size="2.1154 2.1154 0.0251" rgba="0.361 0.786 0.388 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 -3.0048 0.3247" size="1.8750 1.8750 0.0251" rgba="0.668 0.862 0.196 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 -3.0048 0.3247" size="1.8750 1.8750 0.0251" rgba="0.668 0.862 0.196 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 3.0048 0.3247" size="1.8750 1.8750 0.0251" rgba="0.668 0.862 0.196 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 -3.0048 0.3749" size="1.6346 1.6346 0.0251" rgba="0.993 0.906 0.144 1"/>
+        <geom group="2" class="terrain_box" pos="3.0048 -3.0048 0.3749" size="1.6346 1.6346 0.0251" rgba="0.993 0.906 0.144 1"/>
+        <geom group="2" class="terrain_box" pos="-3.0048 3.0048 0.3749" size="1.6346 1.6346 0.0251" rgba="0.993 0.906 0.144 1"/>
+      </body>
+  </worldbody>
+
+  <keyframe>
+    <key name="home"
+      qpos="
+      0 0 0.278
+      1 0 0 0
+      0.1 0.9 -1.8
+      -0.1 0.9 -1.8
+      0.1 0.9 -1.8
+      -0.1 0.9 -1.8"
+      ctrl="0.1 0.9 -1.8 -0.1 0.9 -1.8 0.1 0.9 -1.8 -0.1 0.9 -1.8"/>
+  </keyframe>
+
+</mujoco>

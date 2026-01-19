@@ -81,7 +81,7 @@ class LeggedRobotTorchCfg:
         local_linvel = "local_linvel"
         gyro = "gyro"
         contact_sensor = True
-        foot_name = ['fr1', 'fl1', 'rr1', 'rl1']
+        foot_name = ["fr1", "fl1", "rr1", "rl1"]
         num_contact = 1
 
     class rewards:
@@ -104,11 +104,11 @@ class LeggedRobotTorchCfg:
             hip_pos = -1
             calf_pos = -0.3 * 0
 
-        only_positive_rewards = (
-            True  # if true negative total rewards are clipped at zero (avoids early termination problems)
-        )
+        only_positive_rewards = True  # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25  # tracking reward = exp(-error^2/sigma)
-        soft_dof_pos_limit = 1.0  # percentage of urdf limits, values above this limit are penalized
+        soft_dof_pos_limit = (
+            1.0  # percentage of urdf limits, values above this limit are penalized
+        )
         soft_dof_vel_limit = 1.0
         soft_torque_limit = 1.0
         base_height_target = 1.0
