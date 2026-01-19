@@ -20,6 +20,8 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+*.lock
+*.ipynb
 
 # IDEs
 .vscode/
