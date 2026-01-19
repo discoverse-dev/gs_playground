@@ -66,10 +66,10 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     hang_height_margin: float = 0.05         # cup_z > hook_z - margin
 
     pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.15, 0.03)
-    hang_offset: Tuple[float, float, float] = (-0.04, 0, -0.03)
+    hang_offset: Tuple[float, float, float] = (-0.047, -0.02, -0.03)
     
     pre_hang_dist_threshold: float = 0.03
-    hang_dist_threshold: float = 0.03
+    hang_dist_threshold: float = 0.05
 
     reset_pos_target: Tuple[float, float, float] = (0.3048082 , 0    ,  0.2743337)
     reset_dist_threshold: float = 0.06
@@ -223,6 +223,8 @@ class HangToothbrushCupEnv(TaskEnv):
             & (d_cup_hang < cfg.hang_dist_threshold)
             & (~self.is_hung)
         )
+
+        print("d_cup_hang",d_cup_hang)
 
         self.is_hung = self.is_hung | hung_now
         r_hang_sparse = self.is_hung.astype(np.float32) * cfg.hang_reward_bonus

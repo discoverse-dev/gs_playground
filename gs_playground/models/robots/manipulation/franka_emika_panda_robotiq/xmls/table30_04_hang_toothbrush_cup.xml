@@ -139,9 +139,8 @@
     </body>
 
     <!-- Red bottle: dynamic free body -->
-    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="-0.849358 0.215527 0.422472 -0.231636">    
+    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="1 0 0 0">    
       <joint type="free" frictionloss="0.0001"/>
-      <!-- approximate bottle collision (tune to match mesh) -->
       <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" />
       <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <geom name="toothbrush_cup_geom_2" type="mesh" mesh="toothbrush_cup_mesh_2" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
@@ -213,7 +212,7 @@
       <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1"/>
       <!-- site for detecting bottle grasping -->
-      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.04 0.02" quat="-0.849358 -0.215527 -0.422472 0.231636" rgba="0.1 0.1 0.8 0.3" />
+      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 0.3" />
     </body>
 
     <!-- Mocap target -->
@@ -235,7 +234,7 @@
   <keyframe>
     <key name="home"
       qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
-        0.515367 0.056162 0.105959 -0.881827 0.304215 0.359299 -0.0271738"
+        0.515367 0.056162 0.105959 -0.725325 -0.00304526 0.00311753 0.688392"
       ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
     />
     <!-- <key name ="pick"

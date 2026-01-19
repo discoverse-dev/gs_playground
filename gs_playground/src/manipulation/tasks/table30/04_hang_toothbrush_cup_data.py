@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
     seed: int = 300
     save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_refined"
 
@@ -69,15 +69,15 @@ class CollectorCfg:
 
     # motion
     max_dp: float = 0.005
-    pos_tol: float = 0.005
+    pos_tol: float = 0.001
 
     # keypoints offsets (world frame offsets)
-    grasp_offset: Tuple[float, float, float] = (0.0, -0.04, 0.01)
+    grasp_offset: Tuple[float, float, float] = (0.0, -0.04, 0.02)
     pre_grasp_z: float = 0.05
     # lift_height: float = 0.20 # Deprecated in favor of pre-hang alignment logic
 
-    pre_hang_offset: Tuple[float, float, float] = (-0.04, -0.15, 0.03)
-    hang_offset: Tuple[float, float, float] = (-0.04, 0, 0.03)
+    pre_hang_offset: Tuple[float, float, float] = (-0.047, -0.15, 0.03)
+    hang_offset: Tuple[float, float, float] = (-0.047, -0.02 , 0.03)
     retreat_dx: float = 0.10
 
     # gripper
@@ -583,27 +583,35 @@ class HangToothbrushCupCollector:
                 dtype=np.bool_,
             ).reshape(-1)
 
+              # 6) mark done/success (per-env)
             for i in range(self.B):
                 if (not self.active[i]) or self.done[i]:
                     continue
+
                 timeout = int(self.ctrl_step[i]) >= int(cfg.max_ctrl_steps)
-                finished = bool(is_success[i]) or (int(self.states[i]) == self.ST_DONE)
+                finished = bool(is_success[i]) or (int(self.states[i]) == int(self.ST_DONE))
+
                 if finished or timeout:
                     self.done[i] = True
-                    self.success[i] = bool(is_success[i]) 
+                    self.success[i] = bool(is_success[i])
 
-            for i in range(self.B):
-                if (not self.active[i]) or (not self.done[i]):
-                    continue
-                self._finalize_episode(i)
-                if self.saved_success >= target:
-                    self.active[i] = False
-                    continue
-                restart_ids = np.where(self.active & self.done)[0]
+
+            # 7) finalize ALL done envs first (no restart inside per-env loop!)
+            done_ids = np.where(self.active & self.done)[0]
+            for env_id in done_ids.tolist():
+                self._finalize_episode(int(env_id))
+
+            # 8) if reached target, stop remaining envs and exit loop naturally
+            if self.saved_success >= target:
+                self.active[done_ids] = False
+            else:
+                # 9) restart done envs in one batch (only those still active)
+                restart_ids = done_ids[self.active[done_ids]]
                 if restart_ids.size > 0:
                     batch_seed = int(cfg.seed + self.attempted)
                     self.done[restart_ids] = False
                     self.start_episodes(restart_ids, seed=batch_seed)
+
 
             now = time.perf_counter()
             if (now - self._last_log_t) >= 2.0:
