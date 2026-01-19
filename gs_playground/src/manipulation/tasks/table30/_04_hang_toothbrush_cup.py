@@ -10,7 +10,7 @@ from gs_playground import ROOT_PATH
 from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
 from gs_playground.src.env.motrix_env.render_env import RenderEnvState
-
+from scipy.spatial.transform import Rotation  # 确保头部引入
 ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_04_hang_toothbrush_cup" / "3dgs"
 TASK_GAUSSIANS = {
     "toothbrush_cup": ASSETS_TASK_DIR / "toothbrush_cup.ply",
@@ -99,6 +99,8 @@ class HangToothbrushCupEnv(TaskEnv):
         # sites
         self.grasp_site = self.model.get_site(cfg.grasp_site_name)
         self.hook_site = self.model.get_site(cfg.hook_site_name)
+        self.rand_yaw = np.zeros((self.num_envs,), dtype=np.float32)  # rad
+
 
         # task latch state
         self.is_grasped = np.zeros((self.num_envs,), dtype=bool)
@@ -111,38 +113,69 @@ class HangToothbrushCupEnv(TaskEnv):
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
     
-        # ---- Task hooks ----
+
+
+    # ... Inside your class ...
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
-            """
-            Randomization: Only jitter cup XY positions. Rack remains fixed.
-            """
-            if data.shape[0] == 0:
-                return
+        """
+        Randomization: 
+        1. Jitter cup XY positions. 
+        2. Randomize cup Yaw angle (-90 to +90 degrees).
+        Rack remains fixed.
+        """
+        if data.shape[0] == 0:
+            return
 
-            # 1. 只获取 Cup 的 Pose (Batch, 7)
-            # 移除了 rack_body 的获取
-            cup_poses = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)
+        # 获取 Batch Size
+        B = data.shape[0]
 
-            # 2. 生成随机噪声
-            # 形状对应 (Batch, 2)，只针对 XY
-            xy_jitter = self._rng.uniform(
-                -self._cfg.xy_jitter, 
-                self._cfg.xy_jitter, 
-                size=(data.shape[0], 2)
-            ).astype(np.float32)
-            
-            # 3. 应用噪声
-            new_cup_poses = cup_poses.copy()
-            new_cup_poses[:, :2] = cup_poses[:, :2] + xy_jitter
+        # 1. 获取 Cup 的 Pose (Batch, 7) [x, y, z, qx, qy, qz, qw]
+        cup_poses = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)
+        new_cup_poses = cup_poses.copy()
 
-            # 4. 写回物理引擎
-            for env_idx in range(data.shape[0]):
-                # 仅设置 Cup，不再设置 Rack
-                self.cup_body.set_dof_pos(
-                    data[env_idx],
-                    new_cup_poses[env_idx],
-                    include_floatingbase=True,
-                )
+        # ---------------------------
+        # A. 位置随机化 (XY Jitter)
+        # ---------------------------
+        xy_jitter = self._rng.uniform(
+            -self._cfg.xy_jitter, 
+            self._cfg.xy_jitter, 
+            size=(B, 2)
+        ).astype(np.float32)
+        
+        new_cup_poses[:, :2] = cup_poses[:, :2] + xy_jitter
+
+        # ---------------------------
+        # B. 旋转随机化 (Yaw Jitter)
+        # ---------------------------
+        # 范围: -90 到 90 度 -> -pi/2 到 pi/2 弧度
+        yaw_noise = self._rng.uniform(-np.pi/4, np.pi/4, size=(B,))
+        if done_mask is not None and done_mask.shape[0] == B:
+            self.rand_yaw[done_mask.astype(bool)] = yaw_noise[done_mask.astype(bool)]
+        else:
+            if B == self.num_envs:
+                self.rand_yaw[:] = yaw_noise
+        q_curr = cup_poses[:, 3:7]
+        r_curr = Rotation.from_quat(q_curr)
+
+        # 2. 生成绕 Z 轴的随机旋转
+        r_noise = Rotation.from_euler('z', yaw_noise)
+
+        # 3. 合成新旋转: R_new = R_noise * R_curr (左乘表示绕全局坐标系旋转)
+        # 如果你想绕物体自身的 Z 轴旋转，请用 r_curr * r_noise
+        r_new = r_noise * r_curr
+
+        # 4. 填回新的四元数
+        new_cup_poses[:, 3:7] = r_new.as_quat().astype(np.float32)
+
+        # ---------------------------
+        # C. 写回物理引擎
+        # ---------------------------
+        for env_idx in range(B):
+            self.cup_body.set_dof_pos(
+                data[env_idx],
+                new_cup_poses[env_idx],
+                include_floatingbase=True,
+            )
 
     def _reset_task_state(self, done: np.ndarray):
         done = np.asarray(done, dtype=bool)
@@ -267,6 +300,9 @@ class HangToothbrushCupEnv(TaskEnv):
         info["hung_now"] = hung_now
         info["reset_now"] = reset_now
         info["success_now"] = success_now
+        info["rand_yaw"] = self.rand_yaw.copy()                 # rad
+        info["rand_yaw_deg"] = (self.rand_yaw * 180.0 / np.pi)  # deg
+
 
         return total_reward.astype(np.float32)
     

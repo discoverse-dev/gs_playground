@@ -218,7 +218,7 @@
       <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <!-- site for detecting bottle grasping -->
-      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 1" group="3"/>
+      <site name="bottle_grasp_site" pos="0.039945 -0.002089 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 1" group="3"/>
     </body>
 
     <!-- Mocap target -->
