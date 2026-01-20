@@ -85,10 +85,11 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
-    seed: int = 300
-    save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style"
+    data_size: int = 500
+    num_envs: int = 15
+
+    seed: int = 1500
+    save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_2"
 
     # env control
     max_ctrl_steps: int = 1200
@@ -387,7 +388,7 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
-        if self.saved_success < self.cfg.data_size:
+        if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
             ep_idx = int(self.saved_success)
             final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
             abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)
@@ -589,14 +590,14 @@ class HangToothbrushCupCollector:
             return np.linalg.norm(self.exec_pos - p, axis=1) < float(cfg.pos_tol)
 
 
-        if np.any(want_rot):
-            i = np.where(want_rot)[0][0]
-            print(
-                "start_yaw:", float(self.latched_start_yaw[i]),
-                "target_yaw:", float(tgt_yaw[i]),
-                "delta:", float(wrap_to_pi(tgt_yaw[i] - self.latched_start_yaw[i])),
-                "curr_yaw:", float(curr_yaw[i]),
-            )
+        # if np.any(want_rot):
+        #     i = np.where(want_rot)[0][0]
+        #     print(
+        #         "start_yaw:", float(self.latched_start_yaw[i]),
+        #         "target_yaw:", float(tgt_yaw[i]),
+        #         "delta:", float(wrap_to_pi(tgt_yaw[i] - self.latched_start_yaw[i])),
+        #         "curr_yaw:", float(curr_yaw[i]),
+        #     )
 
 
         def _check_reach_dwell(state_idx, p):
@@ -676,7 +677,7 @@ class HangToothbrushCupCollector:
         all_ids = np.arange(self.B, dtype=np.int64)
         self.start_episodes(all_ids, seed=int(cfg.seed))
 
-        print(f"Starting Collection. Target: {target}")
+        # print(f"Starting Collection. Target: {target}")
 
         while self.saved_success < target:
             self._step_logic()
