@@ -25,7 +25,6 @@ def class_to_dict(obj) -> dict:
 
 def train(env, cfg, train_cfg, headless):
    
-    cfg.env.num_envs = 1024
     env = env(Cfg=cfg, headless=headless)
  
     log_root = os.path.join((ROOT_PATH / "../logs").as_posix(), train_cfg.runner.experiment_name)
@@ -40,10 +39,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='go1', help='Task name')
     parser.add_argument('--run_name', type=str, default='', help='Run name')
+    parser.add_argument('--num_envs', type=int, default=1024, help='num envs')
+    parser.add_argument('--headless', type=bool, default=False, help='headless')
     args = parser.parse_args()
 
     env_cls, env_cfg, train_cfg = task_registry.get_task(args.task)
     if args.run_name:
         train_cfg.runner.run_name = args.run_name
+    env_cfg.env.num_envs = args.num_envs
         
-    train(env_cls, env_cfg, train_cfg, True)
+    train(env_cls, env_cfg, train_cfg, args.headless)
