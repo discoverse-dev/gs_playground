@@ -47,6 +47,4 @@ if __name__ == "__main__":
     if args.run_name:
         train_cfg.runner.run_name = args.run_name
     env_cfg.env.num_envs = args.num_envs
-    print('#####################')
-    print(args.task)
     train(env_cls, env_cfg, train_cfg, args.headless)
