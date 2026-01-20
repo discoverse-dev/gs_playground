@@ -16,3 +16,6 @@ task_registry.register("go2_flat", Go2_train_env, Go2TrainCfg, Go2TrainCfgPPO)
 # task_registry.register("go2_lidar", Go2_lidar_train_env, Go2TrainCfg, Go2TrainCfgPPO)
 
 # Register G1
+from gs_playground.src.locomotion.legged_robots.g1.g1_train import G1_train_env
+from gs_playground.src.locomotion.legged_robots.g1.g1_train_config import G1TrainCfg, G1TrainCfgPPO
+task_registry.register("g1", G1_train_env, G1TrainCfg, G1TrainCfgPPO)
