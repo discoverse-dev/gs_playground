@@ -2,9 +2,9 @@ from gs_playground.src.locomotion.legged_robots.base.legged_robot_cfg import (
     LeggedRobotTorchCfg,
     LeggedRobotCfgPPO,
 )
+from gs_playground import ROOT_PATH
 
-
-class Go1TrainCfg(LeggedRobotTorchCfg):
+class Go2TrainCfg(LeggedRobotTorchCfg):
     class sim(LeggedRobotTorchCfg.sim):
         dt = 0.005
 
@@ -56,11 +56,17 @@ class Go1TrainCfg(LeggedRobotTorchCfg):
             dof_vel = 0.05
 
     class asset(LeggedRobotTorchCfg.asset):
+        file = (ROOT_PATH / "models/robots/locomotion/go2/scene_flat.xml").as_posix()
+        body_name = 'base'
         foot_name = "foot"
         foot_site = ["FR", "FL", "RR", "RL"]
         penalize_contacts_on = ["thigh", "calf"]
-        terminate_after_contacts_on = ["trunk", "thigh", "calf"]
+        terminate_after_contacts_on = ["base", "thigh", "calf"]
         ground = "floor"
+
+    class sensor(LeggedRobotTorchCfg.sensor):
+        foot_name = ["FR_foot_contact", "FL_foot_contact", "RR_foot_contact", "RL_foot_contact"]
+        num_contact = 1
 
     class rewards(LeggedRobotTorchCfg.rewards):
         class scales(LeggedRobotTorchCfg.rewards.scales):
@@ -70,19 +76,11 @@ class Go1TrainCfg(LeggedRobotTorchCfg):
             contact = 0.18
             feet_air_time = 1
             swing_feet_z = -40
-<<<<<<< Updated upstream
-    
-    class lidarcfg:
-        lidartype: str = "mid360"
-        downsample: int = 1
-        dynamic_lidar: bool = False
-=======
             stand_still = -0.15
             dof_vel = -0.001
->>>>>>> Stashed changes
 
 
-class Go1TrainCfgPPO(LeggedRobotCfgPPO):
+class Go2TrainCfgPPO(LeggedRobotCfgPPO):
     class policy(LeggedRobotCfgPPO.policy):
         actor_hidden_dims = [256, 128, 64]
         critic_hidden_dims = [256, 128, 64]
@@ -92,4 +90,4 @@ class Go1TrainCfgPPO(LeggedRobotCfgPPO):
 
     class runner(LeggedRobotCfgPPO.runner):
         run_name = ""
-        experiment_name = "rough_go1"
+        experiment_name = "rough_go2"
