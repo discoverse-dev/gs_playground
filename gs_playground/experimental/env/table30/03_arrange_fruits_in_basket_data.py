@@ -16,6 +16,7 @@ from gs_playground.src.manipulation.tasks.table30._03_arrange_fruits_in_basket i
     ArrangeFruitsEnvCfg,
 )
 
+
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
@@ -96,9 +97,16 @@ class CollectorCfg:
     video_h: int = 240
     cam_view_key: Optional[str] = None  # None -> 默认 "pixels/view_0"
 
+    # MotrixSim 渲染器视频录制配置
+    enable_motrix_video: bool = True  # 启用 MotrixSim 渲染器录制
+    motrix_video_fps: int = 30
+    motrix_video_width: int = 320
+    motrix_video_height: int = 240
+    # Note: MotrixSim videos are saved to the same directory as 3DGS videos ({save_dir}/videos)
+
     # text fields（若 None，则默认继承 env cfg）
-    subtask: Optional[str] = None   # None -> env._cfg.instruction
-    prompt: Optional[str] = None    # None -> 从 instruction 简单派生
+    subtask: Optional[str] = None  # None -> env._cfg.instruction
+    prompt: Optional[str] = None  # None -> 从 instruction 简单派生
 
     # offsets
     default_offsets: StageOffsets = StageOffsets(
@@ -108,32 +116,34 @@ class CollectorCfg:
         above_container=(0.0, 0.0, 0.10),
     )
 
-    obj_offsets: Dict[str, StageOffsets] = field(default_factory=lambda: {
-        "fruit_avocado": StageOffsets(
-            above_obj=(0.0, 0.0, 0.10),
-            grasp=(0.0, -0.05, -0.015),
-            lift=(0.0, 0.0, 0.20),
-            above_container=(0.0, 0.0, 0.10),
-        ),
-        "fruit_banana": StageOffsets(
-            above_obj=(0.0, -0.05, 0.10),
-            grasp=(0.0, -0.05, -0.02),
-            lift=(0.0, 0.0, 0.20),
-            above_container=(0.0, 0.0, 0.10),
-        ),
-        "fruit_carambola": StageOffsets(
-            above_obj=(-0.02, -0.03, 0.20),
-            grasp=(-0.02, -0.03, -0.02),
-            lift=(0.0, 0.0, 0.20),
-            above_container=(0.0, 0.0, 0.10),
-        ),
-        "fruit_mangosteen": StageOffsets(
-            above_obj=(-0.03, 0.0, 0.20),
-            grasp=(-0.03, 0 , -0.07),
-            lift=(0.0, 0.0, 0.20),
-            above_container=(0.0, 0.0, 0.15),
-        ),
-    })
+    obj_offsets: Dict[str, StageOffsets] = field(
+        default_factory=lambda: {
+            "fruit_avocado": StageOffsets(
+                above_obj=(0.0, 0.0, 0.10),
+                grasp=(0.0, -0.05, -0.015),
+                lift=(0.0, 0.0, 0.20),
+                above_container=(0.0, 0.0, 0.10),
+            ),
+            "fruit_banana": StageOffsets(
+                above_obj=(0.0, -0.05, 0.10),
+                grasp=(0.0, -0.05, -0.02),
+                lift=(0.0, 0.0, 0.20),
+                above_container=(0.0, 0.0, 0.10),
+            ),
+            "fruit_carambola": StageOffsets(
+                above_obj=(-0.02, -0.03, 0.20),
+                grasp=(-0.02, -0.03, -0.02),
+                lift=(0.0, 0.0, 0.20),
+                above_container=(0.0, 0.0, 0.10),
+            ),
+            "fruit_mangosteen": StageOffsets(
+                above_obj=(-0.03, 0.0, 0.20),
+                grasp=(-0.03, 0, -0.07),
+                lift=(0.0, 0.0, 0.20),
+                above_container=(0.0, 0.0, 0.15),
+            ),
+        }
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -150,7 +160,9 @@ class ArrangeFruitsCollector:
     ST_RETREAT = 7
     ST_DONE = 8
 
-    def __init__(self, cfg: CollectorCfg, env_cfg: Optional[ArrangeFruitsEnvCfg] = None):
+    def __init__(
+        self, cfg: CollectorCfg, env_cfg: Optional[ArrangeFruitsEnvCfg] = None
+    ):
         self.cfg = cfg
         os.makedirs(cfg.save_dir, exist_ok=True)
         self.videos_dir = os.path.join(cfg.save_dir, "videos")
@@ -158,6 +170,15 @@ class ArrangeFruitsCollector:
 
         # env cfg：优先外部传入，否则用默认
         self.env_cfg = env_cfg if env_cfg is not None else ArrangeFruitsEnvCfg()
+
+        # 传递 MotrixSim 视频配置到环境配置
+        self.env_cfg.enable_motrix_video = cfg.enable_motrix_video
+        self.env_cfg.motrix_video_fps = cfg.motrix_video_fps
+        self.env_cfg.motrix_video_width = cfg.motrix_video_width
+        self.env_cfg.motrix_video_height = cfg.motrix_video_height
+        # MotrixSim 视频保存到与 3DGS 视频相同的目录
+        self.env_cfg.motrix_video_output_dir = self.videos_dir
+
         self.env = ArrangeFruitsEnv(self.env_cfg, num_envs=int(cfg.num_envs))
         self.env.reset()
 
@@ -203,7 +224,9 @@ class ArrangeFruitsCollector:
 
         # per-env video writer
         self.video_writers: List[Optional[EpisodeVideoWriter]] = [None] * B
-        self._tmp_video_paths: List[str] = [os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(B)]
+        self._tmp_video_paths: List[str] = [
+            os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(B)
+        ]
 
         # stats
         self.saved_success = 0
@@ -242,7 +265,9 @@ class ArrangeFruitsCollector:
     # ----------------------------
     # Small helpers: robust info reading
     # ----------------------------
-    def _info_get_scalar(self, info: Dict[str, Any], env_id: int, keys: List[str], default: float = 0.0) -> float:
+    def _info_get_scalar(
+        self, info: Dict[str, Any], env_id: int, keys: List[str], default: float = 0.0
+    ) -> float:
         for k in keys:
             if k in info and info[k] is not None:
                 a = np.asarray(info[k]).reshape(-1)
@@ -250,7 +275,9 @@ class ArrangeFruitsCollector:
                     return float(a[env_id])
         return float(default)
 
-    def _info_get_bool(self, info: Dict[str, Any], env_id: int, keys: List[str], default: bool = False) -> bool:
+    def _info_get_bool(
+        self, info: Dict[str, Any], env_id: int, keys: List[str], default: bool = False
+    ) -> bool:
         for k in keys:
             if k in info and info[k] is not None:
                 a = np.asarray(info[k]).reshape(-1)
@@ -258,7 +285,9 @@ class ArrangeFruitsCollector:
                     return bool(a[env_id])
         return bool(default)
 
-    def _info_get_int(self, info: Dict[str, Any], env_id: int, keys: List[str], default: int = 0) -> int:
+    def _info_get_int(
+        self, info: Dict[str, Any], env_id: int, keys: List[str], default: int = 0
+    ) -> int:
         for k in keys:
             if k in info and info[k] is not None:
                 a = np.asarray(info[k]).reshape(-1)
@@ -275,7 +304,7 @@ class ArrangeFruitsCollector:
             return
 
         # Set env RNG once for this batch reset
-   
+
         self.env._rng = np.random.default_rng(int(seed))
         self.env.robot.update_reference(self.env._state.data)
 
@@ -292,7 +321,9 @@ class ArrangeFruitsCollector:
 
         # init exec_pos + fixed_rpy from obs
         obs = self.env._state.obs
-        ee6_all = np.asarray(obs["ee_pose"], dtype=np.float32).reshape(self.B, -1)  # (B,6)
+        ee6_all = np.asarray(obs["ee_pose"], dtype=np.float32).reshape(
+            self.B, -1
+        )  # (B,6)
         self.exec_pos[env_ids] = ee6_all[env_ids, :3]
         self.fixed_rpy[env_ids] = ee6_all[env_ids, 3:6]
 
@@ -301,7 +332,9 @@ class ArrangeFruitsCollector:
 
         # latch basket pos once per episode start (can also refresh per step if you prefer)
         data = self.env._state.data
-        basket_pose7 = np.asarray(self.basket_site.get_pose(data), dtype=np.float32).reshape(self.B, -1)
+        basket_pose7 = np.asarray(
+            self.basket_site.get_pose(data), dtype=np.float32
+        ).reshape(self.B, -1)
         self.latched_basket_pos[env_ids] = basket_pose7[env_ids, :3]
 
         # buffers/video reset
@@ -320,8 +353,21 @@ class ArrangeFruitsCollector:
                 except Exception:
                     pass
                 self.video_writers[env_id] = EpisodeVideoWriter(
-                    tmp_path, int(self.cfg.video_fps), (int(self.cfg.video_w), int(self.cfg.video_h))
+                    tmp_path,
+                    int(self.cfg.video_fps),
+                    (int(self.cfg.video_w), int(self.cfg.video_h)),
                 )
+
+            # Restart MotrixSim video recorder for env_id=0
+            # (MotrixSim only records the first environment)
+            if env_id == 0 and self.cfg.enable_motrix_video:
+                if (
+                    hasattr(self.env, "_motrix_recorder")
+                    and self.env._motrix_recorder is not None
+                ):
+                    # Use next saved_success as episode index for naming
+                    ep_idx = int(self.saved_success)
+                    self.env._motrix_recorder.restart_episode(self.videos_dir, ep_idx)
 
             self._attempt_id[env_id] += 1
             self.attempted += 1
@@ -348,8 +394,12 @@ class ArrangeFruitsCollector:
         completed = self._info_get_int(info, env_id, ["completed"], 0)
         is_grasped_env = self._info_get_bool(info, env_id, ["is_grasped"], False)
         touch_val = self._info_get_scalar(info, env_id, ["touch_val", "touch"], 0.0)
-        d_ee_fruit = self._info_get_scalar(info, env_id, ["dist_ee_fruit", "d_ee_fruit"], 0.0)
-        d_fruit_basket = self._info_get_scalar(info, env_id, ["dist_fruit_basket", "d_fruit_basket"], 0.0)
+        d_ee_fruit = self._info_get_scalar(
+            info, env_id, ["dist_ee_fruit", "d_ee_fruit"], 0.0
+        )
+        d_fruit_basket = self._info_get_scalar(
+            info, env_id, ["dist_fruit_basket", "d_fruit_basket"], 0.0
+        )
         in_basket = self._info_get_bool(info, env_id, ["in_basket"], False)
         is_success = self._info_get_bool(info, env_id, ["is_success", "success"], False)
 
@@ -385,7 +435,9 @@ class ArrangeFruitsCollector:
         vw.write(bgr)
         self.buffers[env_id]["video_frames"] += 1
 
-    def _flush_episode_jsonl(self, env_id: int, ep_idx: int, video_rel_path: str) -> None:
+    def _flush_episode_jsonl(
+        self, env_id: int, ep_idx: int, video_rel_path: str
+    ) -> None:
         path = os.path.join(self.cfg.save_dir, f"episode_{ep_idx:05d}.jsonl")
         buf = self.buffers[env_id]
         n = len(buf["times"])
@@ -394,7 +446,11 @@ class ArrangeFruitsCollector:
             for i in range(n):
                 legacy_state = buf["qpos"][i] + buf["gripper"][i]
                 rec = {
-                    "images_1": {"url": video_rel_path, "type": "video", "frame_idx": i},
+                    "images_1": {
+                        "url": video_rel_path,
+                        "type": "video",
+                        "frame_idx": i,
+                    },
                     "prompt": str(self.ep_prompt[env_id]),
                     "state": legacy_state,
                     "qpos": buf["qpos"][i],
@@ -415,7 +471,7 @@ class ArrangeFruitsCollector:
         tmp_path = self._tmp_video_paths[env_id]
 
         if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
-        # if True:
+            # if True:
             ep_idx = int(self.saved_success)
             final_video_abs = os.path.join(self.videos_dir, f"episode_{ep_idx:05d}.mp4")
             video_rel_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -466,7 +522,9 @@ class ArrangeFruitsCollector:
         data = self.env._state.data
 
         # Sync our current fruit idx with env internal index (env increments when place succeeds)
-        env_cur = np.asarray(getattr(self.env, "current_obj_idx", np.zeros((B,), dtype=np.int32))).reshape(-1)
+        env_cur = np.asarray(
+            getattr(self.env, "current_obj_idx", np.zeros((B,), dtype=np.int32))
+        ).reshape(-1)
         N = len(self.env._cfg.fruit_names)
         advance = running & (env_cur > self.current_fruit_idx) & (env_cur < N)
         if np.any(advance):
@@ -480,13 +538,19 @@ class ArrangeFruitsCollector:
             self.states[done_all] = self.ST_DONE
 
         # Latch fruit pos at IDLE -> GO_ABOVE
-        m_idle = running & (self.states == self.ST_IDLE) & (self.current_fruit_idx < len(self.env._cfg.fruit_names))
+        m_idle = (
+            running
+            & (self.states == self.ST_IDLE)
+            & (self.current_fruit_idx < len(self.env._cfg.fruit_names))
+        )
         if np.any(m_idle):
             idxs = self.current_fruit_idx.copy()
             # latch current fruit pose
             for i in np.where(m_idle)[0].tolist():
                 f_i = int(idxs[i])
-                pose7 = np.asarray(self.fruit_bodies[f_i].get_pose(data[i]), dtype=np.float32).reshape(-1)
+                pose7 = np.asarray(
+                    self.fruit_bodies[f_i].get_pose(data[i]), dtype=np.float32
+                ).reshape(-1)
                 self.latched_fruit_pos[i] = pose7[:3]
             self._enter_state(m_idle, self.ST_GO_ABOVE)
 
@@ -556,8 +620,7 @@ class ArrangeFruitsCollector:
             tgt_pos[m7] = retreat_p[m7]
             grip_cmd[m7] = float(cfg.gripper_open)
 
-        ref_pose_6d = self.env.robot.ref_ee_pose   # (B,6)
-
+        ref_pose_6d = self.env.robot.ref_ee_pose  # (B,6)
 
         ref_pos = ref_pose_6d[:, :3]
         ref_rpy = ref_pose_6d[:, 3:6]
@@ -568,11 +631,12 @@ class ArrangeFruitsCollector:
         action[:, :3] = self.exec_pos - ref_pos
         action[:, :2] *= 0.5
         action[:, 2] *= 1
-        action[:, 3:6] = 0 
+        action[:, 3:6] = 0
         action[:, 6] = grip_cmd
         self._last_action[:] = action
 
         self.env.step(action)
+
         # reach checks (use exec_pos)
         def _reach(p: np.ndarray) -> np.ndarray:
             return np.linalg.norm(self.exec_pos - p, axis=1) < float(cfg.pos_tol)
@@ -583,22 +647,34 @@ class ArrangeFruitsCollector:
         reach_basket = _reach(basket_p)
         reach_retreat = _reach(retreat_p)
 
-        self._enter_state(running & (s == self.ST_GO_ABOVE) & reach_above, self.ST_DESCEND)
+        self._enter_state(
+            running & (s == self.ST_GO_ABOVE) & reach_above, self.ST_DESCEND
+        )
         self._enter_state(running & (s == self.ST_DESCEND) & reach_grasp, self.ST_CLOSE)
 
         in_close = running & (self.states == self.ST_CLOSE)
-        close_done = in_close & ((self.ctrl_step - self.state_enter_step) >= int(cfg.close_hold_steps))
+        close_done = in_close & (
+            (self.ctrl_step - self.state_enter_step) >= int(cfg.close_hold_steps)
+        )
         self._enter_state(close_done, self.ST_LIFT)
 
-        self._enter_state(running & (self.states == self.ST_LIFT) & reach_lift, self.ST_GO_BASKET)
-        self._enter_state(running & (self.states == self.ST_GO_BASKET) & reach_basket, self.ST_OPEN)
+        self._enter_state(
+            running & (self.states == self.ST_LIFT) & reach_lift, self.ST_GO_BASKET
+        )
+        self._enter_state(
+            running & (self.states == self.ST_GO_BASKET) & reach_basket, self.ST_OPEN
+        )
 
         in_open = running & (self.states == self.ST_OPEN)
 
-        open_done = in_open & ((self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps))
+        open_done = in_open & (
+            (self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps)
+        )
         self._enter_state(open_done, self.ST_RETREAT)
 
-        self._enter_state(running & (self.states == self.ST_RETREAT) & reach_retreat, self.ST_IDLE)
+        self._enter_state(
+            running & (self.states == self.ST_RETREAT) & reach_retreat, self.ST_IDLE
+        )
 
         # done by env success latch（兼容 is_success / success）
         info = self.env._state.info
@@ -627,13 +703,17 @@ class ArrangeFruitsCollector:
             running = self.active & (~self.done)
 
             # 2) capture
-            sample_mask = running & ((self.ctrl_step % int(cfg.sample_every_steps)) == 0)
+            sample_mask = running & (
+                (self.ctrl_step % int(cfg.sample_every_steps)) == 0
+            )
             for env_id in np.where(sample_mask)[0].tolist():
                 self._capture_step(int(env_id))
 
             # 3) render
             if cfg.save_video:
-                render_mask = running & ((self.ctrl_step % int(cfg.render_every_steps)) == 0)
+                render_mask = running & (
+                    (self.ctrl_step % int(cfg.render_every_steps)) == 0
+                )
                 for env_id in np.where(render_mask)[0].tolist():
                     self._write_video_frame(int(env_id))
 
@@ -643,7 +723,10 @@ class ArrangeFruitsCollector:
             # 5) read env success
             info = self.env._state.info
             is_success = np.asarray(
-                info.get("is_success", info.get("success", np.zeros((self.B,), dtype=np.bool_))),
+                info.get(
+                    "is_success",
+                    info.get("success", np.zeros((self.B,), dtype=np.bool_)),
+                ),
                 dtype=np.bool_,
             ).reshape(-1)
 
@@ -653,12 +736,13 @@ class ArrangeFruitsCollector:
                     continue
 
                 timeout = int(self.ctrl_step[i]) >= int(cfg.max_ctrl_steps)
-                finished = bool(is_success[i]) or (int(self.states[i]) == int(self.ST_DONE))
+                finished = bool(is_success[i]) or (
+                    int(self.states[i]) == int(self.ST_DONE)
+                )
 
                 if finished or timeout:
                     self.done[i] = True
                     self.success[i] = bool(is_success[i])
-
 
             # 7) finalize ALL done envs first (no restart inside per-env loop!)
             done_ids = np.where(self.active & self.done)[0]
@@ -685,11 +769,17 @@ class ArrangeFruitsCollector:
                 )
                 self._last_log_t = now
 
-        print(f"[DONE] saved_success={self.saved_success}/{target}, attempted={int(self.attempted)}")
+        print(
+            f"[DONE] saved_success={self.saved_success}/{target}, attempted={int(self.attempted)}"
+        )
         print(f"Saved to: {cfg.save_dir}")
 
-
     def close(self) -> None:
+        # 关闭 MotrixSim 视频录制器
+        if hasattr(self.env, "close"):
+            self.env.close()
+
+        # 关闭 3DGS 视频写入器
         for vw in self.video_writers:
             if vw is not None:
                 vw.close()
@@ -707,8 +797,21 @@ def main() -> None:
     p.add_argument("--no_video", action="store_true")
     p.add_argument("--max_ctrl_steps", type=int, default=None)
 
+    # MotrixSim 视频录制参数
+    p.add_argument(
+        "--enable_motrix_video",
+        action="store_true",
+        default=True,
+        help="Enable MotrixSim renderer video recording (default: False)",
+    )
+
     # env cfg override（只允许改 env 已有字段）
-    p.add_argument("--action_mode", type=str, default="eef_relative", choices=["eef", "eef_relative", "joint"])
+    p.add_argument(
+        "--action_mode",
+        type=str,
+        default="eef_relative",
+        choices=["eef", "eef_relative", "joint"],
+    )
     args = p.parse_args()
 
     env_cfg = ArrangeFruitsEnvCfg()
@@ -717,11 +820,17 @@ def main() -> None:
 
     cfg = CollectorCfg(
         save_dir=args.save_dir if args.save_dir is not None else CollectorCfg.save_dir,
-        data_size=args.data_size if args.data_size is not None else CollectorCfg.data_size,
+        data_size=args.data_size
+        if args.data_size is not None
+        else CollectorCfg.data_size,
         num_envs=args.num_envs if args.num_envs is not None else CollectorCfg.num_envs,
         seed=args.seed if args.seed is not None else CollectorCfg.seed,
         save_video=(not args.no_video),
-        max_ctrl_steps=args.max_ctrl_steps if args.max_ctrl_steps is not None else CollectorCfg.max_ctrl_steps,
+        max_ctrl_steps=args.max_ctrl_steps
+        if args.max_ctrl_steps is not None
+        else CollectorCfg.max_ctrl_steps,
+        # MotrixSim 视频录制配置
+        enable_motrix_video=(args.enable_motrix_video),
     )
 
     runner = ArrangeFruitsCollector(cfg, env_cfg=env_cfg)
