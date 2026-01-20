@@ -25,10 +25,10 @@
   </worldbody>
 
   <sensor>
-    <contact name="FL_foot_contact" geom1="FL_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
-    <contact name="FR_foot_contact" geom1="FR_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
-    <contact name="RL_foot_contact" geom1="RL_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
-    <contact name="RR_foot_contact" geom1="RR_foot" geom2="floor" data="found force pos normal tangent" num="1" reduce="none"/>
+    <contact name="FL_foot_contact" geom1="floor" geom2="FL_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
+    <contact name="FR_foot_contact" geom1="floor" geom2="FR_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
+    <contact name="RL_foot_contact" geom1="floor" geom2="RL_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
+    <contact name="RR_foot_contact" geom1="floor" geom2="RR_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
   </sensor>
 
   <keyframe>
