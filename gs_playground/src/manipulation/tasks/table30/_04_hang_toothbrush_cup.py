@@ -111,38 +111,38 @@ class HangToothbrushCupEnv(TaskEnv):
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
     
-        # ---- Task hooks ----
+    # ---- Task hooks ----
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
-            """
-            Randomization: Only jitter cup XY positions. Rack remains fixed.
-            """
-            if data.shape[0] == 0:
-                return
+        """
+        Randomization: Only jitter cup XY positions. Rack remains fixed.
+        """
+        if data.shape[0] == 0:
+            return
 
-            # 1. 只获取 Cup 的 Pose (Batch, 7)
-            # 移除了 rack_body 的获取
-            cup_poses = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)
+        # 1. 只获取 Cup 的 Pose (Batch, 7)
+        # 移除了 rack_body 的获取
+        cup_poses = np.asarray(self.cup_body.get_pose(data), dtype=np.float32)
 
-            # 2. 生成随机噪声
-            # 形状对应 (Batch, 2)，只针对 XY
-            xy_jitter = self._rng.uniform(
-                -self._cfg.xy_jitter, 
-                self._cfg.xy_jitter, 
-                size=(data.shape[0], 2)
-            ).astype(np.float32)
-            
-            # 3. 应用噪声
-            new_cup_poses = cup_poses.copy()
-            new_cup_poses[:, :2] = cup_poses[:, :2] + xy_jitter
+        # 2. 生成随机噪声
+        # 形状对应 (Batch, 2)，只针对 XY
+        xy_jitter = self._rng.uniform(
+            -self._cfg.xy_jitter, 
+            self._cfg.xy_jitter, 
+            size=(data.shape[0], 2)
+        ).astype(np.float32)
+        
+        # 3. 应用噪声
+        new_cup_poses = cup_poses.copy()
+        new_cup_poses[:, :2] = cup_poses[:, :2] + xy_jitter
 
-            # 4. 写回物理引擎
-            for env_idx in range(data.shape[0]):
-                # 仅设置 Cup，不再设置 Rack
-                self.cup_body.set_dof_pos(
-                    data[env_idx],
-                    new_cup_poses[env_idx],
-                    include_floatingbase=True,
-                )
+        # 4. 写回物理引擎
+        for env_idx in range(data.shape[0]):
+            # 仅设置 Cup，不再设置 Rack
+            self.cup_body.set_dof_pos(
+                data[env_idx],
+                new_cup_poses[env_idx],
+                include_floatingbase=True,
+            )
 
     def _reset_task_state(self, done: np.ndarray):
         done = np.asarray(done, dtype=bool)

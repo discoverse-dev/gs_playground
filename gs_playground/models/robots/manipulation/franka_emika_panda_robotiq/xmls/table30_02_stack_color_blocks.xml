@@ -33,7 +33,7 @@
     
     <camera fovy="43.365" name="front" pos="1.516 0.044 1.111" xyaxes="-0.043 0.999 -0.000 -0.551 -0.023 0.834"/>
 
-    <geom type="box" pos="0.5 0.02 0.075" size="0.125 0.225 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
+    <geom name="range" type="box" pos="0.5 0.02 0.075" size="0.125 0.225 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>

@@ -101,9 +101,6 @@
     <mesh name="toothbrush_cup_mesh_62" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_062.obj"/>
     <mesh name="toothbrush_cup_mesh_63" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_063.obj"/>
 
-
-
-
     <mesh name="rack_mesh_0"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_000.obj"/>
     <mesh name="rack_mesh_1"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_001.obj"/>
     <mesh name="rack_mesh_2"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_002.obj"/>
@@ -122,14 +119,14 @@
 
     <camera fovy="43.365" name="front" pos="1.574 0.022 1.073" xyaxes="-0.029 1.000 0.000 -0.488 -0.014 0.872"/>
 
-
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+
+    <geom name="range" type="box" pos="0.45 0 0.075" size="0.14 0.14 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
 
     <!-- Rack/Hooks: static body -->
     <body name="rack" pos="0.539524 0.323790 0.174200" quat="0.721105 0 0 -0.692826">
       <!-- <joint type="free" frictionloss="0.0001"/> -->
-
       <!-- collision + visual. If your rack mesh is non-convex, prefer primitive colliders in code. -->
       <geom name="rack_geom_0" type="mesh" mesh="rack_mesh_0" material="rack_mat" contype="1" conaffinity="1"/>
       <geom name="rack_geom_1" type="mesh" mesh="rack_mesh_1" material="rack_mat" contype="1" conaffinity="1"/>
