@@ -67,9 +67,6 @@ class Go1_train_env(Legged_Robot_Torch):
             )
             min = np.min(self.height_data)
             max = np.max(self.height_data)
-            # self.height_data = self.height_data - min
-            # self.height_data = self.height_data / (max - min)
-            # self.height_data = torch.from_numpy(self.height_data, device=self.device, dtype=torch.float32)
             self.height_data = torch.from_numpy(
                 self.height_data
             )  # 从numpy数组创建tensor
@@ -184,7 +181,6 @@ class Go1_train_env(Legged_Robot_Torch):
     def _reward_feet_air_time(self):
         # Reward long steps
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-        # contact = self.contact_forces[:, self.feet_indices, 2] > 1.0
         contact = self.foot_force[:, :, 0] > 1.0
         contact_filt = torch.logical_or(contact, self.last_contacts)
         self.last_contacts = contact
