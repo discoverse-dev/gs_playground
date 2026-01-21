@@ -32,6 +32,7 @@ dependencies = [
     "scipy",
     "datetime>=6.0",
     "opencv-python>=4.13.0.90",
+    "mediapy",
 ]
 
 [project.optional-dependencies]
