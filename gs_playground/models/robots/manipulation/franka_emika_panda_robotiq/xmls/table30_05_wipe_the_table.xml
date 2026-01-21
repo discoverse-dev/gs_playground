@@ -455,10 +455,6 @@
       <geom name="transparent_tape_paper_geom_part_025" type="mesh" mesh="transparent_tape_paper_part_025" material="transparent_tape_paper_mat"  contype="1" conaffinity="1"/>
       <site name="transparent_tape_paper_center" type="box" size="0.05 0.05 0.01" pos="0 0 0" rgba="1 0 0 0.2" quat="0.0748384 0.189223 -0.919095 0.337428"  group="4"/>
     </body>
-
-
-
-
   </worldbody>
 
     <sensor>

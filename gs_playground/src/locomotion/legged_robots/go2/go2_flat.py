@@ -98,7 +98,6 @@ class Go2_train_env(Legged_Robot_Torch):
     def _reward_feet_air_time(self):
         # Reward long steps
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-        # contact = self.contact_forces[:, self.feet_indices, 2] > 1.0
         contact = self.foot_force[:, :, 0] > 1.0
         contact_filt = torch.logical_or(contact, self.last_contacts)
         self.last_contacts = contact
@@ -112,6 +111,18 @@ class Go2_train_env(Legged_Robot_Torch):
         )  # no reward for zero command
         self.feet_air_time *= ~contact_filt
         return rew_airTime
+
+    def _reward_contact(self):
+        contact = self.foot_force[:, :, 0] > 1.0
+        res = torch.zeros(
+            self.num_envs, dtype=torch.float32, device=self.device, requires_grad=False
+        )
+        for i in range(len(self.feet_site)):
+            is_contact = (self.feet_phase[:, i] < 0.6) | (
+                torch.norm(self.commands[:, :2], dim=1) < 0.1
+            )
+            res += ~(contact[:, i] ^ is_contact)
+        return res
 
     def _reward_swing_feet_z(self):
         contact = self.foot_force[:, :, 0] > 1.0

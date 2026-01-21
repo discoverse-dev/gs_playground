@@ -59,8 +59,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 300
     save_dir: str = "./data/table30_hang_toothbrush_cup_env_collect_20" # Updated dir name
 
@@ -72,7 +72,7 @@ class CollectorCfg:
     pos_tol: float = 0.001 # 提高精度
 
     # keypoints offsets (world frame offsets)
-    grasp_offset: Tuple[float, float, float] = (0.0, 0, 0.02)
+    grasp_offset: Tuple[float, float, float] = (0.0, -0.04, 0.02)
     # 这个高度将作为 Approach 阶段的安全平面高度
     pre_grasp_z: float = 0.05 
 
@@ -82,7 +82,7 @@ class CollectorCfg:
 
     # gripper
     gripper_open: float = 0.0
-    gripper_close: float = 0.8
+    gripper_close: float = 0.75
     
     # timing / dwell
     close_hold_steps: int = 25
