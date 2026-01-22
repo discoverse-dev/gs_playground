@@ -85,8 +85,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 1
+    num_envs: int = 1
 
     seed: int = 1500
     save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_2"
@@ -116,7 +116,7 @@ class CollectorCfg:
 
     # gripper
     gripper_open: float = 0.0
-    gripper_close: float = 0.75
+    gripper_close: float = 0.8
 
     # timing / dwell
     close_hold_steps: int = 25
@@ -389,6 +389,7 @@ class HangToothbrushCupCollector:
             self.video_writers[env_id] = None
 
         if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
+        # if True :
             ep_idx = int(self.saved_success)
             final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
             abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)

@@ -66,7 +66,7 @@ class CollectorCfg:
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan"
 
     # env control
-    max_ctrl_steps: int = 800
+    max_ctrl_steps: int = 1000
 
     # motion params
     max_dp: float = 0.005
