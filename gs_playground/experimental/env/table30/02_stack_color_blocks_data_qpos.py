@@ -60,13 +60,13 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan"
 
     # env control
-    max_ctrl_steps: int = 1000
+    max_ctrl_steps: int = 800
 
     # motion params
     max_dp: float = 0.005
@@ -103,8 +103,8 @@ class CollectorCfg:
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 1280
-    video_h: int = 720
+    video_w: int = 640
+    video_h: int = 480
     cam_view_key: Optional[str] = "pixels/view_0"
 
     # text fields
@@ -356,7 +356,8 @@ class StackColorBlocksCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
-        if self.success[env_id]:
+        # if self.success[env_id]:
+        if True :
             if self.saved_count < self.cfg.data_size:
                 ep_idx = int(self.saved_count)
                 final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
@@ -452,8 +453,8 @@ class StackColorBlocksCollector:
         p_stack[:, 0] = base_p[:, 0] - 0.015
 
         # C. 结束阶段
-        p_retreat = base_p + np.array([0, 0, cfg.lift_dz + 0.05], dtype=np.float32)
-        p_home = np.tile(np.array([0.4, 0.0, 0.5], dtype=np.float32), (B, 1))
+        p_retreat = base_p + np.array([0, 0, cfg.lift_dz + 0.1], dtype=np.float32)
+        p_home = np.tile(np.array([0.33502 , 0    ,  0.11], dtype=np.float32), (B, 1))
 
         # --- 2. 目标分配 ---
         tgt_pos_curr = self.exec_pos.copy()
@@ -511,8 +512,21 @@ class StackColorBlocksCollector:
 
         # Phase 4: Release & Home
         set_target(self.ST_OPEN_HOLD, p_stack, cfg.gripper_open)
-        set_target(self.ST_RETREAT,   p_retreat, cfg.gripper_open)
-        set_target(self.ST_TO_HOME,   p_home, cfg.gripper_open)
+
+        retreat_yaw = self.latched_start_yaw 
+        
+        set_target(
+            self.ST_RETREAT,   
+            p_retreat, 
+            cfg.gripper_open
+        )
+        
+        set_target_yaw(
+            self.ST_TO_HOME,   
+            p_home, 
+            cfg.gripper_open,
+            retreat_yaw # 显式重置角度
+        )
 
         # --- 3. 执行控制：位置 ---
         self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos_curr, cfg.max_dp)

@@ -85,14 +85,14 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
 
     seed: int = 1500
     save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_2"
 
     # env control
-    max_ctrl_steps: int = 1200
+    max_ctrl_steps: int = 1500
 
     # motion position
     max_dp: float = 0.005
@@ -278,6 +278,7 @@ class HangToothbrushCupCollector:
         self.exec_pos[env_ids] = ee_pose_raw[env_ids, :3]
         self.latched_start_pos[env_ids] = ee_pose_raw[env_ids, :3]
         self.home_pos[env_ids] = ee_pose_raw[env_ids, :3]
+        print("self.home_pos",self.home_pos)
 
         if ee_pose_raw.shape[1] == 6:
             r = Rotation.from_euler("xyz", ee_pose_raw[env_ids, 3:6], degrees=False)
