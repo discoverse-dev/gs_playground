@@ -549,7 +549,13 @@ class StackColorBlocksCollector:
         phase_yaw[use_tgt] = tgt_yaw[use_tgt].astype(np.float32)
 
         # Build desired quaternion (xyzw) using Rot Z synthesis
-        want_rot = running & (~np.isnan(phase_yaw))
+        # want_rot = running & (~np.isnan(phase_yaw))
+        want_rot = running & (~np.isnan(phase_yaw)) & (
+            (s == self.ST_APP_ALIGN_YAW) |
+            (s == self.ST_TRP_ALIGN_YAW) |
+            (s == self.ST_TO_HOME)
+        )
+
         desired_quat = self.exec_quat.copy() 
 
         if np.any(want_rot):

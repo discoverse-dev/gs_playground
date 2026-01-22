@@ -152,11 +152,14 @@ class StackColorBlocksEnv(TaskEnv):
 
             # 假设四元数顺序为 xyzw (scipy 默认)
             q_old = new_pose[..., 3:7].reshape(-1, 4) 
+            # print("q_old",q_old)
             r_old = R.from_quat(q_old)
             r_yaw = R.from_euler("z", yaw.reshape(-1), degrees=False)
             r_new = r_yaw * r_old
 
             q_new = r_new.as_quat().astype(np.float32).reshape(B, C, 4)
+            # print("q_new",q_new)
+
             new_pose[..., 3:7] = q_new
 
             # ---- 3) 随机打乱方块索引 (Permute) ----
