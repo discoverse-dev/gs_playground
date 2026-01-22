@@ -89,7 +89,7 @@ class CollectorCfg:
     num_envs: int = 5
 
     seed: int = 1500
-    save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_2"
+    save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_debug"
 
     # env control
     max_ctrl_steps: int = 1500

@@ -60,8 +60,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 8
+    num_envs: int = 8
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan"
 
@@ -86,7 +86,7 @@ class CollectorCfg:
     grasp_down_z: float = 0.0
 
     # 提升高度：作为所有水平移动的安全平面的相对高度
-    lift_dz: float = 0.10
+    lift_dz: float = 0.06
     cube_half: float = 0.025
 
     # gripper

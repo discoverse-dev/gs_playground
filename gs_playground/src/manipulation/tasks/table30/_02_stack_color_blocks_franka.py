@@ -94,7 +94,7 @@ class StackColorBlocksEnv(TaskEnv):
 
             # ---- XML <geom name="range"> 参数 ----
             # pos="0.5 0.02 0.055", size="0.125 0.225 0.001"
-            range_center = np.array([0.5, 0.02], dtype=np.float32)
+            range_center = np.array([0.42, 0.02], dtype=np.float32)
             range_half_size = np.array([0.125, 0.225], dtype=np.float32)
             
             # 计算采样边界

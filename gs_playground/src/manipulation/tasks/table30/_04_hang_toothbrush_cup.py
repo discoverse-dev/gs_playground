@@ -70,8 +70,8 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     pre_hang_dist_threshold: float = 0.03
     hang_dist_threshold: float = 0.05
 
-    reset_pos_target: Tuple[float, float, float] = (0.33502 , 0    ,  0.11)
-    reset_dist_threshold: float = 0.06
+    reset_pos_target: Tuple[float, float, float] = (0.32 , 0.00084485 ,0.31)
+    reset_dist_threshold: float = 0.10
 
     # randomization
     xy_jitter: float = 0.10  # uniform[-xy_jitter, xy_jitter] (meters)
@@ -142,7 +142,7 @@ class HangToothbrushCupEnv(TaskEnv):
             # A. 位置随机化 (Absolute Range)
             # ---------------------------
             # 对应 XML: pos="0.45 0.0 ..." size="0.14 0.14 ..."
-            range_center = np.array([0.45, 0.0], dtype=np.float32)
+            range_center = np.array([0.43, -0.05], dtype=np.float32)
             range_half = np.array([0.14, 0.14], dtype=np.float32)
 
             lower_bound = range_center - range_half
@@ -275,8 +275,7 @@ class HangToothbrushCupEnv(TaskEnv):
         # 5) Stage 2 sparse: reset-after-hung (final success)
         reset_pos = np.asarray(cfg.reset_pos_target, dtype=np.float32).reshape(1, 3)
         d_ee_reset = np.linalg.norm(ee_pos - reset_pos, axis=1)
-        print("ee_pos",ee_pos)
-        print("d_ee_reset",d_ee_reset)
+
         reset_now = self.is_hung & (~self.is_reset) & (d_ee_reset < cfg.reset_dist_threshold)
         self.is_reset = self.is_reset | reset_now
 
@@ -288,12 +287,12 @@ class HangToothbrushCupEnv(TaskEnv):
         total_reward = r_reach + r_grasp_fixed + r_pre_hang_fixed + r_move + r_hang_sparse + r_reset_sparse
         # print(total_reward)
         # print(r_reach,r_grasp_fixed,r_pre_hang_fixed,r_move,r_hang_sparse,r_reset_sparse)
-        if self.is_pre_hang.any() :
-            print("d_cup_pre_hang",d_cup_pre_hang)
-            print("d_cup_hang",d_cup_hang)
-            print("hang_tgt",hang_tgt)
-            print("cup_grasp_pos",cup_grasp_pos)
-        print("is_hung",self.is_hung)
+        # if self.is_pre_hang.any() :
+        #     print("d_cup_pre_hang",d_cup_pre_hang)
+        #     print("d_cup_hang",d_cup_hang)
+        #     print("hang_tgt",hang_tgt)
+        #     print("cup_grasp_pos",cup_grasp_pos)
+        # print("is_hung",self.is_hung)
         # ---- stash info ----
         info["d_ee_cup"] = d_ee_cup
         info["d_cup_pre_hang"] = d_cup_pre_hang
