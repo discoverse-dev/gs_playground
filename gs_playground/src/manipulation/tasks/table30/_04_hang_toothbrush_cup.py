@@ -292,6 +292,7 @@ class HangToothbrushCupEnv(TaskEnv):
         #     print("d_cup_hang",d_cup_hang)
         #     print("hang_tgt",hang_tgt)
         #     print("cup_grasp_pos",cup_grasp_pos)
+        #     print("d_ee_reset",d_ee_reset)
         # print("is_hung",self.is_hung)
         # ---- stash info ----
         info["d_ee_cup"] = d_ee_cup
