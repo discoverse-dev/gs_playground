@@ -1,0 +1,58 @@
+<mujoco model="panda_press_buttons">
+  <!-- Robot -->
+  <include file="panda_robotiq_224.xml"/>
+
+  <!-- <statistic center="0.3 0 0.4" extent="1"/> -->
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="12" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <!-- Environment -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+
+    <!-- <camera fovy="43.365" name="front" pos="1.05139524 0.00603114 0.6419337" quat="0.6090352  0.29501705 0.31961847 0.66323834"/>
+     -->
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/> 
+
+    <!-- <camera pos="2.176 -1.172 1.145" xyaxes="0.474 0.880 0.000 -0.344 0.185 0.921"/>
+     -->
+    <!-- <camera fovy="43.36" name="front" pos="0.90 0.029 0.57" xyaxes="-0.109 0.993 0.038 -0.659 -0.101 0.745"/>
+     -->
+   <camera pos="0.640 0.013 1.295" xyaxes="0.185 0.983 -0.000 -0.981 0.185 0.063"/>
+
+
+
+   
+  </worldbody>
+
+ 
+  <keyframe>
+
+    <key name="home"
+        qpos='0.00123 0.01763 0.34764 -2.36648 0.00347 2.26305 -0.95601 5.19045e-21 6.86723e-21'
+        ctrl="0.00123 0.01763 0.34764 -2.36648 0.00347 2.26305 -0.95601 0"
+  />
+  </keyframe>
+
+</mujoco>
+

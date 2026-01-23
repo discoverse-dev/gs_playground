@@ -58,7 +58,7 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 4
+    data_size: int = 1
     num_envs: int = 1
     seed: int = 0
     save_dir: str = "./data/table30_press_three_buttons_env_collect"

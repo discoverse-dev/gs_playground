@@ -7,4 +7,5 @@ from gs_playground.src.manipulation.tasks.table30 import _01_press_three_buttons
 from gs_playground.src.manipulation.tasks.table30 import _04_hang_toothbrush_cup
 from gs_playground.src.manipulation.tasks.table30 import _05_wipe_the_table
 from gs_playground.src.manipulation.tasks.table30 import _06_put_cup_on_coaster
+from gs_playground.src.manipulation.tasks.table30 import _13_arrange_flowers
 
