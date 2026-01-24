@@ -81,100 +81,101 @@ class StackColorBlocksEnv(TaskEnv):
     # -----------------------------------------------------------------------------
 
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
-            if data.shape[0] == 0:
-                return
+            # if data.shape[0] == 0:
+            #     return
 
 
 
-            B = data.shape[0]
-            C = len(self.cube_bodies)
+            # B = data.shape[0]
+            # C = len(self.cube_bodies)
 
-            min_xy_dist = 0.08
-            max_tries = 100  # 增加尝试次数以确保在有限空间内能找到不重叠的解
+            # min_xy_dist = 0.08
+            # max_tries = 100  # 增加尝试次数以确保在有限空间内能找到不重叠的解
 
-            # ---- XML <geom name="range"> 参数 ----
-            # pos="0.5 0.02 0.055", size="0.125 0.225 0.001"
-            range_center = np.array([0.42, 0.02], dtype=np.float32)
-            range_half_size = np.array([0.125, 0.225], dtype=np.float32)
+            # # ---- XML <geom name="range"> 参数 ----
+            # # pos="0.5 0.02 0.055", size="0.125 0.225 0.001"
+            # range_center = np.array([0.42, 0.02], dtype=np.float32)
+            # range_half_size = np.array([0.125, 0.225], dtype=np.float32)
             
-            # 计算采样边界
-            lower_bound = range_center - range_half_size
-            upper_bound = range_center + range_half_size
+            # # 计算采样边界
+            # lower_bound = range_center - range_half_size
+            # upper_bound = range_center + range_half_size
 
-            # 获取当前位姿作为基础容器 (主要用于保持 Z 轴高度和初始旋转)
-            cube_pose = np.stack(
-                [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
-                axis=1,
-            )
-            new_pose = cube_pose.copy()
+            # # 获取当前位姿作为基础容器 (主要用于保持 Z 轴高度和初始旋转)
+            # cube_pose = np.stack(
+            #     [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
+            #     axis=1,
+            # )
+            # new_pose = cube_pose.copy()
             
-            # 初始化采样状态
-            # remaining: 标记哪些环境(env)还没有生成合法的(不重叠的)位置
-            remaining = np.ones((B,), dtype=bool)
+            # # 初始化采样状态
+            # # remaining: 标记哪些环境(env)还没有生成合法的(不重叠的)位置
+            # remaining = np.ones((B,), dtype=bool)
             
-            # 用于距离计算的对角线掩码 (避免计算自己到自己的距离为0)
-            eye_mask = (np.eye(C, dtype=np.float32) * 1e6)[None, :, :]
+            # # 用于距离计算的对角线掩码 (避免计算自己到自己的距离为0)
+            # eye_mask = (np.eye(C, dtype=np.float32) * 1e6)[None, :, :]
 
-            # ---- 1) 在 range 范围内随机生成 XY，并保证最小间距 ----
-            for _ in range(max_tries):
-                if not remaining.any():
-                    break
+            # # ---- 1) 在 range 范围内随机生成 XY，并保证最小间距 ----
+            # for _ in range(max_tries):
+            #     if not remaining.any():
+            #         break
 
-                n_rem = int(remaining.sum())
+            #     n_rem = int(remaining.sum())
                 
-                # 在边界内均匀采样: shape (n_rem, C, 2)
-                # cand_xy = lower + (upper - lower) * rand
-                rand_uniform = self._rng.uniform(0.0, 1.0, size=(n_rem, C, 2)).astype(np.float32)
-                cand_xy = lower_bound + (upper_bound - lower_bound) * rand_uniform
+            #     # 在边界内均匀采样: shape (n_rem, C, 2)
+            #     # cand_xy = lower + (upper - lower) * rand
+            #     rand_uniform = self._rng.uniform(0.0, 1.0, size=(n_rem, C, 2)).astype(np.float32)
+            #     cand_xy = lower_bound + (upper_bound - lower_bound) * rand_uniform
 
-                # 计算两两之间的距离
-                # diff shape: (n_rem, C, C, 2)
-                diff = cand_xy[:, :, None, :] - cand_xy[:, None, :, :]
-                # dist shape: (n_rem, C, C)
-                dist = np.linalg.norm(diff, axis=-1) + eye_mask
+            #     # 计算两两之间的距离
+            #     # diff shape: (n_rem, C, C, 2)
+            #     diff = cand_xy[:, :, None, :] - cand_xy[:, None, :, :]
+            #     # dist shape: (n_rem, C, C)
+            #     dist = np.linalg.norm(diff, axis=-1) + eye_mask
                 
-                # 检查是否所有物体的间距都 >= min_xy_dist
-                # ok shape: (n_rem,)
-                ok = dist.min(axis=(1, 2)) >= float(min_xy_dist)
+            #     # 检查是否所有物体的间距都 >= min_xy_dist
+            #     # ok shape: (n_rem,)
+            #     ok = dist.min(axis=(1, 2)) >= float(min_xy_dist)
 
-                if ok.any():
-                    rem_idx = np.where(remaining)[0] # 找出所有还需要处理的 env 索引
-                    good_envs = rem_idx[ok]          # 从中找出这一轮生成成功的 env 索引
+            #     if ok.any():
+            #         rem_idx = np.where(remaining)[0] # 找出所有还需要处理的 env 索引
+            #         good_envs = rem_idx[ok]          # 从中找出这一轮生成成功的 env 索引
                     
-                    # 将成功的 XY 坐标填入 new_pose
-                    new_pose[good_envs, :, :2] = cand_xy[ok]
+            #         # 将成功的 XY 坐标填入 new_pose
+            #         new_pose[good_envs, :, :2] = cand_xy[ok]
                     
-                    # 标记这些环境已完成
-                    remaining[good_envs] = False
+            #         # 标记这些环境已完成
+            #         remaining[good_envs] = False
 
-            # ---- 2) 添加随机 Yaw 旋转 (保持 [-90, 90] 度) ----
-            yaw = self._rng.uniform(-0.25 * np.pi, 0.25 * np.pi, size=(B, C)).astype(np.float32)
+            # # ---- 2) 添加随机 Yaw 旋转 (保持 [-90, 90] 度) ----
+            # yaw = self._rng.uniform(-0.25 * np.pi, 0.25 * np.pi, size=(B, C)).astype(np.float32)
 
-            # 假设四元数顺序为 xyzw (scipy 默认)
-            q_old = new_pose[..., 3:7].reshape(-1, 4) 
-            # print("q_old",q_old)
-            r_old = R.from_quat(q_old)
-            r_yaw = R.from_euler("z", yaw.reshape(-1), degrees=False)
-            r_new = r_yaw * r_old
+            # # 假设四元数顺序为 xyzw (scipy 默认)
+            # q_old = new_pose[..., 3:7].reshape(-1, 4) 
+            # # print("q_old",q_old)
+            # r_old = R.from_quat(q_old)
+            # r_yaw = R.from_euler("z", yaw.reshape(-1), degrees=False)
+            # r_new = r_yaw * r_old
 
-            q_new = r_new.as_quat().astype(np.float32).reshape(B, C, 4)
-            # print("q_new",q_new)
+            # q_new = r_new.as_quat().astype(np.float32).reshape(B, C, 4)
+            # # print("q_new",q_new)
 
-            new_pose[..., 3:7] = q_new
+            # new_pose[..., 3:7] = q_new
 
-            # ---- 3) 随机打乱方块索引 (Permute) ----
-            # 这一步让颜色和位置的对应关系随机化
-            perm = np.argsort(self._rng.random((B, C)).astype(np.float32), axis=1)
-            new_pose = np.take_along_axis(new_pose, perm[:, :, None], axis=1)
+            # # ---- 3) 随机打乱方块索引 (Permute) ----
+            # # 这一步让颜色和位置的对应关系随机化
+            # perm = np.argsort(self._rng.random((B, C)).astype(np.float32), axis=1)
+            # new_pose = np.take_along_axis(new_pose, perm[:, :, None], axis=1)
 
-            # ---- 写回物理引擎 ----
-            for env_idx in range(B):
-                for cube_idx, body in enumerate(self.cube_bodies):
-                    body.set_dof_pos(
-                        data[env_idx],
-                        new_pose[env_idx, cube_idx],
-                        include_floatingbase=True,
-                    )
+            # # ---- 写回物理引擎 ----
+            # for env_idx in range(B):
+            #     for cube_idx, body in enumerate(self.cube_bodies):
+            #         body.set_dof_pos(
+            #             data[env_idx],
+            #             new_pose[env_idx, cube_idx],
+            #             include_floatingbase=True,
+            #         )
+            return 
 
 
     def _reset_task_state(self, done: np.ndarray):

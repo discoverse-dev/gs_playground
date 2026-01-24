@@ -85,8 +85,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1000
-    num_envs: int = 18
+    data_size: int = 10
+    num_envs: int = 15
 
     seed: int = 1500
     save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_debug"

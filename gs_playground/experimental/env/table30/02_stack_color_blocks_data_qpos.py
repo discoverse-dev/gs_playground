@@ -60,8 +60,9 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 8
-    num_envs: int = 8
+    data_size: int = 3
+    num_envs: int = 3
+    
     seed: int = 42
     save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan"
 
@@ -356,8 +357,8 @@ class StackColorBlocksCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
-        # if self.success[env_id]:
-        if True :
+        if self.success[env_id]:
+        # if True :
             if self.saved_count < self.cfg.data_size:
                 ep_idx = int(self.saved_count)
                 final_video_path = f"videos/episode_{ep_idx:05d}.mp4"

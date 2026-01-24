@@ -240,6 +240,10 @@
                     <body name="robotiq_base" childclass="2f85" quat="1 0 0 -1" pos="0 0 0.11" gravcomp="1">
                       <inertial mass="0.777441" pos="0 -2.70394e-05 0.0354675" quat="1 -0.00152849 0 0"
                         diaginertia="0.000260285 0.000225381 0.000152708"/>
+                        <camera name="hand_cam" mode="fixed"
+                            pos="0.00703378 0.14769519 -0.02045677"
+                            xyaxes="-0.99908848 -0.03738158 0.02061130   -0.02467457 0.89973124 0.43574633"
+                            fovy="43.22" resolution="640 480"/>
                       <geom class="visual_gripper" pos="0 0 0.0108" quat="0 0 0 1" mesh="robotiq_base"/>
                       <geom class="visual_gripper" pos="0 0 0.004" quat="0.707107 -0.707107 0 0"   mesh="base_coupling"/>
                       <geom class="visual_gripper" pos="0 0 0.0108" quat="1 0 0 0"  material="metal" mesh="c-a01-85-open"/>
