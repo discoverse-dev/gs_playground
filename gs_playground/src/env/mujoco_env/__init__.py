@@ -1,1 +1,1 @@
-from .mj_env import MujocoEnv, MujocoEnvState
+from .mj_env import MjNpEnv, MjNpEnvState
