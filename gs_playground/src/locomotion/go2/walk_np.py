@@ -58,15 +58,11 @@ def quat_rotate_inverse(quats, v):
     return v_rotated
 
 
-@registry.env("go2-flat-terrain-walk-mj", sim_backend="mujoco")
+@registry.env("go2-flat-terrain-walk", sim_backend="mujoco")
 class Go2WalkTaskMj(MjNpEnv):
     def __init__(self, cfg: Go2WalkNpEnvCfg, num_envs=1):
         super().__init__(cfg, num_envs)
-        self._init_action_space()
-        self._init_obs_space()
-        self._num_action = self._action_space.shape[0]
-        self._num_observation = self._observation_space.shape[0]
-        
+
         self.nq = self._model.nq
         self.nv = self._model.nv
         # Offsets in physics_state (mjSTATE_FULLPHYSICS: time, qpos, qvel, act, qacc_warmstart)
@@ -76,7 +72,12 @@ class Go2WalkTaskMj(MjNpEnv):
 
         self._num_dof_pos = self.nq - 7 # Floating base 7
         self._num_dof_vel = self.nv - 6 # Floating base 6
-
+        
+        self._init_action_space()
+        self._num_action = self._action_space.shape[0]
+        self._init_obs_space()
+        self._num_observation = self._observation_space.shape[0]
+        
         self._init_dof_vel = np.zeros(
             (self._num_dof_vel,),
             dtype=np.float32,
@@ -135,12 +136,14 @@ class Go2WalkTaskMj(MjNpEnv):
         # model = self.model
         num_dof_vel = self._num_dof_vel
         num_joint_angle = self._num_dof_pos
+        num_linvel = 3
+        num_gyro = 3
         num_gravity = 3
         num_actions = self._num_action
         num_command = 3
 
-        num_obs = num_dof_vel + num_joint_angle + num_gravity + num_actions + num_command
-        # assert num_obs == 48
+        num_obs = num_linvel + num_gyro + num_gravity + num_joint_angle + num_dof_vel + num_actions + num_command
+        # 3 + 3 + 3 + 12 + 12 + 12 + 3 = 48
 
         self._observation_space = gym.spaces.Box(-np.inf, np.inf, (num_obs,), dtype=np.float32)
 
@@ -354,6 +357,9 @@ class Go2WalkTaskMj(MjNpEnv):
         total_reward = np.zeros(self._num_envs, dtype=np.float32)
         scales = self.cfg.reward_config.scales
         
+        # Logging dictionary for rsl_rl
+        log = {}
+        
         for name, scale in scales.items():
             if scale == 0.0:
                 continue
@@ -361,7 +367,20 @@ class Go2WalkTaskMj(MjNpEnv):
             if name in self._reward_fns:
                 # Call standardized lambda/method
                 term = self._reward_fns[name](state)
-                total_reward += term * scale
+                weighted_reward = term * scale
+                total_reward += weighted_reward
+                
+                # Log average weighted reward per step
+                log[f"reward/{name}"] = np.mean(weighted_reward)
+        
+        # Log other info metrics
+        if "feet_air_time" in state.info:
+            log["metrics/feet_air_time"] = np.mean(state.info["feet_air_time"])
+        if "contacts" in state.info:
+            log["metrics/contact_rate"] = np.mean(state.info["contacts"].astype(float))
+
+        # Store log in info
+        state.info["log"] = log
         
         # Clip reward
         total_reward = np.clip(total_reward, 0.0, 10000.0)
@@ -421,7 +440,7 @@ class Go2WalkTaskMj(MjNpEnv):
             mj_data.qpos[:] = qpos_batch[i]
             mj_data.qvel[:] = qvel_batch[i]
             mj_data.ctrl[:] = 0.0
-            mj_data.acc[:] = 0.0
+            mj_data.qacc[:] = 0.0
             mj_data.qacc_warmstart[:] = 0.0
 
             # Execute Kinematics/Sensor update
@@ -462,7 +481,8 @@ class Go2WalkTaskMj(MjNpEnv):
         # Call _get_obs ONCE for the entire batch
         obs_batch = self._get_obs(obs_state, info)
 
-        return obs_batch, info
+        # MjNpEnv expects: new_physics_states, new_obs, info
+        return obs_physics_state, obs_batch, info
 
     # ------------ reward functions----------------
     def _reward_lin_vel_z(self, state):
