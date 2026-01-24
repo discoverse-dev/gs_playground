@@ -66,6 +66,21 @@ class Go2_train_env(Legged_Robot_Torch):
         self.feet_phase[:, 1] = (self.phase + 0.5) % 1
         self.feet_phase[:, 2] = (self.phase + 0.5) % 1
         super().post_physics_step()
+    def _get_noise_scale_vec(self):
+        noise_vec = torch.zeros(self.config.env.num_observations, device=self.device, dtype=torch.float32)
+        self.add_noise = self.config.noise.add_noise#self.cfg.noise.add_noise
+        noise_scales = self.config.noise.noise_scales
+        noise_level = self.config.noise.noise_level
+        self.obs_scales = self.config.normalization.obs_scales
+        # noise_vec[:3] = noise_scales.lin_vel * noise_level * self.obs_scales.lin_vel
+        noise_vec[0:3] = noise_scales.ang_vel * noise_level * self.obs_scales.ang_vel
+        noise_vec[3:6] = noise_scales.gravity * noise_level
+        # noise_vec[9:12] = 0. # commands
+        noise_vec[6:6+self.num_actions] = noise_scales.dof_pos * noise_level * self.obs_scales.dof_pos
+        noise_vec[6+self.num_actions:6+2*self.num_actions] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
+        noise_vec[6+2*self.num_actions:6+3*self.num_actions] = 0. # previous actions
+        
+        return noise_vec
 
     def compute_obs(self):
         # raise NotImplementedError("compute_obs() must be implemented for env")
@@ -94,7 +109,9 @@ class Go2_train_env(Legged_Robot_Torch):
             self.privileged_obs_buf[:, 33:45] = self.actions
             self.privileged_obs_buf[:, 45:48] = self.commands * self.commands_scale
             self.privileged_obs_buf[:, 48:52] = self.feet_phase
-
+        if self.add_noise:
+            self.obs += (2 * torch.rand_like(self.obs) - 1) * self.noise_vec
+           
     def _reward_feet_air_time(self):
         # Reward long steps
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
