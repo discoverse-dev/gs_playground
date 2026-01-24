@@ -94,7 +94,7 @@ class CollectorCfg:
     gripper_open: float = 0.0
     gripper_close: float = 0.82
 
-    # timing
+    # timingg
     close_hold_steps: int = 20
     waypoint_dwell_steps: int = 15 # 稍微增加停留时间等待稳定
 
@@ -417,7 +417,7 @@ class ArrangeFlowersCollector:
 
         # [Step 6] Retreat
         p_retreat = p_aligned.copy()
-        p_retreat[:, 0] -= 0.2
+        p_retreat[:, 0] -= 0.5
 
         
         home_pos = np.tile(np.array([0.335, 0.0, 0.11], dtype=np.float32), (B, 1))
@@ -576,7 +576,7 @@ class ArrangeFlowersCollector:
                 r_ok = is_rot_reached(rot_tgt, use_real_obs=check_real_rot) if use_rot else np.ones(B, dtype=bool)
                 reached =  r_ok
             else :
-                reached =  p_ok
+                reached =  p_ok & r_ok
             just_reached = in_state & reached & (self.state_reach_step == -1)
             if np.any(just_reached):
                 self.state_reach_step[just_reached] = self.ctrl_step[just_reached]

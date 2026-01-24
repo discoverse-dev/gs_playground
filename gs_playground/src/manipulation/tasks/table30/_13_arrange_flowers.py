@@ -72,7 +72,7 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
     touch_name_flower: str = "flower_touch"
 
     # Alignment Threshold (cos theta > 0.9 is approx < 25 degrees error)
-    alignment_thresh: float = 0.9
+    alignment_thresh: float = 0.6
 
     # Randomization: flower yaw about WORLD Z
     rand_yaw_deg_min: float = -45.0
@@ -138,8 +138,8 @@ class ArrangeFlowersEnv(TaskEnv):
             return
 
         # 1) Position Randomization (XY in a box)
-        center_pos = np.array([0.45, -0.06], dtype=np.float32)
-        half_size = np.array([0.1, 0.1], dtype=np.float32)
+        center_pos = np.array([0.45, -0.1], dtype=np.float32)
+        half_size = np.array([0.05, 0.05], dtype=np.float32)
 
         rand_xy_offset = self._rng.uniform(-half_size, half_size, size=(n_reset, 2)).astype(np.float32)
         target_xy = center_pos + rand_xy_offset
@@ -253,7 +253,7 @@ class ArrangeFlowersEnv(TaskEnv):
 
         # B. Insert Logic
         is_xy_near = dist_xy_flower_vase < self._cfg.success_dist_xy
-        is_deep_enough = (dist_z_flower_vase < -self._cfg.success_z_depth) & (dist_z_flower_vase > self._cfg.safe_z)
+        is_deep_enough = (dist_z_flower_vase < self._cfg.success_z_depth) & (dist_z_flower_vase > self._cfg.safe_z)
         is_inserted = is_xy_near & is_deep_enough & is_aligned_pose
         self.inserted_latched = self.inserted_latched | is_inserted
 
@@ -262,7 +262,12 @@ class ArrangeFlowersEnv(TaskEnv):
         is_retracted = (np.linalg.norm(ee_pos - vase_pos, axis=1) > 0.2) | (ee_pos[:, 2] > 0.4)
         is_success = self.inserted_latched & is_released & is_retracted
         self.success_latched = self.success_latched | is_success
-
+        print("is_success",self.success_latched)
+        print("flower_pose",flower_pose)
+        print("vase_pos",vase_pos)
+        print("dist_xy_flower_vase",dist_xy_flower_vase)
+        print("dist_z_flower_vase",dist_z_flower_vase)
+        print("align_score",align_score)
         # 5. Reward Calculation
         reward = np.zeros(self.num_envs, dtype=np.float32)
 

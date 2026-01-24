@@ -82,7 +82,7 @@ class CollectorCfg:
 
     # vase insertion
     vase_rim_height: float = 0.55
-    insert_depth: float = 0.15
+    insert_depth: float = 0.45
 
     # gripper
     gripper_open: float = 0.0
@@ -180,6 +180,7 @@ class ArrangeFlowersCollector:
         # Control targets (executor)
         self.exec_pos = np.zeros((self.B, 3), dtype=np.float32)
         self.exec_quat = np.zeros((self.B, 4), dtype=np.float32)
+        self.hold_quat = np.zeros((self.B, 4), dtype=np.float32)
 
         # Latches
         self.latched_flower_pos = np.zeros((self.B, 3), dtype=np.float32)
@@ -264,7 +265,7 @@ class ArrangeFlowersCollector:
                 euler = pose[3:]
                 self.exec_quat[idx] = Rotation.from_euler("xyz", euler).as_quat()
             self.latched_start_quat[idx] = self.exec_quat[idx].copy()
-
+        self.hold_quat[env_ids] = self.latched_start_quat[env_ids].copy()
         # Latch object poses
         flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)  # (B, 7) or sliced; here full
         vase_pose = np.asarray(self.vase_body.get_pose(data), dtype=np.float32)
@@ -349,6 +350,7 @@ class ArrangeFlowersCollector:
             self.video_writers[env_id].close()
             self.video_writers[env_id] = None
 
+        # if self.success[env_id]:
         if True:
             if self.saved_count < self.cfg.data_size:
                 ep_idx = int(self.saved_count)
@@ -396,6 +398,8 @@ class ArrangeFlowersCollector:
         self.states[mask] = new_state
         self.state_enter_step[mask] = self.ctrl_step[mask].copy()
         self.state_reach_step[mask] = -1
+
+
 
     def _step_logic(self) -> None:
         cfg = self.cfg
@@ -445,7 +449,7 @@ class ArrangeFlowersCollector:
 
         # Retreat + home
         p_retreat = p_aligned.copy()
-        p_retreat[:, 0] -= 0.2
+        p_retreat[:, 0] -= 0.1
 
         home_pos = np.tile(np.array([0.335, 0.0, 0.11], dtype=np.float32), (B, 1))
         p_home_x = p_retreat.copy()
@@ -485,9 +489,12 @@ class ArrangeFlowersCollector:
 
         # Phase 2: lift + rotate back + move to vase
         set_target(self.ST_LIFT_HIGH, p_lift_high, q_yaw, cfg.gripper_close)
-        set_target(self.ST_ROT_BACK_TO_ORIG, p_lift_high, q_def, cfg.gripper_close)
-        set_target(self.ST_TRP_ALIGN_X, p_vase_hover, q_def, cfg.gripper_close)
-        set_target(self.ST_TRP_ALIGN_Y, p_vase_hover, q_def, cfg.gripper_close)
+        # set_target(self.ST_ROT_BACK_TO_ORIG, p_lift_high, q_def, cfg.gripper_close)
+        # set_target(self.ST_TRP_ALIGN_X, p_vase_hover, q_def, cfg.gripper_close)
+        # set_target(self.ST_TRP_ALIGN_Y, p_vase_hover, q_def, cfg.gripper_close)
+        set_target(self.ST_ROT_BACK_TO_ORIG, p_lift_high, self.hold_quat, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_X, p_vase_hover, self.hold_quat, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_Y, p_vase_hover, self.hold_quat, cfg.gripper_close)
 
         # Phase 3/4/5: existing behavior
         set_target(self.ST_ROT_X, p_vase_hover, q_step1, cfg.gripper_close)
@@ -507,6 +514,22 @@ class ArrangeFlowersCollector:
                 current_pos = obs["ee_pose"][mask, :3]
                 tgt_pos_curr[mask] = current_pos
                 self.exec_pos[mask] = current_pos
+
+        def latch_hold_quat(mask: np.ndarray) -> None:
+            """Latch current observed EE orientation to self.hold_quat for envs in mask."""
+            if not np.any(mask):
+                return
+            rot_data = obs["ee_pose"][mask, 3:]
+            if rot_data.shape[1] == 4:
+                # already quaternion (xyzw)
+                self.hold_quat[mask] = rot_data.astype(np.float32)
+            elif rot_data.shape[1] == 3:
+                # euler (xyz)
+                self.hold_quat[mask] = Rotation.from_euler("xyz", rot_data, degrees=False).as_quat().astype(np.float32)
+            else:
+                # fallback
+                self.hold_quat[mask] = self.exec_quat[mask]
+
 
         freeze_pos_for_state(self.ST_APP_ROT_TO_YAW)
         freeze_pos_for_state(self.ST_ROT_BACK_TO_ORIG)
@@ -534,6 +557,7 @@ class ArrangeFlowersCollector:
                 self.exec_quat[i] = tgt_quat_curr[i]
 
         # Action (PD in eef_relative)
+
         ref_pose_6d = self.env.robot.ref_ee_pose
         ref_pos = ref_pose_6d[:, :3]
         ref_euler = ref_pose_6d[:, 3:6]
@@ -594,12 +618,11 @@ class ArrangeFlowersCollector:
             in_state = running & (s == state_id)
 
             p_ok = is_pos_reached(pos_tgt)
-
+            r_ok = is_rot_reached(rot_tgt, use_real_obs=check_real_rot)
             if use_rot:
-                r_ok = is_rot_reached(rot_tgt, use_real_obs=check_real_rot)
                 reached = r_ok if check_real_rot else (p_ok & r_ok)
             else:
-                reached = p_ok
+                reached = p_ok   & r_ok 
 
             just_reached = in_state & reached & (self.state_reach_step == -1)
             if np.any(just_reached):
@@ -632,16 +655,24 @@ class ArrangeFlowersCollector:
             done_close = t_in >= cfg.close_hold_steps
             self._enter_state(mask_close & done_close, self.ST_LIFT_HIGH)
 
-        # Phase 2: lift -> rotate back -> move to vase
-        self._enter_state(_check_and_dwell(self.ST_LIFT_HIGH, p_lift_high, q_yaw), self.ST_ROT_BACK_TO_ORIG)
+        # Phase 2: lift -> (settle without orientation lock) -> move to vase
+        to_back = _check_and_dwell(self.ST_LIFT_HIGH, p_lift_high, q_yaw)
+        if np.any(to_back):
+            # enter "ROT_BACK" state (now used as a settle/hold-orientation state)
+            self._enter_state(to_back, self.ST_ROT_BACK_TO_ORIG)
+            # latch the current orientation on entry, so we do NOT lock to any preset quat
+            latch_hold_quat(to_back)
 
-        self._enter_state(
-            _check_and_dwell(self.ST_ROT_BACK_TO_ORIG, self.exec_pos, q_def, use_rot=True, check_real_rot=True),
-            self.ST_TRP_ALIGN_X,
-        )
+        # ST_ROT_BACK_TO_ORIG: do a pure pause (no orientation target reaching), then go to TRP_ALIGN_X
+        mask_back = running & (s == self.ST_ROT_BACK_TO_ORIG)
+        if np.any(mask_back):
+            t_in = self.ctrl_step - self.state_enter_step
+            done_pause = t_in >= int(cfg.waypoint_dwell_steps)  # you can set a dedicated cfg if you want
+            self._enter_state(mask_back & done_pause, self.ST_TRP_ALIGN_X)
 
-        self._enter_state(_check_and_dwell(self.ST_TRP_ALIGN_X, p_vase_hover, q_def), self.ST_TRP_ALIGN_Y)
-        self._enter_state(_check_and_dwell(self.ST_TRP_ALIGN_Y, p_vase_hover, q_def), self.ST_ROT_X)
+        # Move to vase hover while holding latched orientation
+        self._enter_state(_check_and_dwell(self.ST_TRP_ALIGN_X, p_vase_hover, self.hold_quat), self.ST_TRP_ALIGN_Y)
+        self._enter_state(_check_and_dwell(self.ST_TRP_ALIGN_Y, p_vase_hover, self.hold_quat), self.ST_ROT_X)
 
         # Phase 3: near-vase rotation sequence (existing)
         self._enter_state(

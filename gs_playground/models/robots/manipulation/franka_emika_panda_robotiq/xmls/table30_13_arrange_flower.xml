@@ -2,7 +2,7 @@
   <include file="panda_robotiq.xml"/>
   <statistic center="0.3 0 0.4" extent="1"/>
 
-  <option timestep="0.005" iterations="100" ls_iterations="8" integrator="implicitfast">
+  <option timestep="0.005" iterations="100" ls_iterations="20" integrator="implicitfast">
     <flag eulerdamp="disable"/>
   </option>
 
@@ -18,10 +18,10 @@
 
   <default>
     <default class="vase_part">
-      <geom type="mesh" material="vase_mat" contype="1" conaffinity="1" density="100" group="1"/>
+      <geom type="mesh" material="vase_mat" contype="1" conaffinity="1"  group="1"/>
     </default>
     <default class="flower_part">
-      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="50" group="1"/>
+      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="100" group="1"/>
     </default>
   </default>
 
@@ -135,7 +135,7 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     <geom name="table" pos="0.45 0.06 0.0442" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
 
-    <body name="vase" pos="0.45 0.25 0.16" >
+    <body name="vase" pos="0.5 0.15 0.16" >
       <geom mesh="v_00" class="vase_part"/>
       <geom mesh="v_01" class="vase_part"/>
       <geom mesh="v_02" class="vase_part"/>
