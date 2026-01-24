@@ -8,7 +8,7 @@ import torch
 from scipy.spatial.transform import Rotation
 import motrixsim as mtx
 
-from .base import EnvCfg
+from ..base import EnvCfg
 from .mtx_env import NpEnv, NpEnvState
 
 from gaussian_renderer import BatchSplatConfig, MtxBatchSplatRenderer

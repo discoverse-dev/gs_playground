@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
-from .motrix_env.base import ABEnv, EnvCfg
+from .base import ABEnv, EnvCfg
 
 TEnvCfg = TypeVar("TEnvCfg", bound=EnvCfg)
 
