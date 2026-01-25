@@ -209,12 +209,12 @@ def main():
     else:
         print("Model loaded (no dict returned).")
     
-    policy = runner.alg.policy.actor
+    policy = runner.alg.policy
     policy.eval()
 
     # Need to move normalizer to eval mode to stop updating stats
-    if hasattr(runner.alg.policy, 'actor_obs_normalizer'):
-         runner.alg.policy.actor_obs_normalizer.eval()
+    if hasattr(policy, 'actor_obs_normalizer'):
+         policy.actor_obs_normalizer.eval()
          print("Actor observation normalizer set to eval mode.")
     
     # 3. Simulate
@@ -231,7 +231,8 @@ def main():
     for step in range(max_steps):
         with torch.no_grad():
             # Get Action
-            actions = policy(obs["policy"])
+            # Use act_inference to ensure observation normalization is applied if configured
+            actions = policy.act_inference(obs)
             # Step
             obs, rew, done, extras = vec_env.step(actions)
             
