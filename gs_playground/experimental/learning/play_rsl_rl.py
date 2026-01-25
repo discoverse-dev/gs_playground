@@ -197,7 +197,6 @@ def main():
         with torch.no_grad():
             # Get Action
             actions = policy(obs["policy"])
-            actions[:] = 0.0
             # Step
             obs, rew, done, extras = vec_env.step(actions)
             

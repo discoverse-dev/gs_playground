@@ -49,6 +49,21 @@ def axis_angle_to_quat(axis, angle):
     s = np.sin(half_angle)
     return np.stack([c, axis[:, 0]*s, axis[:, 1]*s, axis[:, 2]*s], axis=1)
 
+def quat_rotate(quats, v):
+    """
+    Rotate a fixed vector v by a list of quaternions.
+    Computes q * v * q^-1 (Standard rotation).
+    """
+    w = quats[:, 0]
+    im = -quats[:, 1:] # Note: Definition of im part sign usually determines rotation direction
+    # Standard formula for q * v * q' where q = [w, x, y, z] matches 
+    # v' = v + 2*w*(q_im x v) + 2*(q_im x (q_im x v))
+    # Note on sign: logic above in quat_rotate_inverse used im = -quats, implying quat convention
+    # Here we use standard:
+    xyz = quats[:, 1:]
+    t = 2 * np.cross(xyz, v)
+    return v + w[:, np.newaxis] * t + np.cross(xyz, t)
+
 
 @registry.env("go2-flat-terrain-walk", sim_backend="mujoco")
 class Go2WalkTaskMj(MjNpEnv):
@@ -125,7 +140,8 @@ class Go2WalkTaskMj(MjNpEnv):
         for name in expected_names:
             if name not in self.sensor_indices:
                 raise ValueError(f"Required contact sensor '{name}' not found in model. Available sensors: {list(self.sensor_indices.keys())}")
-            self.contact_sensor_indices.append(self.sensor_indices[name])
+            # Map sensor ID to data indices
+            self.contact_sensor_indices.extend(self._get_sensor_indices(name))
             
         print(f"Mapped contact sensors: {expected_names} -> {self.contact_sensor_indices}")
         
@@ -144,38 +160,39 @@ class Go2WalkTaskMj(MjNpEnv):
             expected_term_sensors = [f"{part}_contact" for part in possible_parts]
             for name in expected_term_sensors:
                 if name not in self.sensor_indices:
-                     # Check if it was optional? The user said "check validness"
-                     # We only added specific ones in XML. If an XML is updated but not code, or vice versa, this catches it.
                      raise ValueError(f"Required termination contact sensor '{name}' not found. Verify scene matching 'terminate_after_contacts_on'.")
-                self.termination_contact_indices.append(self.sensor_indices[name])
+                self.termination_contact_indices.extend(self._get_sensor_indices(name))
             print(f"Mapped termination sensors: {expected_term_sensors}")
 
         # Resolve 'local_linvel' and 'gyro'
-        if self._cfg.sensor.local_linvel not in self.sensor_indices:
-            raise ValueError(f"Sensor '{self._cfg.sensor.local_linvel}' not found.")
-        self.idx_linvel = self.sensor_indices[self._cfg.sensor.local_linvel]
-
-        if self._cfg.sensor.gyro not in self.sensor_indices:
-             raise ValueError(f"Sensor '{self._cfg.sensor.gyro}' not found.")
-        self.idx_gyro = self.sensor_indices[self._cfg.sensor.gyro]
+        self.idx_linvel = self._get_sensor_indices(self._cfg.sensor.local_linvel)
+        self.idx_gyro = self._get_sensor_indices(self._cfg.sensor.gyro)
         
-        # Resolve required sensors for observation/tracking
-        if "global_position" not in self.sensor_indices:
-            raise ValueError("Required sensor 'global_position' not found.")
-        self.idx_global_pos = self.sensor_indices["global_position"]
+        # Resolve required sensors for observation/tracking (Global sensors)
+        self.idx_global_linvel = self._get_sensor_indices("global_linvel")
+        self.idx_global_angvel = self._get_sensor_indices("global_angvel")
+        self.idx_upvector = self._get_sensor_indices("upvector")
         
-        if "orientation" not in self.sensor_indices:
-             raise ValueError("Required sensor 'orientation' not found.")
-        self.idx_orientation = self.sensor_indices["orientation"]
+        if "global_position" in self.sensor_indices:
+             self.idx_global_pos = self._get_sensor_indices("global_position")
+        
+        self.idx_orientation = self._get_sensor_indices("orientation")
 
         # Foot position sensors
         foot_names = ["FL", "FR", "RL", "RR"]
-        self.foot_pos_indices = []
+        self.foot_pos_sensor_indices = [] 
         for name in foot_names:
             sname = f"{name}_pos"
-            if sname not in self.sensor_indices:
-                raise ValueError(f"Required sensor '{sname}' not found.")
-            self.foot_pos_indices.append(self.sensor_indices[sname])
+            self.foot_pos_sensor_indices.append(self._get_sensor_indices(sname))
+
+    def _get_sensor_indices(self, name):
+        """Helper to get data indices from sensor name."""
+        if name not in self.sensor_indices:
+             raise ValueError(f"Sensor '{name}' not found.")
+        sensor_id = self.sensor_indices[name]
+        adr = self._model.sensor_adr[sensor_id]
+        dim = self._model.sensor_dim[sensor_id]
+        return list(range(adr, adr + dim))
 
 
     def _init_obs_space(self):
@@ -278,9 +295,7 @@ class Go2WalkTaskMj(MjNpEnv):
         self.foot_linvel_sensor_indices = []
         for site in foot_sites:
             name = f"{site}_global_linvel"
-            if name not in self.sensor_indices:
-                raise ValueError(f"Required foot linvel sensor '{name}' not found.")
-            self.foot_linvel_sensor_indices.append(self.sensor_indices[name])
+            self.foot_linvel_sensor_indices.append(self._get_sensor_indices(name))
 
     def apply_action(self, actions, state):
         # Update info for rewards
@@ -299,16 +314,19 @@ class Go2WalkTaskMj(MjNpEnv):
         return target_jq
 
     def get_local_linvel(self, state: MjNpEnvState) -> np.ndarray:
-        adr = self._model.sensor_adr[self.idx_linvel]
-        dim = self._model.sensor_dim[self.idx_linvel]
-        return state.sensor_data[:, adr:adr+dim]
+        return state.sensor_data[:, self.idx_linvel]
 
     def get_gyro(self, state: MjNpEnvState) -> np.ndarray:
-        if self.idx_gyro != -1:
-            adr = self._model.sensor_adr[self.idx_gyro]
-            dim = self._model.sensor_dim[self.idx_gyro]
-            return state.sensor_data[:, adr:adr+dim]
-        return np.zeros((self._num_envs, 3))
+        return state.sensor_data[:, self.idx_gyro]
+
+    def get_global_linvel(self, state: MjNpEnvState) -> np.ndarray:
+        return state.sensor_data[:, self.idx_global_linvel]
+
+    def get_global_angvel(self, state: MjNpEnvState) -> np.ndarray:
+        return state.sensor_data[:, self.idx_global_angvel]
+
+    def get_upvector(self, state: MjNpEnvState) -> np.ndarray:
+        return state.sensor_data[:, self.idx_upvector]
 
     def update_state(self, state, obs_required=True):
         # 1. Always update intermediate state info (sensors, math) needed for rewards/termination
@@ -372,30 +390,31 @@ class Go2WalkTaskMj(MjNpEnv):
             info["swing_peak"] = np.zeros((batch_size, 4), dtype=np.float32)
             
         foot_rel_pos_list = []
-        for idx in self.foot_pos_indices:
-             adr = self._model.sensor_adr[idx]
-             dim = self._model.sensor_dim[idx]
-             foot_rel_pos_list.append(state.sensor_data[:, adr:adr+dim])
+        for idx_list in self.foot_pos_sensor_indices:
+             foot_rel_pos_list.append(state.sensor_data[:, idx_list])
         foot_rel_pos = np.stack(foot_rel_pos_list, axis=1) # (N, 4, 3)
         
-        adr_pos = self._model.sensor_adr[self.idx_global_pos]
-        base_pos = state.sensor_data[:, adr_pos:adr_pos+3] # (N, 3)
-        
-        adr_quat = self._model.sensor_adr[self.idx_orientation]
-        base_quat = state.sensor_data[:, adr_quat:adr_quat+4] # (N, 4)
+        base_pos = state.sensor_data[:, self.idx_global_pos] # (N, 3)
+        base_quat = state.sensor_data[:, self.idx_orientation] # (N, 4)
         
         # Calculate Forward Kinematics manually: Global = Base + R * Local
-        # q_conj used because quat_rotate_inverse does q^-1 * v * q
         base_quat_conj = base_quat.copy()
-        base_quat_conj[:, 1:] *= -1
+        base_quat_conj[:, 1:] *= -1 # Conjugate
         
         foot_global_z = np.zeros((batch_size, 4), dtype=np.float32)
         for i in range(4):
             vec = foot_rel_pos[:, i, :]
+            # quat_rotate_inverse(q_conj, v) = q * v * q^-1 (Standard Rotate)
             vec_rot = quat_rotate_inverse(base_quat_conj, vec)
             foot_global_z[:, i] = (vec_rot + base_pos)[:, 2]
             
         info["foot_pos_z"] = foot_global_z
+        
+        # update swing peak
+        p_fz = foot_global_z
+        info["swing_peak"] = np.maximum(info["swing_peak"], p_fz)
+        # Reset peak on contact
+        info["swing_peak"] *= ~current_contacts
         info["swing_peak"] = np.maximum(info["swing_peak"], foot_global_z)
         info["swing_peak_at_contact"] = info["swing_peak"] * current_contacts
         info["swing_peak"] *= ~current_contacts
@@ -604,17 +623,21 @@ class Go2WalkTaskMj(MjNpEnv):
     # ------------ reward functions----------------
     def _reward_lin_vel_z(self, state):
         # Penalize z axis base linear velocity
-        return np.square(self.get_local_linvel(state)[:, 2])
+        # Matches joystick.py _cost_lin_vel_z using global_linvel
+        global_linvel = self.get_global_linvel(state)
+        return np.square(global_linvel[:, 2])
 
     def _reward_ang_vel_xy(self, state):
         # Penalize xy axes base angular velocity
-        return np.sum(np.square(self.get_gyro(state)[:, :2]), axis=1)
+        # Matches joystick.py _cost_ang_vel_xy using global_angvel
+        global_angvel = self.get_global_angvel(state)
+        return np.sum(np.square(global_angvel[:, :2]), axis=1)
 
     def _reward_orientation(self, state):
         # Penalize non flat base orientation
-        # qpos 3:7 is quat
-        gravity = state.info["local_gravity"]
-        return np.sum(np.square(gravity[:, :2]), axis=1)
+        # Matches joystick.py _cost_orientation using upvector (Global Z axis of body)
+        upvector = self.get_upvector(state)
+        return np.sum(np.square(upvector[:, :2]), axis=1)
 
     def _reward_torques(self, state):
         return np.sum(np.square(state.ctrl), axis=1)
@@ -691,10 +714,8 @@ class Go2WalkTaskMj(MjNpEnv):
     def _cost_feet_slip(self, state, info):
         # Penalize foot velocity while in contact
         vals = []
-        for idx in self.foot_linvel_sensor_indices:
-             adr = self._model.sensor_adr[idx]
-             dim = self._model.sensor_dim[idx]
-             vals.append(state.sensor_data[:, adr:adr+dim]) #(N, 3)
+        for idx_list in self.foot_linvel_sensor_indices:
+             vals.append(state.sensor_data[:, idx_list]) #(N, 3)
         
         feet_vel = np.stack(vals, axis=1) # (N, 4, 3)
         vel_xy = feet_vel[..., :2]
@@ -709,10 +730,8 @@ class Go2WalkTaskMj(MjNpEnv):
         # Penalize deviation from target height during swing
         # Get foot velocity XY
         vals = []
-        for idx in self.foot_linvel_sensor_indices:
-             adr = self._model.sensor_adr[idx]
-             dim = self._model.sensor_dim[idx]
-             vals.append(state.sensor_data[:, adr:adr+dim])
+        for idx_list in self.foot_linvel_sensor_indices:
+             vals.append(state.sensor_data[:, idx_list])
         feet_vel = np.stack(vals, axis=1)
         vel_xy = feet_vel[..., :2]
         vel_norm = np.sqrt(np.linalg.norm(vel_xy, axis=-1))
