@@ -14,7 +14,7 @@
     <default class="go2">
       <geom condim="1"/>
       <joint axis="0 1 0" damping="2" armature="0.01"/>
-      <general forcerange="-24 24" biastype="affine" gainprm="80 0 0" biasprm="0 -80 -1"/>
+      <general forcerange="-24 24" biastype="affine" gainprm="35 0 0" biasprm="0 -35 -0.5"/>
 
       <default class="abduction">
         <joint axis="1 0 0" range="-1.0472 1.0472"/>
@@ -70,7 +70,7 @@
 
   <worldbody>
     <light name="spotlight" mode="targetbodycom" target="base" pos="3 0 4"/>
-    <body name="base" pos="0 0 0.4" childclass="go2">
+    <body name="base" pos="0 0 0.278" childclass="go2">
       <camera name="track" pos="0.846 -1.465 0.916" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940" mode="trackcom"/>
       <camera name="head_camera" pos="0.32 0 0.04" xyaxes="0 -1 0 0 0 1"/>
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719" mass="6.921"
