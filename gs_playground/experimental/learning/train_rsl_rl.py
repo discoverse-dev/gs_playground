@@ -10,13 +10,16 @@ from tensordict import TensorDict
 
 from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
 from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
+from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
+from gs_playground.src.locomotion.go1.cfg import Go1WalkNpEnvCfg
 from rsl_rl.runners import OnPolicyRunner
 from rsl_rl.env import VecEnv
 
 class RslMjEnvWrapper(VecEnv):
-    def __init__(self, env: Go2WalkTaskMj, device: str):
+    def __init__(self, env, device: str):
         self.env = env
         self.device = torch.device(device)
+
         self.num_envs = env._num_envs
         self.num_actions = env.action_space.shape[0]
         self.num_obs = env.observation_space.shape[0]
@@ -107,10 +110,11 @@ class RslMjEnvWrapper(VecEnv):
             device=self.device
         )
 
-def find_checkpoint(root_root, run_id=None, ckpt_id=None):
+def find_checkpoint(root_root, task_name, run_id=None, ckpt_id=None):
     """
     Find checkpoint path.
     root_root: logs/
+    task_name: e.g. go2_walk
     run_id: timestamp folder name or None (latest)
     ckpt_id: model_{ckpt_id}.pt or None (latest)
     """
@@ -120,12 +124,11 @@ def find_checkpoint(root_root, run_id=None, ckpt_id=None):
         print(f"No task directories found in {root_root}")
         return None
         
-    # Assume first task dir or we need to know task name? 
-    # Current script implies "go2_walk"
-    task_dir = os.path.join(root_root, "go2_walk")
+    task_dir = os.path.join(root_root, task_name)
     if not os.path.exists(task_dir):
-         # Try finding any
-         task_dir = task_dirs[0]
+        # If specific task dir doesn't exist, we can't resume for that task
+        print(f"Task directory {task_dir} not found.")
+        return None
 
     # Find Run Dir
     if run_id:
@@ -167,20 +170,33 @@ def find_checkpoint(root_root, run_id=None, ckpt_id=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--robot", type=str, default="go2", choices=["go1", "go2"], help="Robot to train: go1 or go2")
     parser.add_argument("--resume", action="store_true", help="Resume training from latest checkpoint")
     parser.add_argument("--load_run", type=str, default=None, help="Specific run directory name to resume from (e.g. 2024-01-25_...)")
     parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint filename or full path")
     args = parser.parse_args()
 
     # 1. Environment Config
-    env_cfg = Go2WalkNpEnvCfg()
+    if args.robot == "go1":
+        env_cfg = Go1WalkNpEnvCfg()
+        EnvClass = Go1WalkTaskMj
+        task_name = "go1_walk"
+        env_cfg.train_cfg.runner.experiment_name = task_name
+    elif args.robot == "go2":
+        env_cfg = Go2WalkNpEnvCfg()
+        EnvClass = Go2WalkTaskMj
+        task_name = "go2_walk"
+        env_cfg.train_cfg.runner.experiment_name = task_name
+    else:
+        raise ValueError(f"Unknown robot: {args.robot}")
+
     # Adjust config for training if needed
     num_envs = 1024 // 2
     
     # 2. Create Environment
     # We instantiate directly to bypass registry string parsing if convenient, 
     # but using registry class is fine.
-    env = Go2WalkTaskMj(env_cfg, num_envs=num_envs)
+    env = EnvClass(env_cfg, num_envs=num_envs)
     
     # 3. Wrap Environment
     if torch.cuda.is_available():
@@ -204,7 +220,6 @@ def main():
     
     # 5. Runner
     root_log_dir = os.path.join(os.path.dirname(__file__), "../../../logs")
-    task_name = "go2_walk"
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_dir = os.path.join(root_log_dir, task_name, timestamp)
     
@@ -212,8 +227,8 @@ def main():
     
     # 6. Resume Handling
     if args.resume or args.load_run or args.checkpoint:
-        print("Attempting to resume...")
-        ckpt_path = find_checkpoint(root_log_dir, args.load_run, args.checkpoint)
+        print(f"Attempting to resume for task {task_name}...")
+        ckpt_path = find_checkpoint(root_log_dir, task_name, args.load_run, args.checkpoint)
         if ckpt_path and os.path.exists(ckpt_path):
             print(f"Loading checkpoint: {ckpt_path}")
             # load_optimizer=True for resuming training
