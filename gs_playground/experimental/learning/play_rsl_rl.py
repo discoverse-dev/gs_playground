@@ -167,11 +167,23 @@ def main():
     elif args.robot == "go2":
         env_cfg = Go2WalkNpEnvCfg()
         env_class = Go2WalkTaskMj
+
+    # Force zero commands for playback
+    # env_cfg.commands.vel_limit is a list [[min], [max]]
+    # We set min and max to 0 to ensure sampled commands are always 0
+    env_cfg.commands.vel_limit = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
     
     print(f"Initializing Env ({args.robot}) with {num_envs} envs...")
     env = env_class(env_cfg, num_envs=num_envs)
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    print(f"Using device: {device}")
+
     vec_env = RslMjEnvWrapper(env, device)
     
     # 2. Runner & Policy
