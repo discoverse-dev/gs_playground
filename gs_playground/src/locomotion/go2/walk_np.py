@@ -93,6 +93,12 @@ class Go2WalkTaskMj(MjNpEnv):
             "feet_air_time": lambda s: self._reward_feet_air_time(s.info["commands"], s.info),
             "termination": lambda s: self._reward_termination(s.terminated),
             "collision": lambda s: self._reward_collision(s),
+            "dof_pos_limits": lambda s: self._cost_joint_pos_limits(s),
+            "pose": lambda s: self._reward_pose(s),
+            "energy": lambda s: self._cost_energy(s),
+            "feet_clearance": lambda s: self._cost_feet_clearance(s),
+            "feet_height": lambda s: self._cost_feet_height(s.info),
+            "feet_slip": lambda s: self._cost_feet_slip(s, s.info),
         }
 
     def _init_sensor_indices(self):
@@ -243,10 +249,33 @@ class Go2WalkTaskMj(MjNpEnv):
         self._init_qpos[7:] = self.default_angles
 
         # Foot stuff handle in _init_sensor_indices
+        self._init_foot_linvel_sensor_indices()
+        
+        # Cache joint limits for reward
+        # Assuming joint 0 is free joint, and 1-12 are actuated joints
+        if self._model.njnt > 1:
+             self.dof_pos_limits = self._model.jnt_range[1:1+self._num_dof_pos].copy()
+        else:
+             self.dof_pos_limits = np.zeros((self._num_dof_pos, 2))
+
+    def _init_foot_linvel_sensor_indices(self):
+        # We need foot global linear velocity for some rewards (feet_slip, feet_clearance)
+        # Using sites FL, FR, RL, RR defined in XML
+        # Assuming sensor names: {site}_global_linvel
+        # Check joystick logic: sensor(f"{site}_global_linvel")
+        foot_sites = ["FL", "FR", "RL", "RR"]
+        self.foot_linvel_sensor_indices = []
+        for site in foot_sites:
+            name = f"{site}_global_linvel"
+            if name in self.sensor_indices:
+                self.foot_linvel_sensor_indices.append(self.sensor_indices[name])
+            else:
+                print(f"Warning: Foot linvel sensor {name} not found. Some rewards may fail.")
 
     def apply_action(self, actions, state):
         # Update info for rewards
         state.info["last_dof_vel"] = self.get_dof_vel(state)
+        state.info["last_last_actions"] = state.info["last_actions"] # Keep history of last last
         state.info["last_actions"] = state.info["current_actions"]
         state.info["current_actions"] = actions
         
@@ -362,13 +391,134 @@ class Go2WalkTaskMj(MjNpEnv):
         
         # Capture the air time for feet that are about to reset (contacting now)
         # We need this for the reward function which is called LATER
-        info["air_time_at_contact"] = info["feet_air_time"] * current_contacts
+        # info["air_time_at_contact"] = info["feet_air_time"] * current_contacts
         
+        # Update logic for swing peak
+        # We need foot z position. Assuming we can get it from body position or site position.
+        # But we don't have direct access to body position in simple manner without sensor.
+        # Joystick py uses: data.site_xpos[self._feet_site_id]
+        # In NP env, we rely on sensors.
+        # Let's assume we have FL_pos, FR_pos etc sensors relative to IMU?
+        # Actually, let's use the fact that we might have global position sensors for feet if added in XML?
+        # Check XML: <framepos objtype="site" objname="FL" name="FL_pos" .../>
+        # Yes, we have FL_pos etc. These are relative to IMU (reftype="site" refname="imu")?
+        # Wait, if they are relative to IMU, we need to transform them to world to get Z if base is moving?
+        # Actually foot height is usually relative to ground. If ground is at z=0, we need world z.
+        # The sensor <framepos name="FL_pos" ... reftype="site" refname="imu" /> gives pos relative to IMU.
+        # This is not directly useful for ground clearance unless we know IMU height.
+        # BUT, wait, checking joystick.py: p_f = data.site_xpos[self._feet_site_id]. This is global pos.
+        # Does our XML have global foot pos sensor?
+        # No, only reftype="site".
+        # However, we can use forward kinematics or just assume flat terrain and use base height + relative foot pos?
+        # MjNpEnvState doesn't expose data directly.
+        
+        # Simplify: For now, if we don't have direct global foot z, we might skip swing_peak logic or approx.
+        # Let's try to find if we can access data.
+        # In _update_cache, we receive MjNpEnvState, which has sensor_data.
+        # We also have access to self._worker_data[0] if we are in main thread? No, careful with multiprocessing.
+        # But MjNpEnv is usually single process in this implementation or we are inside the worker.
+        # Wait, MjNpEnv is the wrapper.
+        
+        # Let's use what we have. If we lack sensors, we can't do it perfectly without changing XML to add global pos sensor.
+        # We DO have specific sensors in XML:
+        # <framepos objtype="site" objname="FL" name="FL_pos" reftype="site" refname="imu"/>
+        # To get global Z, we need R_imu * pos_rel + p_imu.
+        # We have p_imu (global_position sensor) and R_imu (orientation sensor).
+        # So we can compute global foot pos.
+        
+        # Let's add that logic.
+        
+        # 1. Get Global Position and Orientation of Base (IMU)
+        # We need indices for them.
+        self._update_foot_tracking(state, info, current_contacts)
+
         # Now apply reset
         info["feet_air_time"] *= ~current_contacts
         
         # Store contacts for next step / other logic
         info["contacts"] = current_contacts
+
+    def _update_foot_tracking(self, state, info, current_contacts):
+        # Calculate foot global Z for swing height reward
+        batch_size = current_contacts.shape[0]
+        
+        if "swing_peak" not in info:
+            info["swing_peak"] = np.zeros((batch_size, 4), dtype=np.float32)
+            
+        # We need to compute foot Z
+        # We can try to use body position if available, or sensors.
+        # Let's look for "FL_pos" etc in sensor data.
+        # Assuming we can find them.
+        foot_names = ["FL", "FR", "RL", "RR"]
+        foot_pos_indices = [self.sensor_indices.get(f"{name}_pos") for name in foot_names]
+        
+        # If we can't find sensors, return
+        if any(idx is None for idx in foot_pos_indices):
+            return
+
+        # Get relative foot pos (N, 4, 3)
+        foot_rel_pos_list = []
+        for idx in foot_pos_indices:
+             adr = self._model.sensor_adr[idx]
+             dim = self._model.sensor_dim[idx]
+             foot_rel_pos_list.append(state.sensor_data[:, adr:adr+dim])
+        foot_rel_pos = np.stack(foot_rel_pos_list, axis=1) # (N, 4, 3)
+        
+        # Get Index of global pos and quat
+        idx_pos = self.sensor_indices.get("global_position")
+        idx_quat = self.sensor_indices.get("orientation")
+        
+        if idx_pos is None or idx_quat is None:
+            return
+
+        # Get Base Pos/Quat
+        adr_pos = self._model.sensor_adr[idx_pos]
+        base_pos = state.sensor_data[:, adr_pos:adr_pos+3] # (N, 3)
+        
+        adr_quat = self._model.sensor_adr[idx_quat]
+        base_quat = state.sensor_data[:, adr_quat:adr_quat+4] # (N, 4)
+        
+        # Rotate relative pos by base_quat and add base_pos
+        # We need quat_rotate (not inverse)
+        # v_global = q * v_local * q^ -1  (Standard rotation)
+        # Re-use our quat_rotate_inverse but with conjugated quat?
+        # Actually quat_rotate_inverse(q, v) does q^-1 * v * q.
+        # So to do q * v * q^-1, we pass conjugate of q to quat_rotate_inverse.
+        # Wait, conjugate of (conjugate q) is q.
+        # So quat_rotate(q, v) == quat_rotate_inverse(q_conj, v)
+        
+        # q_conj = [w, -x, -y, -z]
+        base_quat_conj = base_quat.copy()
+        base_quat_conj[:, 1:] *= -1
+        
+        # We have 4 feet, we need to rotate each.
+        # Expand base quat to (N, 1, 4) broadcast?
+        # Let's loop for simplicity or reshape
+        foot_global_z = np.zeros((batch_size, 4), dtype=np.float32)
+        
+        for i in range(4):
+            # Rotate
+            vec = foot_rel_pos[:, i, :]
+            # Rotated = q * v * q^-1.
+            # quat_rotate_inverse(q, v) is q^-1 * v * q
+            # So we call quat_rotate_inverse(q_conj, vec)
+            vec_rot = quat_rotate_inverse(base_quat_conj, vec)
+            
+            # Add base pos
+            vec_global = vec_rot + base_pos
+            foot_global_z[:, i] = vec_global[:, 2] # Z component
+            
+        # Store for clearance reward
+        info["foot_pos_z"] = foot_global_z
+
+        # Update swing peak
+        info["swing_peak"] = np.maximum(info["swing_peak"], foot_global_z)
+        
+        # Capture peak at contact for reward
+        info["swing_peak_at_contact"] = info["swing_peak"] * current_contacts
+        
+        # Reset peak on contact
+        info["swing_peak"] *= ~current_contacts
 
     def _get_obs(self, state: MjNpEnvState, info: dict) -> np.ndarray:
         linear_vel = self.get_local_linvel(state)
@@ -614,48 +764,103 @@ class Go2WalkTaskMj(MjNpEnv):
         return done
 
     def _reward_feet_air_time(self, commands: np.ndarray, info: dict):
-        # Reward long steps
-        # info["feet_air_time"] is reset to 0 for contacting feet in _update_cache
-        # We use the snapshot "air_time_at_contact" taken just before reset
-        air_time_at_contact = info.get("air_time_at_contact", np.zeros((self._num_envs, 4)))
+        # Reward for taking long steps: (air_time - threshold) * first_contact
+        air_time = info.get("air_time_at_contact", np.zeros((self._num_envs, 4)))
         
-        # Determine valid first contacts. 
-        # Note: air_time_at_contact is > 0 only for contacting feet.
-        # To avoid penalizing continuous contact (where air_time would be just dt),
-        # we can optionaly filter for air_time > dt. 
-        # Standard implementation creates 'first_contact' mask.
-        # Here air_time_at_contact implies contact is True.
+        rew_air_time = np.sum((air_time - 0.1) * (air_time > 0.0), axis=1)
         
-        # Standard logic: (time - 0.5) * contact
-        # 0.5 is too large for walking/trotting (period ~0.5s total, air ~0.25s).
-        # We want to encourage any air time > 0.0 or a small threshold like 0.2
-        # Using a positive reward linear to air time is usually better for learning gait.
-        rew_airTime = np.sum(air_time_at_contact - 0.3, axis=1)
-        
-        # no reward for zero command
-        rew_airTime *= np.linalg.norm(commands[:, :3], axis=1) > 0.1
-        return rew_airTime
+        # Reward is only non-zero when commands are non-zero
+        rew_air_time *= np.linalg.norm(commands[:, :3], axis=1) > 0.01
+        return rew_air_time
 
     def _reward_tracking_lin_vel(self, state, commands: np.ndarray):
-        # Tracking of linear velocity commands (xy axes)
         lin_vel_error = np.sum(np.square(commands[:, :2] - self.get_local_linvel(state)[:, :2]), axis=1)
         return np.exp(-lin_vel_error / self.cfg.reward_config.tracking_sigma)
 
     def _reward_tracking_ang_vel(self, state, commands: np.ndarray):
-        # Tracking of angular velocity commands (yaw)
         ang_vel_error = np.square(commands[:, 2] - self.get_gyro(state)[:, 2])
         return np.exp(-ang_vel_error / self.cfg.reward_config.tracking_sigma)
 
     def _reward_stand_still(self, state, commands: np.ndarray):
-        # Penalize motion at zero commands
+        # Penalize motion (joint deviation) at zero commands
+        cmd_norm = np.linalg.norm(commands, axis=1)
         return np.sum(np.abs(self.get_dof_pos(state) - self.default_angles), axis=1) * (
-            np.linalg.norm(commands, axis=1) < 0.1
+            cmd_norm < 0.01
         )
 
     def _reward_collision(self, state: MjNpEnvState):
         if not hasattr(self, "penalised_contact_indices") or not self.penalised_contact_indices:
             return 0.0
-        # Check contact sensors
         contact_values = state.sensor_data[:, self.penalised_contact_indices]
-        # Return 1.0 if any contact > 0.1
         return np.any(contact_values > 0.1, axis=1).astype(np.float32)
+
+    def _cost_energy(self, state: MjNpEnvState):
+        # Energy = sum(abs(qvel) * abs(torque))
+        return np.sum(np.abs(self.get_dof_vel(state)) * np.abs(state.ctrl), axis=1)
+
+    def _reward_pose(self, state: MjNpEnvState):
+        # Penalize deviation from default pose
+        qpos = self.get_dof_pos(state)
+        weight = np.tile(np.array([1.0, 1.0, 0.1]), 4)
+        error = np.sum(np.square(qpos - self.default_angles) * weight, axis=1)
+        return np.exp(-error)
+
+    def _cost_joint_pos_limits(self, state: MjNpEnvState):
+        # Penalize joint positions that are close to the limits
+        qpos = self.get_dof_pos(state)
+        out_of_limits = -np.clip(qpos - self.dof_pos_limits[:, 1], 0., None) # Upper limit violation
+        out_of_limits += -np.clip(self.dof_pos_limits[:, 0] - qpos, 0., None) # Lower limit violation
+        return np.sum(out_of_limits, axis=1)
+
+    def _cost_feet_slip(self, state, info):
+        # Penalize foot velocity while in contact
+        if not hasattr(self, "foot_linvel_sensor_indices"): return 0.0
+        
+        vals = []
+        for idx in self.foot_linvel_sensor_indices:
+             adr = self._model.sensor_adr[idx]
+             dim = self._model.sensor_dim[idx]
+             vals.append(state.sensor_data[:, adr:adr+dim]) #(N, 3)
+        
+        feet_vel = np.stack(vals, axis=1) # (N, 4, 3)
+        vel_xy = feet_vel[..., :2]
+        vel_xy_norm_sq = np.sum(np.square(vel_xy), axis=-1)
+        
+        contacts = info.get("contacts", np.zeros((self._num_envs, 4)))
+        cmd_norm = np.linalg.norm(info["commands"], axis=1)
+        
+        return np.sum(vel_xy_norm_sq * contacts, axis=1) * (cmd_norm > 0.01)
+
+    def _cost_feet_clearance(self, state):
+        # Penalize deviation from target height during swing
+        if not hasattr(self, "foot_linvel_sensor_indices"): return 0.0
+        
+        # Get foot velocity XY
+        vals = []
+        for idx in self.foot_linvel_sensor_indices:
+             adr = self._model.sensor_adr[idx]
+             dim = self._model.sensor_dim[idx]
+             vals.append(state.sensor_data[:, adr:adr+dim])
+        feet_vel = np.stack(vals, axis=1)
+        vel_xy = feet_vel[..., :2]
+        vel_norm = np.sqrt(np.linalg.norm(vel_xy, axis=-1))
+        
+        # Get Foot Z
+        foot_z = state.info.get("foot_pos_z", np.zeros((self._num_envs, 4)))
+        
+        target = self.cfg.reward_config.max_foot_height
+        delta = np.square(foot_z - target)
+        return np.sum(delta * vel_norm, axis=1)
+
+    def _cost_feet_height(self, info):
+        # Penalize swing feet that don't reach target height
+        peak = info.get("swing_peak_at_contact", np.zeros((self._num_envs, 4)))
+        
+        target = self.cfg.reward_config.max_foot_height
+        if target < 0.001: target = 0.05
+        
+        error = peak / target - 1.0
+        mask = (peak > 0.001) 
+        
+        cmd_norm = np.linalg.norm(info["commands"], axis=1)
+        return np.sum(np.square(error) * mask, axis=1) * (cmd_norm > 0.01)

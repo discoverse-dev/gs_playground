@@ -17,7 +17,7 @@ _MJCF_PATH = ROOT_PATH / "models" / "robots" / "locomotion" / "go2" / "scene_fla
 _JOINT_NUM = 12
 
 default_joint_pos = np.array([0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0.1, 0.9, -1.8, -0.1, 0.9, -1.8])
-action_scale = 0.05
+action_scale = 0.5
 lin_vel_scale = 2.0
 ang_vel_scale = 0.25
 
@@ -29,7 +29,7 @@ class OnnxController:
         policy_path: str,
         default_angles: np.ndarray,
         n_substeps: int,
-        action_scale: float = 0.05,
+        action_scale: float = 0.5,
     ):
         self._policy = rt.InferenceSession(
             policy_path, providers=["CPUExecutionProvider"]
@@ -104,7 +104,7 @@ def load_callback(model=None, data=None):
     mujoco.mj_resetDataKeyframe(model, data, 0)
 
     ctrl_dt = 0.02
-    sim_dt = 0.004
+    sim_dt = 0.002
     n_substeps = int(round(ctrl_dt / sim_dt))
     model.opt.timestep = sim_dt
 
