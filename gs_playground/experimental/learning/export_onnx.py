@@ -76,12 +76,26 @@ def main():
     
     # Correct attribute path based on previous debug
     if hasattr(runner.alg, "policy"):
-        policy = runner.alg.policy.actor
+        actor_critic = runner.alg.policy
     else:
-        policy = runner.alg.actor_critic.actor
+        actor_critic = runner.alg.actor_critic
         
-    policy.eval()
-    policy.to(device)
+    class OnnxPolicy(torch.nn.Module):
+        def __init__(self, actor_critic):
+            super().__init__()
+            self.actor = actor_critic.actor
+            # Handle RSL-RL empirical normalization
+            self.normalizer = actor_critic.actor_obs_normalizer # Typically an EmpiricalNormalization module or Identity
+            
+        def forward(self, obs):
+            # 1. Normalize
+            obs_norm = self.normalizer(obs)
+            # 2. Forward actor
+            return self.actor(obs_norm)
+            
+    policy_export = OnnxPolicy(actor_critic)
+    policy_export.eval()
+    policy_export.to(device)
     
     # Input shape: 48 (based on observation space)
     # 3 (linvel) + 3 (gyro) + 3 (grav) + 12 (pos) + 12 (vel) + 12 (action) + 3 (cmd) = 48
@@ -92,7 +106,7 @@ def main():
     
     print(f"Exporting to {output_path}")
     torch.onnx.export(
-        policy, 
+        policy_export, 
         dummy_input, 
         output_path, 
         verbose=False,
