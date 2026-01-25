@@ -488,8 +488,8 @@ class ArrangeFlowersCollector:
 
         # ---------------- place1 to dst ----------------
         p_dst_hover = p1_lift.copy()
-        p_dst_hover[:, 0] = vase_dst_p[:, 0] + 0.02
-        p_dst_hover[:, 1] = vase_dst_p[:, 1]
+        p_dst_hover[:, 0] = vase_dst_p[:, 0] + 0.03
+        p_dst_hover[:, 1] = vase_dst_p[:, 1] + 0.02
         p_dst_hover[:, 2] = float(cfg.lift_height_z)
 
         p_dst_align = p_dst_hover.copy()
