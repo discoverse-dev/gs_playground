@@ -9,6 +9,8 @@ from dataclasses import asdict
 import mediapy as media
 import math
 import glob
+import multiprocessing
+from functools import partial
 
 # Add paths
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
@@ -29,12 +31,25 @@ def get_grid_offsets(num_envs, spacing=1.0):
         offsets[i, 1] = c * spacing
     return offsets
 
-def render_many(model, data, state_batch, shape=(640, 480), transparent=False, offsets=None):
+# Worker global context
+_worker_ctx = {}
+
+def init_worker(model_path, shape):
+    """Initialize MuJoCo context for worker process."""
+    _worker_ctx['model'] = mujoco.MjModel.from_xml_path(model_path)
+    _worker_ctx['data'] = mujoco.MjData(_worker_ctx['model'])
+    _worker_ctx['renderer'] = mujoco.Renderer(_worker_ctx['model'], height=shape[1], width=shape[0])
+
+def render_frame_job(args):
     """
-    Render multiple env states into one scene using mjv_addGeoms.
-    state_batch: (num_envs, nstate) at a specific time step.
+    Worker function to render a single frame.
+    args: (state_batch, offsets, transparent, shape)
     """
-    num_envs = state_batch.shape[0]
+    state_batch, offsets, transparent = args
+    
+    model = _worker_ctx['model']
+    data = _worker_ctx['data']
+    renderer = _worker_ctx['renderer']
     
     # Visual options
     vopt = mujoco.MjvOption()
@@ -42,26 +57,19 @@ def render_many(model, data, state_batch, shape=(640, 480), transparent=False, o
     pert = mujoco.MjvPerturb()
     catmask = mujoco.mjtCatBit.mjCAT_DYNAMIC
 
-    # Renderer
-    # We use model (singular) for the renderer.
-    renderer = mujoco.Renderer(model, height=shape[1], width=shape[0])
-    
-    # Function to set state
+    # Helper to set state
     def set_state(d, s, offset=None):
-        # s is physics_state
-        # time(1), qpos(nq), qvel(nv) ...
-        # Go2 model: nq=19 (7 base + 12 joints), nv=18 (6 base + 12 joints)
         d.time = s[0]
         d.qpos[:] = s[1:1+model.nq]
         d.qvel[:] = s[1+model.nq:1+model.nq+model.nv]
         if offset is not None:
-            # Assumes the first 2 qpos are x, y (free joint)
             d.qpos[0] += offset[0]
             d.qpos[1] += offset[1]
         mujoco.mj_forward(model, d)
+        
+    num_envs = state_batch.shape[0]
 
     # 1. Clear/Init Scene
-    # Load state for robot 0 with its offset
     set_state(data, state_batch[0], offsets[0] if offsets is not None else None)
     
     # Init Camera
@@ -77,7 +85,6 @@ def render_many(model, data, state_batch, shape=(640, 480), transparent=False, o
     else:
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
 
-    # Update scene (creates the scene structure)
     renderer.update_scene(data, camera=cam, scene_option=vopt)
     
     # 2. Add other robots
@@ -86,6 +93,12 @@ def render_many(model, data, state_batch, shape=(640, 480), transparent=False, o
         mujoco.mjv_addGeoms(model, data, vopt, pert, catmask, renderer.scene)
 
     return renderer.render()
+
+def render_many(model, data, state_batch, shape=(640, 480), transparent=False, offsets=None):
+    """
+    Deprecated: Serial render function. kept for reference or fallback.
+    """
+    pass
 
 def find_latest_model(log_dir):
     # Search for model_*.pt recursively in log_dir
@@ -196,17 +209,27 @@ def main():
 
     print("Rendering...")
     
-    # Render
-    render_data = mujoco.MjData(env.model)
     offsets = get_grid_offsets(num_envs, spacing=grid_spacing)
-    frames = []
     
-    for i in range(0, len(state_history), decimation):
-        print(f"Rendering frame {i}...", end="\r")
-        frame = render_many(env.model, render_data, state_history[i], 
-                            offsets=offsets, 
-                            shape=(640, 480))
-        frames.append(frame)
+    # Prepare arguments for multiprocessing
+    # Filter state history by decimation
+    render_states = state_history[::decimation]
+    render_shape = (640, 480)
+    
+    # args: (state_batch, offsets, transparent)
+    pool_args = [(s, offsets, False) for s in render_states]
+    
+    # Use multiprocessing Pool to render frames in parallel
+    num_workers = min(multiprocessing.cpu_count(), 8) # Cap workers
+    print(f"Starting render pool with {num_workers} workers...")
+    
+    with multiprocessing.Pool(processes=num_workers, 
+                              initializer=init_worker, 
+                              initargs=(env_cfg.model_file, render_shape)) as pool:
+        
+        frames = pool.map(render_frame_job, pool_args)
+        
+    print(f"Rendered {len(frames)} frames.")
         
     # Save video
     output_path = os.path.join(os.path.dirname(__file__), "play_rollout.mp4")
@@ -215,4 +238,5 @@ def main():
     print("Done.")
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("spawn", force=True)
     main()
