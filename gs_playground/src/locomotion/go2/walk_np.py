@@ -70,6 +70,11 @@ class Go2WalkTaskMj(MjNpEnv):
     def __init__(self, cfg: Go2WalkNpEnvCfg, num_envs=1):
         super().__init__(cfg, num_envs)
 
+        # Modify PD gains to match mujoco_playground go2/base.py
+        self._model.dof_damping[6:] = cfg.control_config.Kd
+        self._model.actuator_gainprm[:, 0] = cfg.control_config.Kp
+        self._model.actuator_biasprm[:, 1] = -cfg.control_config.Kp
+
         self.nq = self._model.nq
         self.nv = self._model.nv
         # Offsets in physics_state (mjSTATE_FULLPHYSICS: time, qpos, qvel, act, qacc_warmstart)

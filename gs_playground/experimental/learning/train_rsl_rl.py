@@ -175,7 +175,7 @@ def main():
     # 1. Environment Config
     env_cfg = Go2WalkNpEnvCfg()
     # Adjust config for training if needed
-    num_envs = 1024
+    num_envs = 1024 // 2
     
     # 2. Create Environment
     # We instantiate directly to bypass registry string parsing if convenient, 
