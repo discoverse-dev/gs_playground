@@ -10,9 +10,9 @@ import shutil
 import argparse
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Sequence
-
+import mediapy
 import numpy as np
-import cv2
+
 from scipy.spatial.transform import Rotation
 
 from gs_playground.src.manipulation.tasks.table30._13_arrange_flowers import (
@@ -66,23 +66,58 @@ def obs_ee_quat_xyzw(obs_ee_pose_row: np.ndarray) -> np.ndarray:
 # Video Writer
 # -----------------------------------------------------------------------------
 class EpisodeVideoWriter:
-    def __init__(self, path: str, fps: int, size_wh: Tuple[int, int]):
+    """
+    Stream mp4 writer based on mediapy.VideoWriter (ffmpeg).
+    Expects RGB frames (H, W, 3). No BGR conversion needed.
+    """
+    def __init__(self, path: str, fps: int, size_wh: Tuple[int, int], *, codec: str = "h264", qp: int | None = None):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        self.size_wh = (int(size_wh[0]), int(size_wh[1]))
-        self.vw = cv2.VideoWriter(path, fourcc, float(fps), self.size_wh)
 
-    def write(self, bgr: Optional[np.ndarray]) -> None:
-        if bgr is None:
+        w, h = int(size_wh[0]), int(size_wh[1])
+        self.shape_hw = (h, w)  # mediapy expects (height, width)
+
+        # Note: mediapy.VideoWriter is a context manager; we open it here for streaming writes.
+        # Bitrate control: specify at most one of bps/qp/crf. If none, it uses defaults. :contentReference[oaicite:3]{index=3}
+        kwargs = {"codec": codec}
+        if qp is not None:
+            kwargs["qp"] = int(qp)
+
+        self._ctx = mediapy.VideoWriter(path, shape=self.shape_hw, fps=float(fps), **kwargs)
+        self._writer = self._ctx.__enter__()
+
+        self._closed = False
+
+    def write(self, rgb: Optional[np.ndarray]) -> None:
+        if rgb is None or self._closed:
             return
-        if (bgr.shape[1], bgr.shape[0]) != self.size_wh:
-            bgr = cv2.resize(bgr, self.size_wh, interpolation=cv2.INTER_AREA)
-        self.vw.write(bgr)
+
+        img = np.asarray(rgb)
+
+        # Ensure RGB uint8
+        if img.dtype != np.uint8:
+            img = mediapy.to_uint8(img)
+
+        # Ensure shape matches (H, W, 3)
+        if img.ndim != 3 or img.shape[2] != 3:
+            raise ValueError(f"Expected RGB image (H,W,3), got shape={img.shape}")
+
+        if tuple(img.shape[:2]) != tuple(self.shape_hw):
+            # mediapypy.resize_image expects shape (H,W)
+            img = mediapy.resize_image(img, self.shape_hw)
+            if img.dtype != np.uint8:
+                img = mediapy.to_uint8(img)
+
+        # Write one frame :contentReference[oaicite:4]{index=4}
+        self._writer.add_image(img)
 
     def close(self) -> None:
-        if self.vw is not None and self.vw.isOpened():
-            self.vw.release()
-        self.vw = None
+        if self._closed:
+            return
+        self._closed = True
+        if self._ctx is not None:
+            self._ctx.__exit__(None, None, None)
+            self._ctx = None
+            self._writer = None
 
 
 # -----------------------------------------------------------------------------
@@ -91,10 +126,10 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 1
+    num_envs: int = 1
     seed: int = 0
-    save_dir: str = "./data/table30_arrange_flowers_vase_swap_1"
+    save_dir: str = "./data/table30_arrange_flowers_vase_swap_test"
 
     # env control
     max_ctrl_steps: int = 1700
@@ -352,7 +387,8 @@ class ArrangeFlowersCollector:
             if key in obs and key in writers:
                 rgb = obs[key][env_id]
                 if rgb is not None:
-                    writers[key].write(rgb[..., ::-1].copy())
+                    writers[key].write(rgb.copy())
+
                     wrote_any = True
 
         if wrote_any:

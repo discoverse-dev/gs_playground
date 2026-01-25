@@ -1,94 +1,39 @@
+
+# =============================================================================
+# File: 02_stack_color_blocks_data_qpos_refactored.py
+#
+# Notes:
+#   - This script keeps ONLY: task FSM + keypoint computation + control logic.
+#   - Video, buffering, JSONL export, and pose fixes are handled by table30_collect_common.py
+#   - GS (pixels/...) dual-view videos are saved; Motrix video is NOT saved.
+# =============================================================================
 from __future__ import annotations
 
 import os
-import json
 import time
+import json
 import shutil
 import argparse
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-import cv2
-import motrixsim as mtx
-from scipy.spatial.transform import Rotation, Slerp
+from scipy.spatial.transform import Rotation
+
 from gs_playground.src.manipulation.tasks.table30._02_stack_color_blocks_franka import (
     StackColorBlocksEnv,
     StackColorBlocksEnvCfg,
 )
 
-# -----------------------------------------------------------------------------
-# Utilities
-# -----------------------------------------------------------------------------
-def smooth_step_pos(curr: np.ndarray, tgt: np.ndarray, max_dp: float) -> np.ndarray:
-    """
-    位置平滑插值
-    curr/tgt: (B,3)
-    """
-    dp = tgt - curr
-    n = np.linalg.norm(dp, axis=1, keepdims=True)
-    s = np.minimum(1.0, float(max_dp) / (n + 1e-9))
-    return curr + dp * s
-
-def smooth_step_quat(curr_quat: np.ndarray, tgt_quat: np.ndarray, max_dq: float) -> np.ndarray:
-    """
-    四元数平滑插值 (Slerp)
-    curr_quat/tgt_quat: (B,4) xyzw
-    max_dq: 每步最大旋转角度 (弧度)
-    """
-    B = curr_quat.shape[0]
-    next_quats = []
-    
-    for i in range(B):
-        q0 = curr_quat[i]
-        q1 = tgt_quat[i]
-        
-        # 确保最短路径插值
-        dot = np.sum(q0 * q1)
-        if dot < 0.0:
-            q1 = -q1
-            dot = -dot
-            
-        dot = np.clip(dot, -1.0, 1.0)
-        theta = 2.0 * np.arccos(dot)
-        
-        if theta < 1e-6:
-            next_quats.append(q1)
-            continue
-            
-        # 计算插值比例 t
-        t = np.minimum(1.0, max_dq / theta)
-        
-        # 使用 Slerp
-        times = [0, 1]
-        key_rots = Rotation.from_quat(np.stack([q0, q1]))
-        slerp = Slerp(times, key_rots)
-        q_next = slerp([t])[0].as_quat()
-        next_quats.append(q_next)
-        
-    return np.array(next_quats, dtype=np.float32)
-
-# -----------------------------------------------------------------------------
-# Video Writer
-# -----------------------------------------------------------------------------
-class EpisodeVideoWriter:
-    def __init__(self, path: str, fps: int, size_wh: Tuple[int, int]):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        self.size_wh = (int(size_wh[0]), int(size_wh[1]))
-        self.vw = cv2.VideoWriter(path, fourcc, float(fps), self.size_wh)
-
-    def write(self, bgr: Optional[np.ndarray]) -> None:
-        if bgr is None:
-            return
-        if (bgr.shape[1], bgr.shape[0]) != self.size_wh:
-            bgr = cv2.resize(bgr, self.size_wh, interpolation=cv2.INTER_AREA)
-        self.vw.write(bgr)
-
-    def close(self) -> None:
-        if self.vw is not None and self.vw.isOpened():
-            self.vw.release()
-        self.vw = None
+from table30_collect_common import (
+    smooth_step_pos,
+    normalize_quat,
+    wrap_to_pi,
+    quat_to_yaw,
+    VideoCfg,
+    PoseFixCfg,
+    Table30CollectorIO,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -97,33 +42,38 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 5
-    num_envs: int = 5
+    data_size: int = 3
+    num_envs: int = 3
     seed: int = 42
-    save_dir: str = "./data/table30_stack_color_blocks_collect_full_manhattan"
+    save_dir: str = "./data/table30_stack_color_blocks_collect_dual_view"
 
     # env control
-    max_ctrl_steps: int = 1000
+    max_ctrl_steps: int = 800
 
     # motion params
-    max_dp: float = 0.005 # 慢速移动，保证稳定
+    max_dp: float = 0.005
     pos_tol: float = 0.001
-    
+
+    # rotation control
+    rot_gain: float = 0.6
+    max_dr: float = 0.08
+    yaw_tol: float = 0.03
+
+    yaw_offset_grasp: float = 0.0
+    yaw_offset_place: float = 0.0
+
     # task specific offsets
-    above_z: float = 0.00
-    grasp_down_z: float = 0.00
-    
-    # 提升高度
-    lift_dz: float = 0.10 
+    grasp_down_z: float = 0.0
+    lift_dz: float = 0.06
     cube_half: float = 0.025
-    
+
     # gripper
     gripper_open: float = 0.0
     gripper_close: float = 0.82
-    
+
     # timing / dwell
     close_hold_steps: int = 15
-    stack_hold_steps: int = 10 
+    stack_hold_steps: int = 10
     waypoint_dwell_steps: int = 20
 
     # sampling / render
@@ -131,37 +81,43 @@ class CollectorCfg:
     save_video: bool = True
     render_every_steps: int = 1
     video_fps: int = 30
-    video_w: int = 1280
-    video_h: int = 720
-    cam_view_key: Optional[str] = "pixels/view_0"
+    video_w: int = 640
+    video_h: int = 480
+
+    # Dual-view GS videos
+    cam_view_key: Sequence[str] = field(default_factory=lambda: ["pixels/view_0", "pixels/view_1"])
+
+    # JSONL pose export fix (same as your previous scripts)
+    export_z_offset: float = 0.1525
+    export_yaw_offset: float = -0.5 * np.pi
+    export_yaw_sign: float = -1.0
 
     # text fields
     subtask: Optional[str] = "Stack specific colored blocks."
 
+
 # -----------------------------------------------------------------------------
-# Collector
+# Collector (FSM + keypoints + control only)
 # -----------------------------------------------------------------------------
 class StackColorBlocksCollector:
-    # --- FSM States (Full Manhattan Path) ---
-    
-    # Phase 1: Approach (Grasp)
-    ST_APP_LIFT_Z = 0   
-    ST_APP_ALIGN_X = 1  
-    ST_APP_ALIGN_Y = 2  
-    ST_APP_ORIENT = 3   
-    ST_APP_DESCEND = 4  
+    # Phase 1: Approach (Manhattan)
+    ST_APP_LIFT_Z = 0
+    ST_APP_ALIGN_X = 1
+    ST_APP_ALIGN_Y = 2
+    ST_APP_ALIGN_YAW = 3
+    ST_APP_DESCEND = 4
 
     # Phase 2: Grasp
     ST_CLOSE = 5
 
-    # Phase 3: Transport (Stack)
-    ST_TRP_LIFT_Z = 6   
-    ST_TRP_ALIGN_X = 7  
-    ST_TRP_ALIGN_Y = 8  
-    ST_TRP_ORIENT = 9   
-    ST_TO_STACK = 10     
-    
-    # Phase 4: Release & Retreat
+    # Phase 3: Transport (Manhattan)
+    ST_TRP_LIFT_Z = 6
+    ST_TRP_ALIGN_X = 7
+    ST_TRP_ALIGN_Y = 8
+    ST_TRP_ALIGN_YAW = 9
+    ST_TO_STACK = 10
+
+    # Phase 4: Release & End
     ST_OPEN_HOLD = 11
     ST_RETREAT = 12
     ST_TO_HOME = 13
@@ -170,599 +126,469 @@ class StackColorBlocksCollector:
     def __init__(self, cfg: CollectorCfg, env_cfg: Optional[StackColorBlocksEnvCfg] = None):
         self.cfg = cfg
         os.makedirs(cfg.save_dir, exist_ok=True)
-        self.videos_dir = os.path.join(cfg.save_dir, "videos")
-        os.makedirs(self.videos_dir, exist_ok=True)
 
-        # --- Env Setup ---
+        # Env
         self.env_cfg = env_cfg if env_cfg is not None else StackColorBlocksEnvCfg()
         self.env = StackColorBlocksEnv(self.env_cfg, num_envs=int(cfg.num_envs))
         self.env.reset()
 
-        self.model = self.env.model
         self.B = int(cfg.num_envs)
 
         # Bodies
-        self.cube_names = self.env_cfg.cube_names 
+        self.cube_names = self.env_cfg.cube_names
         self.cube_bodies = self.env.cube_bodies
 
-        self.cam_view_key = cfg.cam_view_key or "pixels/view_0"
-        self.ep_subtask = np.array([cfg.subtask] * self.B, dtype=object)
+        # Cameras (GS only)
+        self.cam_keys = list(cfg.cam_view_key)
 
-        # --- Lifecycle ---
+        # IO (video/buffer/jsonl/pose fix)
+        pose_fix = PoseFixCfg(
+            z_offset=float(cfg.export_z_offset),
+            yaw_offset=float(cfg.export_yaw_offset),
+            yaw_sign=float(cfg.export_yaw_sign),
+            wrap_yaw=True,
+        )
+        video_cfg = VideoCfg(fps=int(cfg.video_fps), width=int(cfg.video_w), height=int(cfg.video_h), codec="h264")
+        self.io = Table30CollectorIO(
+            save_dir=str(cfg.save_dir),
+            num_envs=self.B,
+            cam_keys=self.cam_keys,
+            save_video=bool(cfg.save_video),
+            sample_every_steps=int(cfg.sample_every_steps),
+            render_every_steps=int(cfg.render_every_steps),
+            video_cfg=video_cfg,
+            pose_fix=pose_fix,
+            dt=0.02,
+        )
+
+        # lifecycle
         self.active = np.zeros(self.B, dtype=bool)
         self.done = np.zeros(self.B, dtype=bool)
         self.success = np.zeros(self.B, dtype=bool)
         self.ctrl_step = np.zeros(self.B, dtype=np.int32)
-        
-        # --- FSM State ---
+
+        # FSM
         self.states = np.zeros(self.B, dtype=np.int32)
         self.state_enter_step = np.zeros(self.B, dtype=np.int32)
-        
-        # [Dwell Timer]
         self.state_reach_step = np.full(self.B, -1, dtype=np.int32)
-        
+
         self._attempt_id = np.zeros(self.B, dtype=np.int64)
 
-        # Logic specific vars
+        # task-specific
         self.top_idx = np.zeros(self.B, dtype=np.int32)
         self.base_idx = np.zeros(self.B, dtype=np.int32)
         self.stack_hold_counter = np.zeros(self.B, dtype=np.int32)
 
-        # Control Targets (Position + Quaternion)
+        # control targets
         self.exec_pos = np.zeros((self.B, 3), dtype=np.float32)
-        self.exec_quat = np.zeros((self.B, 4), dtype=np.float32) # xyzw
-        self.exec_quat[:, 3] = 1.0 # Init as identity
+        self.exec_quat = np.zeros((self.B, 4), dtype=np.float32)  # xyzw
 
-        self.home_pos = np.zeros((self.B, 3), dtype=np.float32)
-        self.home_quat = np.zeros((self.B, 4), dtype=np.float32)
-        
-        # Latch positions
-        self.latched_start_pos = np.zeros((self.B, 3), dtype=np.float32) 
-        self.latched_start_quat = np.zeros((self.B, 4), dtype=np.float32) 
-        
+        # latches
+        self.latched_start_pos = np.zeros((self.B, 3), dtype=np.float32)
+        self.latched_start_quat = np.zeros((self.B, 4), dtype=np.float32)
+        self.latched_start_yaw = np.zeros((self.B,), dtype=np.float32)
+
         self.latched_top_pos = np.zeros((self.B, 3), dtype=np.float32)
-        self.latched_top_quat = np.zeros((self.B, 4), dtype=np.float32)
-        
         self.latched_base_pos = np.zeros((self.B, 3), dtype=np.float32)
-        self.latched_base_quat = np.zeros((self.B, 4), dtype=np.float32)
+        self.latched_top_yaw = np.zeros((self.B,), dtype=np.float32)
+        self.latched_base_yaw = np.zeros((self.B,), dtype=np.float32)
 
-        # Buffers
-        self.buffers: List[Dict[str, Any]] = [self._new_buffer() for _ in range(self.B)]
-        self.video_writers: List[Optional[EpisodeVideoWriter]] = [None] * self.B
-        self._tmp_video_paths: List[str] = [os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(self.B)]
+        # per env prompt (changes each episode based on sampled cubes)
+        self.ep_prompt = np.array([""] * self.B, dtype=object)
 
         self.saved_count = 0
         self.attempted = 0
         self._last_log_t = time.perf_counter()
         self._last_action = np.zeros((self.B, 7), dtype=np.float32)
 
-    @staticmethod
-    def _new_buffer() -> Dict[str, Any]:
-        return {
-            "times": [],
-            "logic_states": [],
-            "qpos": [],
-            "ee_pose": [],
-            "gripper": [],
-            "ctrl": [],
-            "reward": [],
-            "top_idx": [],
-            "base_idx": [],
-            "is_success": [],
-            "video_frames": 0,
-        }
-
+    # -----------------------------
+    # Episode init / reset
+    # -----------------------------
     def start_episodes(self, env_ids: np.ndarray, seed: int) -> None:
         env_ids = np.asarray(env_ids, dtype=np.int64).reshape(-1)
         if env_ids.size == 0:
             return
 
+        # seed env rng best-effort
         try:
             self.env._rng = np.random.default_rng(int(seed))
         except Exception:
             pass
-        
+
         done_mask = np.zeros((self.B,), dtype=bool)
         done_mask[env_ids] = True
         self.env.reset(done=done_mask)
 
+        # lifecycle reset
         self.active[env_ids] = True
         self.done[env_ids] = False
         self.success[env_ids] = False
         self.ctrl_step[env_ids] = 0
         self.state_enter_step[env_ids] = 0
-        self.stack_hold_counter[env_ids] = 0
-        
-        # [Reset Dwell Timer]
         self.state_reach_step[env_ids] = -1
+        self.stack_hold_counter[env_ids] = 0
 
         data = self.env._state.data
         self.env.robot.reset_envs(data, done_mask)
-        self.env.robot.update_reference(data) 
+        self.env.robot.update_reference(data)
 
-        # --- [修复] 处理 Robot Pose (6D vs 7D) ---
-        ee_pose_raw = self.env.robot.get_ee_pose(data) # (B, 6) or (B, 7)
-        
-        # 1. 提取位置
-        self.exec_pos[env_ids] = ee_pose_raw[env_ids, :3]
-        self.latched_start_pos[env_ids] = ee_pose_raw[env_ids, :3]
-        self.home_pos[env_ids] = ee_pose_raw[env_ids, :3]
-        
-        # 2. 提取并处理旋转
-        if ee_pose_raw.shape[1] == 6:
-            # 6D: XYZ + Euler(XYZ) -> 需要转四元数
-            rot_euler = ee_pose_raw[env_ids, 3:6]
-            r = Rotation.from_euler('xyz', rot_euler, degrees=False)
-            rot_quat = r.as_quat().astype(np.float32) # (N, 4)
-        else:
-            # 7D: XYZ + Quat(XYZW)
-            rot_quat = ee_pose_raw[env_ids, 3:7]
+        # latch start EE pose
+        all_poses = self.env.robot.get_ee_pose(data)
+        for idx in env_ids.tolist():
+            pose = all_poses[idx]
+            self.exec_pos[idx] = pose[:3]
+            self.latched_start_pos[idx] = pose[:3]
 
-        self.exec_quat[env_ids] = rot_quat
-        self.latched_start_quat[env_ids] = rot_quat
-        self.home_quat[env_ids] = rot_quat
+            if len(pose) == 7:
+                q = pose[3:]
+            elif len(pose) == 6:
+                q = Rotation.from_euler("xyz", pose[3:6], degrees=False).as_quat().astype(np.float32)
+            else:
+                q = Rotation.identity().as_quat().astype(np.float32)
 
-        # --- 处理 Cube Pose ---
-        self.top_idx[env_ids] = self.env.top_idx[env_ids]
-        self.base_idx[env_ids] = self.env.base_idx[env_ids]
-        
-        # get_pose 通常返回 7D (Pos + Quat)
-        cube_pose = np.stack(
-            [np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies],
-            axis=1,
-        ) 
-        
-        # Top Block
+            q = normalize_quat(np.asarray(q, dtype=np.float32)[None, :])[0]
+            self.exec_quat[idx] = q
+            self.latched_start_quat[idx] = q.copy()
+            self.latched_start_yaw[idx] = Rotation.from_quat(q).as_euler("xyz", degrees=False)[2].astype(np.float32)
+
+        # latch sampled cubes (from env)
+        self.top_idx[env_ids] = np.asarray(self.env.top_idx[env_ids], dtype=np.int32)
+        self.base_idx[env_ids] = np.asarray(self.env.base_idx[env_ids], dtype=np.int32)
+
+        # latch cube pose + yaw
+        cube_pose = np.stack([np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies], axis=1)
         self.latched_top_pos[env_ids] = cube_pose[env_ids, self.top_idx[env_ids], :3]
-        self.latched_top_quat[env_ids] = cube_pose[env_ids, self.top_idx[env_ids], 3:]
-        
-        # Base Block
         self.latched_base_pos[env_ids] = cube_pose[env_ids, self.base_idx[env_ids], :3]
-        self.latched_base_quat[env_ids] = cube_pose[env_ids, self.base_idx[env_ids], 3:]
-        
-        # Start state
+
+        top_q = cube_pose[env_ids, self.top_idx[env_ids], 3:7]
+        base_q = cube_pose[env_ids, self.base_idx[env_ids], 3:7]
+        top_yaw = Rotation.from_quat(top_q).as_euler("xyz", degrees=False)[:, 2]
+        base_yaw = Rotation.from_quat(base_q).as_euler("xyz", degrees=False)[:, 2]
+        # keep your previous sign convention
+        self.latched_top_yaw[env_ids] = top_yaw.astype(np.float32) * -1.0
+        self.latched_base_yaw[env_ids] = base_yaw.astype(np.float32) * -1.0
+
+        # prompt per env episode
+        for idx in env_ids.tolist():
+            t_raw = str(self.cube_names[int(self.top_idx[idx])])
+            b_raw = str(self.cube_names[int(self.base_idx[idx])])
+            t_name = t_raw.replace("cube_", "").lower()
+            b_name = b_raw.replace("cube_", "").lower()
+            self.ep_prompt[idx] = f"Stack the {t_name} block on top of the {b_name} block."
+
+        # start state
         self.states[env_ids] = self.ST_APP_LIFT_Z
 
+        # IO reset per env
         for env_id in env_ids.tolist():
-            self.buffers[env_id] = self._new_buffer()
-            if self.video_writers[env_id] is not None:
-                self.video_writers[env_id].close()
-                self.video_writers[env_id] = None
-            if self.cfg.save_video:
-                self._reset_video_writer(env_id)
+            self.io.reset_env(env_id)
             self._attempt_id[env_id] += 1
             self.attempted += 1
 
-    def _reset_video_writer(self, env_id: int):
-        tmp_path = self._tmp_video_paths[env_id]
-        if os.path.exists(tmp_path):
-            try: os.remove(tmp_path)
-            except: pass
-        self.video_writers[env_id] = EpisodeVideoWriter(
-            tmp_path, int(self.cfg.video_fps), (int(self.cfg.video_w), int(self.cfg.video_h))
-        )
-
-    def _capture_step(self, env_id: int) -> None:
-        obs = self.env._state.obs
-        buf = self.buffers[env_id]
-        
-        buf["times"].append(float(self.ctrl_step[env_id] * 0.02)) 
-        buf["logic_states"].append(int(self.states[env_id]))
-        buf["qpos"].append(obs["qpos"][env_id].tolist())
-        buf["ee_pose"].append(obs["ee_pose"][env_id].tolist())
-        buf["gripper"].append(obs["gripper"][env_id].tolist())
-        buf["ctrl"].append(self._last_action[env_id].tolist())
-        
-        is_success = bool(self.success[env_id])
-        buf["is_success"].append(is_success)
-        buf["reward"].append(float(1.0 if is_success else 0.0))
-        buf["top_idx"].append(int(self.top_idx[env_id]))
-        buf["base_idx"].append(int(self.base_idx[env_id]))
-
-    def _write_video_frame(self, env_id: int) -> None:
-        vw = self.video_writers[env_id]
-        if vw is None: return
-        obs = self.env._state.obs
-        if self.cam_view_key in obs:
-            rgb = obs[self.cam_view_key][env_id]
-            if rgb is not None:
-                vw.write(rgb[..., ::-1].copy()) # RGB->BGR
-                self.buffers[env_id]["video_frames"] += 1
-
-    def _finalize_episode(self, env_id: int) -> None:
-        if self.video_writers[env_id]:
-            self.video_writers[env_id].close()
-            self.video_writers[env_id] = None
-
-        # if self.success[env_id]:
-        if True :
-            if self.saved_count < self.cfg.data_size:
-                ep_idx = int(self.saved_count)
-                final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
-                abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)
-
-                if self.cfg.save_video and os.path.exists(self._tmp_video_paths[env_id]):
-                    shutil.move(self._tmp_video_paths[env_id], abs_video_path)
-                
-                self._flush_jsonl(env_id, ep_idx, final_video_path)
-                self.saved_count += 1
-                print(f"[Success] Saved episode {ep_idx}. Total saved: {self.saved_count}")
-        
-        if os.path.exists(self._tmp_video_paths[env_id]):
-            try: os.remove(self._tmp_video_paths[env_id])
-            except: pass
-        self.buffers[env_id] = self._new_buffer()
-
-    def _flush_jsonl(self, env_id: int, ep_idx: int, vid_path: str):
-        path = os.path.join(self.cfg.save_dir, f"episode_{ep_idx:05d}.jsonl")
-        buf = self.buffers[env_id]
-        n = len(buf["times"])
-        
-        t_raw = self.cube_names[self.top_idx[env_id]]
-        b_raw = self.cube_names[self.base_idx[env_id]]
-        t_name = t_raw.replace("cube_", "").lower()
-        b_name = b_raw.replace("cube_", "").lower()
-        prompt = f"Stack the {t_name} block on top of the {b_name} block."
-
-        with open(path, "w", encoding="utf-8") as f:
-            for i in range(n):
-                rec = {
-                    "images_1": {"url": vid_path, "type": "video", "frame_idx": i},
-                    "prompt": prompt,
-                    "qpos": buf["qpos"][i],
-                    "ee_pose": buf["ee_pose"][i],
-                    "gripper": buf["gripper"][i],
-                    "ctrl": buf["ctrl"][i],
-                    "is_robot": True,
-                }
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-
-    # ----------------------------
-    # Core Logic
-    # ----------------------------
+    # -----------------------------
+    # FSM helper
+    # -----------------------------
     def _enter_state(self, mask: np.ndarray, new_state: int) -> None:
-        if not np.any(mask): return
-        self.states[mask] = new_state
+        if not np.any(mask):
+            return
+        self.states[mask] = int(new_state)
         self.state_enter_step[mask] = self.ctrl_step[mask].copy()
-        # [Reset reach timer]
         self.state_reach_step[mask] = -1
+
+    # -----------------------------
+    # Core logic (FSM + keypoints + control)
+    # -----------------------------
+    def _check_stack_success(self, mask: np.ndarray) -> np.ndarray:
+        data = self.env._state.data
+        cube_pose = np.stack([np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies], axis=1)
+        row_ids = np.arange(self.B)
+
+        t_idx = self.top_idx
+        b_idx = self.base_idx
+        tp = cube_pose[row_ids, t_idx, :3]
+        bp = cube_pose[row_ids, b_idx, :3]
+
+        xy_dist = np.linalg.norm(tp[:, :2] - bp[:, :2], axis=1)
+        z_diff = tp[:, 2] - bp[:, 2]
+        target_z = 2.0 * float(self.cfg.cube_half)
+
+        xy_ok = xy_dist < 0.03
+        z_ok = np.abs(z_diff - target_z) < 0.02
+        return (xy_ok & z_ok) & mask
 
     def _step_logic(self) -> None:
         cfg = self.cfg
         B = self.B
-        
+
         running = self.active & (~self.done)
-        if not np.any(running): return
+        if not np.any(running):
+            return
 
+        # 1) keypoints
         start_p = self.latched_start_pos
-        start_q = self.latched_start_quat
-
         top_p = self.latched_top_pos
-        top_q = self.latched_top_quat 
-
         base_p = self.latched_base_pos
-        base_q = self.latched_base_quat
-        
-        # --- 计算抓取四元数 (Fixed) ---
-        # 1. 计算物体的 Yaw (Z-rotation)
-        r_top = Rotation.from_quat(top_q)
-        yaw_top = r_top.as_euler('xyz')[:, 2] # [B,] Corrected indexing!
-        
-        r_base = Rotation.from_quat(base_q)
-        yaw_base = r_base.as_euler('xyz')[:, 2] # [B,] Corrected indexing!
-        
-        # 2. 计算机器人的基准姿态 (Start) 的 Roll/Pitch
-        r_start = Rotation.from_quat(start_q)
-        euler_start = r_start.as_euler('xyz') # [B, 3]
-        
-        # 3. 合成目标姿态: Start Roll/Pitch + Object Yaw
-        # 注意：这里假设初始姿态是垂直向下的，我们只旋转 Yaw 来对齐物体
-        grasp_euler = np.stack([euler_start[:, 0], euler_start[:, 1], yaw_top], axis=1) # [B, 3]
-        target_grasp_q = Rotation.from_euler('xyz', grasp_euler).as_quat().astype(np.float32)
 
-        place_euler = np.stack([euler_start[:, 0], euler_start[:, 1], yaw_base], axis=1) # [B, 3]
-        target_place_q = Rotation.from_euler('xyz', place_euler).as_quat().astype(np.float32)
-        
-        
-        # --- 1. 定义关键点 (Full Manhattan Path) ---
-        
-        # 安全高度 (Z plane)
-        # 统一使用 top block 上方一定距离作为安全平面
-        safe_z = top_p[:, 2] + cfg.lift_dz
-        
-        # A. 抓取阶段 (Approach Phase)
-        # 1. Lift Z: 在当前(Start)位置垂直升到 safe_z
+        safe_z = top_p[:, 2] + float(cfg.lift_dz)
+
         p_app_lift_z = start_p.copy()
         p_app_lift_z[:, 2] = safe_z
-        q_app_lift_z = start_q # 保持初始姿态
-        
-        # 2. Align X: 移动 X 到目标 (top_p.x)，Y 保持 Start 的，Z 保持 safe_z
+
         p_app_align_x = p_app_lift_z.copy()
         p_app_align_x[:, 0] = top_p[:, 0]
-        q_app_align_x = start_q
-        
-        # 3. Align Y: 移动 Y 到目标 (top_p.y)，X 已对齐，Z 保持 safe_z
-        # 此时应该位于 top block 正上方
+
         p_app_align_y = top_p.copy()
-        p_app_align_y[:, 2] = safe_z 
-        q_app_align_y = start_q
-        
-        # 4. [NEW] Orient: 原地旋转对齐
-        p_app_orient = p_app_align_y.copy()
-        q_app_orient = target_grasp_q # 旋转到抓取角度
-        
-        # 5. Descend: 垂直下降到抓取点
-        p_grasp = top_p + np.array([0, 0, cfg.grasp_down_z])
-        q_grasp = target_grasp_q # 保持抓取角度
-        
-        # B. 搬运阶段 (Transport Phase)
-        # 5. Lift Z (Transport): 垂直提起
+        p_app_align_y[:, 2] = safe_z
+
+        p_grasp = top_p + np.array([0.0, 0.0, float(cfg.grasp_down_z)], dtype=np.float32)
+
         p_trp_lift_z = top_p.copy()
         p_trp_lift_z[:, 2] = safe_z
-        q_trp_lift_z = target_grasp_q # 提起时保持抓取角度
-        
-        # 6. Align X (Transport): X 对齐 Base，Y 保持 Top 的，Z 保持 safe_z
+
         p_trp_align_x = p_trp_lift_z.copy()
-        p_trp_align_x[:, 0] = base_p[:, 0]-0.015
-        q_trp_align_x = target_grasp_q
-        
-        # 7. Align Y (Transport): Y 对齐 Base，X 已对齐，Z 保持 safe_z
-        # 此时位于 Base 正上方
+        p_trp_align_x[:, 0] = base_p[:, 0] - 0.015
+
         p_trp_align_y = base_p.copy()
         p_trp_align_y[:, 2] = safe_z
-        p_trp_align_y[:, 0] = base_p[:, 0]-0.015
-        q_trp_align_y = target_grasp_q
-        
-        # 8. [NEW] Orient: 原地旋转对齐底座
-        p_trp_orient = p_trp_align_y.copy()
-        q_trp_orient = target_place_q # 旋转到放置角度
+        p_trp_align_y[:, 0] = base_p[:, 0] - 0.015
 
-        # 9. Stack: 下降堆叠
-        p_stack = base_p + np.array([0, 0, 2.0 * cfg.cube_half + 0.005])
-        p_stack[:, 0] = base_p[:, 0]-0.015
-        q_stack = target_place_q
- 
-        # C. 结束阶段
-        # 10. Retreat: 垂直抬起一点
-        p_retreat = base_p + np.array([0, 0, cfg.lift_dz + 0.05])
-        q_retreat = target_place_q
-        
-        # 11. Home
-        p_home = np.tile(np.array([0.4, 0.0, 0.5], dtype=np.float32), (B, 1))
-        q_home = self.home_quat
+        p_stack = base_p + np.array([0.0, 0.0, 2.0 * float(cfg.cube_half) + 0.005], dtype=np.float32)
+        p_stack[:, 0] = base_p[:, 0] - 0.015
 
-        # --- 2. 目标分配 ---
-        tgt_pos_curr = self.exec_pos.copy()
-        tgt_quat_curr = self.exec_quat.copy()
-        grip_cmd = np.full((B,), cfg.gripper_open, dtype=np.float32)
+        p_retreat = base_p + np.array([0.0, 0.0, float(cfg.lift_dz) + 0.10], dtype=np.float32)
+
+        p_home = np.tile(np.array([0.33502, 0.0, 0.11], dtype=np.float32), (B, 1))
+
+        # 2) targets by state
         s = self.states
+        tgt_pos = self.exec_pos.copy()
+        grip_cmd = np.full((B,), float(cfg.gripper_open), dtype=np.float32)
 
-        # Helper to set target
-        def set_target(state_id, pos, quat, grip):
-            mask = running & (s == state_id)
-            if np.any(mask):
-                tgt_pos_curr[mask] = pos[mask]
-                tgt_quat_curr[mask] = quat[mask]
-                grip_cmd[mask] = grip
+        tgt_yaw = np.full((B,), np.nan, dtype=np.float32)
 
-        # Phase 1: Approach
-        set_target(self.ST_APP_LIFT_Z,  p_app_lift_z,  q_app_lift_z,  cfg.gripper_open)
-        set_target(self.ST_APP_ALIGN_X, p_app_align_x, q_app_align_x, cfg.gripper_open)
-        set_target(self.ST_APP_ALIGN_Y, p_app_align_y, q_app_align_y, cfg.gripper_open)
-        set_target(self.ST_APP_ORIENT,  p_app_orient,  q_app_orient,  cfg.gripper_open) # Orient
-        set_target(self.ST_APP_DESCEND, p_grasp,       q_grasp,       cfg.gripper_open)
-        
-        # Phase 2: Close
-        set_target(self.ST_CLOSE,       p_grasp,       q_grasp,       cfg.gripper_close)
-        
-        # Phase 3: Transport
-        set_target(self.ST_TRP_LIFT_Z,  p_trp_lift_z,  q_trp_lift_z,  cfg.gripper_close)
-        set_target(self.ST_TRP_ALIGN_X, p_trp_align_x, q_trp_align_x, cfg.gripper_close)
-        set_target(self.ST_TRP_ALIGN_Y, p_trp_align_y, q_trp_align_y, cfg.gripper_close)
-        set_target(self.ST_TRP_ORIENT,  p_trp_orient,  q_trp_orient,  cfg.gripper_close) # Orient
-        set_target(self.ST_TO_STACK,    p_stack,       q_stack,       cfg.gripper_close)
-        
-        # Phase 4: Release & Home
-        set_target(self.ST_OPEN_HOLD,   p_stack,       q_stack,       cfg.gripper_open)
-        set_target(self.ST_RETREAT,     p_retreat,     q_retreat,     cfg.gripper_open)
-        set_target(self.ST_TO_HOME,     p_home,        q_home,        cfg.gripper_open)
+        def set_target(state_id: int, pos: np.ndarray, grip: float):
+            m = running & (s == state_id)
+            if np.any(m):
+                tgt_pos[m] = pos[m]
+                grip_cmd[m] = float(grip)
 
-        # --- 3. 执行控制 ---
-        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos_curr, cfg.max_dp)
-        self.exec_quat = smooth_step_quat(self.exec_quat, tgt_quat_curr, cfg.max_dq)
-        
-        ref_pose_6d = self.env.robot.ref_ee_pose 
-        ref_pos = ref_pose_6d[:, :3]
-        
-        # Handle Rotation Error for Action
-        # Current orientation (Euler or Quat)
-        if ref_pose_6d.shape[1] == 6:
-            r_curr = Rotation.from_euler('xyz', ref_pose_6d[:, 3:], degrees=False)
+        def set_target_yaw(state_id: int, pos: np.ndarray, grip: float, yaw_arr: np.ndarray):
+            m = running & (s == state_id)
+            if np.any(m):
+                tgt_pos[m] = pos[m]
+                grip_cmd[m] = float(grip)
+                tgt_yaw[m] = yaw_arr[m]
+
+        set_target(self.ST_APP_LIFT_Z, p_app_lift_z, cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_X, p_app_align_x, cfg.gripper_open)
+        set_target(self.ST_APP_ALIGN_Y, p_app_align_y, cfg.gripper_open)
+        set_target_yaw(self.ST_APP_ALIGN_YAW, p_app_align_y, cfg.gripper_open, self.latched_top_yaw + float(cfg.yaw_offset_grasp))
+        set_target(self.ST_APP_DESCEND, p_grasp, cfg.gripper_open)
+
+        set_target(self.ST_CLOSE, p_grasp, cfg.gripper_close)
+
+        set_target(self.ST_TRP_LIFT_Z, p_trp_lift_z, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_X, p_trp_align_x, cfg.gripper_close)
+        set_target(self.ST_TRP_ALIGN_Y, p_trp_align_y, cfg.gripper_close)
+        set_target_yaw(self.ST_TRP_ALIGN_YAW, p_trp_align_y, cfg.gripper_close, self.latched_base_yaw + float(cfg.yaw_offset_place))
+        set_target(self.ST_TO_STACK, p_stack, cfg.gripper_close)
+
+        set_target(self.ST_OPEN_HOLD, p_stack, cfg.gripper_open)
+        set_target(self.ST_RETREAT, p_retreat, cfg.gripper_open)
+        set_target_yaw(self.ST_TO_HOME, p_home, cfg.gripper_open, self.latched_start_yaw)
+
+        # 3) control
+        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, float(cfg.max_dp))
+
+        # yaw control only in yaw states
+        want_rot = running & (~np.isnan(tgt_yaw)) & (
+            (s == self.ST_APP_ALIGN_YAW) | (s == self.ST_TRP_ALIGN_YAW) | (s == self.ST_TO_HOME)
+        )
+
+        # reference pose
+        ref_pose = self.env.robot.ref_ee_pose
+        ref_pos = ref_pose[:, :3]
+        ref_euler = ref_pose[:, 3:6]
+        ref_quat = Rotation.from_euler("xyz", ref_euler, degrees=False).as_quat().astype(np.float32)
+
+        # current ee yaw from obs
+        obs = self.env._state.obs
+        ee_pose = obs.get("ee_pose", None)
+        if ee_pose is not None and ee_pose.shape[1] == 7:
+            ee_quat = ee_pose[:, 3:7].astype(np.float32)
+        elif ee_pose is not None and ee_pose.shape[1] == 6:
+            ee_quat = Rotation.from_euler("xyz", ee_pose[:, 3:6], degrees=False).as_quat().astype(np.float32)
         else:
-            r_curr = Rotation.from_quat(ref_pose_6d[:, 3:])
-            
-        r_tgt = Rotation.from_quat(self.exec_quat)
-        
-        # Calculate diff rotation: R_diff = R_target * R_current.inv()
-        r_diff = r_tgt * r_curr.inv()
-        rot_vec = r_diff.as_rotvec() # (B, 3)
+            ee_quat = ref_quat.copy()
+        curr_yaw = Rotation.from_quat(ee_quat).as_euler("xyz", degrees=False)[:, 2].astype(np.float32)
+
+        desired_quat = self.exec_quat.copy()
+        if np.any(want_rot):
+            # make target yaw closest to current yaw
+            dy = wrap_to_pi(tgt_yaw[want_rot] - curr_yaw[want_rot])
+            target_yaw = curr_yaw[want_rot] + dy
+
+            # 90-degree symmetry for cubes
+            symmetry = np.pi / 2.0
+            delta = target_yaw - self.latched_start_yaw[want_rot]
+            delta = (delta + symmetry / 2.0) % symmetry - symmetry / 2.0
+
+            r_delta = Rotation.from_euler("z", delta, degrees=False)
+            r_start = Rotation.from_quat(self.latched_start_quat[want_rot])
+            r_target = r_delta * r_start
+            desired_quat[want_rot] = r_target.as_quat().astype(np.float32)
+            self.exec_quat[want_rot] = desired_quat[want_rot]
+
+        rotvec_cmd = np.zeros((B, 3), dtype=np.float32)
+        if np.any(want_rot):
+            r_des = Rotation.from_quat(desired_quat[want_rot])
+            r_ref = Rotation.from_quat(ref_quat[want_rot])
+            r_err = r_des * r_ref.inv()
+            rv = r_err.as_rotvec().astype(np.float32)
+            mag = np.linalg.norm(rv, axis=1, keepdims=True) + 1e-9
+            scale = np.minimum(1.0, float(cfg.max_dr) / mag)
+            rv = rv * scale
+            rotvec_cmd[want_rot] = rv * float(cfg.rot_gain)
 
         action = np.zeros((B, 7), dtype=np.float32)
-        action[:, :3] = (self.exec_pos - ref_pos) * 0.5 # P gain Pos
-        action[:, 3:6] = rot_vec * 0.2                  # P gain Rot
+        action[:, :3] = (self.exec_pos - ref_pos) * 0.5
+        action[:, 3:6] = rotvec_cmd
         action[:, 6] = grip_cmd
-        
         self._last_action[:] = action
+
         self.env.step(action)
 
-        # --- 4. 状态跳转 (with Dwell) ---
-        def is_reached(target_p, target_q):
-            p_ok = np.linalg.norm(self.exec_pos - target_p, axis=1) < cfg.pos_tol
-            
-            # Quat dist
-            dot = np.sum(self.exec_quat * target_q, axis=1)
-            # handle double cover
-            dot = np.abs(dot)
-            # angle = 2 * acos(dot), but checking 1 - dot < tol is faster
-            q_ok = (1.0 - dot) < cfg.rot_tol
-            
-            return p_ok & q_ok
+        # 4) transitions
+        def is_reached(p: np.ndarray) -> np.ndarray:
+            return np.linalg.norm(self.exec_pos - p, axis=1) < float(cfg.pos_tol)
 
-        # Dwell Check Helper
-        def _check_reach_and_dwell(state_idx: int, target_p: np.ndarray, target_q: np.ndarray) -> np.ndarray:
-            in_state = running & (self.states == state_idx)
-            reached = is_reached(target_p, target_q)
-            
-            # Record first reach time
-            just_reached = in_state & reached & (self.state_reach_step == -1)
-            if np.any(just_reached):
-                self.state_reach_step[just_reached] = self.ctrl_step[just_reached]
-            
-            has_reached_before = (self.state_reach_step != -1)
-            dwell_pass = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
-            
-            return in_state & has_reached_before & dwell_pass & reached
+        def _check_reach_dwell(state_id: int, p: np.ndarray) -> np.ndarray:
+            in_s = running & (self.states == state_id)
+            ok = is_reached(p)
+            just = in_s & ok & (self.state_reach_step == -1)
+            if np.any(just):
+                self.state_reach_step[just] = self.ctrl_step[just]
+            dwell = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
+            return in_s & (self.state_reach_step != -1) & dwell & ok
 
-        # --- Phase 1: Approach Sequence ---
-        
-        # 1. Start -> Lift Z
-        done_app_lift = _check_reach_and_dwell(self.ST_APP_LIFT_Z, p_app_lift_z, q_app_lift_z)
-        self._enter_state(done_app_lift, self.ST_APP_ALIGN_X)
-        
-        # 2. Lift Z -> Align X
-        done_app_x = _check_reach_and_dwell(self.ST_APP_ALIGN_X, p_app_align_x, q_app_align_x)
-        self._enter_state(done_app_x, self.ST_APP_ALIGN_Y)
-        
-        # 3. Align X -> Align Y
-        done_app_y = _check_reach_and_dwell(self.ST_APP_ALIGN_Y, p_app_align_y, q_app_align_y)
-        self._enter_state(done_app_y, self.ST_APP_ORIENT) # -> Orient
-        
-        # 4. [NEW] Align Y -> Orient
-        done_app_orient = _check_reach_and_dwell(self.ST_APP_ORIENT, p_app_orient, q_app_orient)
-        self._enter_state(done_app_orient, self.ST_APP_DESCEND) # -> Descend
-        
-        # 5. Orient -> Descend (Grasp)
-        done_app_down = _check_reach_and_dwell(self.ST_APP_DESCEND, p_grasp, q_grasp)
-        self._enter_state(done_app_down, self.ST_CLOSE)
-        
-        # --- Phase 2: Close ---
-        mask = running & (s == self.ST_CLOSE)
-        if np.any(mask):
-            time_in_state = self.ctrl_step - self.state_enter_step
-            closed_done = time_in_state >= cfg.close_hold_steps
-            self._enter_state(mask & closed_done, self.ST_TRP_LIFT_Z)
-        
-        # --- Phase 3: Transport Sequence ---
-        
-        # 6. Close -> Lift Z
-        done_trp_lift = _check_reach_and_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z, q_trp_lift_z)
-        self._enter_state(done_trp_lift, self.ST_TRP_ALIGN_X)
-        
-        # 7. Lift Z -> Align X
-        done_trp_x = _check_reach_and_dwell(self.ST_TRP_ALIGN_X, p_trp_align_x, q_trp_align_x)
-        self._enter_state(done_trp_x, self.ST_TRP_ALIGN_Y)
-        
-        # 8. Align X -> Align Y
-        done_trp_y = _check_reach_and_dwell(self.ST_TRP_ALIGN_Y, p_trp_align_y, q_trp_align_y)
-        self._enter_state(done_trp_y, self.ST_TRP_ORIENT) # -> Orient
-        
-        # 9. [NEW] Align Y -> Orient
-        done_trp_orient = _check_reach_and_dwell(self.ST_TRP_ORIENT, p_trp_orient, q_trp_orient)
-        self._enter_state(done_trp_orient, self.ST_TO_STACK) # -> Stack
+        def _check_yaw_dwell(state_id: int, target_yaw: np.ndarray) -> np.ndarray:
+            in_s = running & (self.states == state_id)
+            dy = wrap_to_pi(curr_yaw - target_yaw)
+            symmetry = np.pi / 2.0
+            dy = (dy + symmetry / 2.0) % symmetry - symmetry / 2.0
+            ok = np.abs(dy) < float(cfg.yaw_tol)
+            just = in_s & ok & (self.state_reach_step == -1)
+            if np.any(just):
+                self.state_reach_step[just] = self.ctrl_step[just]
+            dwell = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
+            return in_s & (self.state_reach_step != -1) & dwell & ok
 
-        # 10. Orient -> Stack Down
-        done_stack = _check_reach_and_dwell(self.ST_TO_STACK, p_stack, q_stack)
-        self._enter_state(done_stack, self.ST_OPEN_HOLD)
-        
-        # --- Phase 4: Release & End ---
-        
-        # 11. Open (Wait) -> Retreat
-        mask = running & (s == self.ST_OPEN_HOLD)
-        if np.any(mask):
-            m_open = mask
-            is_stacked = self._check_stack_success(m_open)
-            self.stack_hold_counter[m_open & is_stacked] += 1
-            self.stack_hold_counter[m_open & (~is_stacked)] = 0 
-            
-            ready_retreat = (self.stack_hold_counter >= cfg.stack_hold_steps)
-            self._enter_state(m_open & ready_retreat, self.ST_RETREAT)
-            
-        # 12. Retreat -> Home
-        # Note: We can loosen reach check for retreat
-        mask = running & (s == self.ST_RETREAT)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_retreat, q_retreat), self.ST_TO_HOME)
+        self._enter_state(_check_reach_dwell(self.ST_APP_LIFT_Z, p_app_lift_z), self.ST_APP_ALIGN_X)
+        self._enter_state(_check_reach_dwell(self.ST_APP_ALIGN_X, p_app_align_x), self.ST_APP_ALIGN_Y)
+        self._enter_state(_check_reach_dwell(self.ST_APP_ALIGN_Y, p_app_align_y), self.ST_APP_ALIGN_YAW)
 
-        # 13. Home -> Done
-        mask = running & (s == self.ST_TO_HOME)
-        if np.any(mask):
-            self._enter_state(mask & is_reached(p_home, q_home), self.ST_DONE)
+        grasp_yaw = (self.latched_top_yaw + float(cfg.yaw_offset_grasp)).astype(np.float32)
+        self._enter_state(_check_yaw_dwell(self.ST_APP_ALIGN_YAW, grasp_yaw), self.ST_APP_DESCEND)
 
-    def _check_stack_success(self, mask: np.ndarray) -> np.ndarray:
-        data = self.env._state.data
-        cube_pose = np.stack([np.asarray(b.get_pose(data), dtype=np.float32) for b in self.cube_bodies], axis=1)
-        
-        row_ids = np.arange(self.B)
-        t_idx = self.top_idx
-        b_idx = self.base_idx
-        
-        tp = cube_pose[row_ids, t_idx, :3]
-        bp = cube_pose[row_ids, b_idx, :3]
-        
-        xy_dist = np.linalg.norm(tp[:, :2] - bp[:, :2], axis=1)
-        z_diff = tp[:, 2] - bp[:, 2]
-        target_z = 2.0 * self.cfg.cube_half
-        
-        xy_ok = xy_dist < 0.03
-        z_ok = np.abs(z_diff - target_z) < 0.02
-        
-        return (xy_ok & z_ok) & mask
+        self._enter_state(_check_reach_dwell(self.ST_APP_DESCEND, p_grasp), self.ST_CLOSE)
 
-    # ----------------------------
-    # Main Loop
-    # ----------------------------
+        mask_close = running & (self.states == self.ST_CLOSE)
+        if np.any(mask_close):
+            done_close = (self.ctrl_step - self.state_enter_step) >= int(cfg.close_hold_steps)
+            self._enter_state(mask_close & done_close, self.ST_TRP_LIFT_Z)
+
+        self._enter_state(_check_reach_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z), self.ST_TRP_ALIGN_X)
+        self._enter_state(_check_reach_dwell(self.ST_TRP_ALIGN_X, p_trp_align_x), self.ST_TRP_ALIGN_Y)
+        self._enter_state(_check_reach_dwell(self.ST_TRP_ALIGN_Y, p_trp_align_y), self.ST_TRP_ALIGN_YAW)
+
+        place_yaw = (self.latched_base_yaw + float(cfg.yaw_offset_place)).astype(np.float32)
+        self._enter_state(_check_yaw_dwell(self.ST_TRP_ALIGN_YAW, place_yaw), self.ST_TO_STACK)
+
+        self._enter_state(_check_reach_dwell(self.ST_TO_STACK, p_stack), self.ST_OPEN_HOLD)
+
+        mask_open = running & (self.states == self.ST_OPEN_HOLD)
+        if np.any(mask_open):
+            is_stacked = self._check_stack_success(mask_open)
+            self.stack_hold_counter[mask_open & is_stacked] += 1
+            self.stack_hold_counter[mask_open & (~is_stacked)] = 0
+            ready = self.stack_hold_counter >= int(cfg.stack_hold_steps)
+            self._enter_state(mask_open & ready, self.ST_RETREAT)
+
+        self._enter_state(running & (self.states == self.ST_RETREAT) & is_reached(p_retreat), self.ST_TO_HOME)
+        self._enter_state(running & (self.states == self.ST_TO_HOME) & is_reached(p_home), self.ST_DONE)
+
+    # -----------------------------
+    # Collection loop (minimal; IO in common)
+    # -----------------------------
     def collect(self) -> None:
         cfg = self.cfg
-        target_n = cfg.data_size
-        
+        target_n = int(cfg.data_size)
+
         all_ids = np.arange(self.B, dtype=np.int64)
-        self.start_episodes(all_ids, seed=cfg.seed)
-        
-        print(f"Starting Collection (Full Manhattan). Target: {target_n}")
-        
+        self.start_episodes(all_ids, seed=int(cfg.seed))
+
+        print(f"Starting StackColorBlocks collection. Target: {target_n}")
+
         while self.saved_count < target_n:
             self._step_logic()
-            
+
             running = self.active & (~self.done)
-            
-            sample_mask = running & ((self.ctrl_step % cfg.sample_every_steps) == 0)
-            for env_id in np.where(sample_mask)[0]:
-                self._capture_step(env_id)
-                
+
+            # capture (before video render) to keep frame alignment
+            sample_mask = running & ((self.ctrl_step % int(cfg.sample_every_steps)) == 0)
+            obs = self.env._state.obs
+            for env_id in np.where(sample_mask)[0].tolist():
+                extra = {"top_idx": int(self.top_idx[env_id]), "base_idx": int(self.base_idx[env_id])}
+                self.io.capture_step(
+                    env_id=int(env_id),
+                    ctrl_step=int(self.ctrl_step[env_id]),
+                    state=int(self.states[env_id]),
+                    obs=obs,
+                    last_action=self._last_action,
+                    success=bool(self.success[env_id]),
+                    reward=float(1.0 if self.success[env_id] else 0.0),
+                    extra_step=extra,
+                )
+
+            # render videos
             if cfg.save_video:
-                render_mask = running & ((self.ctrl_step % cfg.render_every_steps) == 0)
-                for env_id in np.where(render_mask)[0]:
-                    self._write_video_frame(env_id)
-            
+                render_ids = np.where(running)[0].tolist()
+                self.io.maybe_write_video(obs, render_ids, int(self.ctrl_step[0]))
+
             self.ctrl_step[running] += 1
-            
+
+            # termination
             for i in range(self.B):
-                if not running[i]: continue
-                
-                fsm_done = (self.states[i] == self.ST_DONE)
-                timeout = (self.ctrl_step[i] >= cfg.max_ctrl_steps)
-                is_stacked = self._check_stack_success(np.eye(self.B, dtype=bool)[i])[i]
-                
+                if not running[i]:
+                    continue
+                fsm_done = (int(self.states[i]) == int(self.ST_DONE))
+                timeout = (int(self.ctrl_step[i]) >= int(cfg.max_ctrl_steps))
                 if fsm_done or timeout:
                     self.done[i] = True
+                    is_stacked = bool(self._check_stack_success(np.eye(self.B, dtype=bool)[i])[i])
                     self.success[i] = bool(fsm_done and is_stacked)
-            
+
+            # finalize & restart
             for i in range(self.B):
                 if self.active[i] and self.done[i]:
-                    self._finalize_episode(i)
-                    
+                    if self.success[i] and self.saved_count < target_n:
+                        ep_idx = int(self.saved_count)
+                        self.io.finalize_episode(
+                            env_id=i,
+                            ep_idx=ep_idx,
+                            prompt=str(self.ep_prompt[i]),
+                            success=True,
+                            extra_episode={"subtask": str(cfg.subtask or "")},
+                        )
+                        self.saved_count += 1
+                        print(f"[Saved] Episode {ep_idx}. Total saved: {self.saved_count}")
+                    else:
+                        # cleanup tmp video/buffer
+                        self.io.finalize_episode(env_id=i, ep_idx=int(self.saved_count), prompt=str(self.ep_prompt[i]), success=False)
+
                     if self.saved_count < target_n:
-                        self.active[i] = False 
+                        self.active[i] = False
+                        self.done[i] = False
                         new_seed = int(cfg.seed + self.attempted)
                         self.start_episodes(np.array([i]), seed=new_seed)
                     else:
@@ -770,15 +596,20 @@ class StackColorBlocksCollector:
 
             now = time.perf_counter()
             if (now - self._last_log_t) > 2.0:
-                print(f"[Collect] Saved: {self.saved_count}/{target_n} | Active: {self.active.sum()}")
+                print(f"[Collect] Saved: {self.saved_count}/{target_n} | Active: {int(self.active.sum())}")
                 self._last_log_t = now
-                
+
         print(f"Done. Saved to {cfg.save_dir}")
         self.close()
 
-    def close(self):
-        for vw in self.video_writers:
-            if vw: vw.close()
+    def close(self) -> None:
+        if hasattr(self.env, "close"):
+            try:
+                self.env.close()
+            except Exception:
+                pass
+        self.io.close()
+
 
 # -----------------------------------------------------------------------------
 # CLI
@@ -788,14 +619,17 @@ def main():
     p.add_argument("--save_dir", type=str, default=None)
     p.add_argument("--num_envs", type=int, default=None)
     p.add_argument("--data_size", type=int, default=None)
+    p.add_argument("--seed", type=int, default=None)
     p.add_argument("--no_video", action="store_true")
+
     args = p.parse_args()
 
     cfg = CollectorCfg(
         save_dir=args.save_dir if args.save_dir else CollectorCfg.save_dir,
-        num_envs=args.num_envs if args.num_envs else CollectorCfg.num_envs,
-        data_size=args.data_size if args.data_size else CollectorCfg.data_size,
-        save_video=(not args.no_video)
+        num_envs=args.num_envs if args.num_envs is not None else CollectorCfg.num_envs,
+        data_size=args.data_size if args.data_size is not None else CollectorCfg.data_size,
+        seed=args.seed if args.seed is not None else CollectorCfg.seed,
+        save_video=(not args.no_video),
     )
 
     runner = StackColorBlocksCollector(cfg)
@@ -805,6 +639,7 @@ def main():
         pass
     finally:
         runner.close()
+
 
 if __name__ == "__main__":
     main()
