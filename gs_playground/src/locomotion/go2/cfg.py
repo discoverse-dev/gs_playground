@@ -10,7 +10,7 @@ model_file = (ROOT_PATH / "models" / "robots" / "locomotion" / "go2" / "scene_fl
 class NoiseConfig:
     level: float = 1.0
     scale_joint_angle: float = 0.03
-    scale_joint_vel: float = 1.5
+    scale_joint_vel: float = 0.5
     scale_gyro: float = 0.2
     scale_gravity: float = 0.05
     scale_linvel: float = 0.1
@@ -31,16 +31,16 @@ class InitState:
 @dataclass
 class Commands:
     vel_limit = [
-        [-2.0, -1.0, -3.1416],  # min: vel_x [m/s], vel_y [m/s], ang_vel [rad/s]
-        [ 2.0,  1.0,  3.1416],  # max
+        [-3.0, -1.5, -6.28],  # min: vel_x [m/s], vel_y [m/s], ang_vel [rad/s]
+        [ 3.0,  1.5,  6.28],  # max
     ]
 
 
 @dataclass
 class Normalization:
-    lin_vel = 2
+    lin_vel = 2.0
     ang_vel = 0.25
-    dof_pos = 1
+    dof_pos = 1.0
     dof_vel = 0.05
 
 @dataclass
@@ -48,8 +48,8 @@ class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
             # Tracking
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 1.0,
+            "tracking_lin_vel": 2.5,
+            "tracking_ang_vel": 1.5,
             # Base
             "lin_vel_z": -0.5,
             "ang_vel_xy": -0.05,
