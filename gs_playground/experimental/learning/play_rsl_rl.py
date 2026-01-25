@@ -1,6 +1,7 @@
 
 import os
 import sys
+import argparse
 import numpy as np
 import torch
 import mujoco
@@ -87,23 +88,39 @@ def render_many(model, data, state_batch, shape=(640, 480), transparent=False, o
     return renderer.render()
 
 def find_latest_model(log_dir):
-    # Pattern: model_*.pt
-    files = glob.glob(os.path.join(log_dir, "model_*.pt"))
+    # Search for model_*.pt recursively in log_dir
+    # Structure: log_dir / experiment_name / timestamp / model_*.pt
+    search_pattern = os.path.join(log_dir, "**", "model_*.pt")
+    files = glob.glob(search_pattern, recursive=True)
+    
     if not files:
         return None
     
-    # Sort by iteration number
-    def extract_iter(f):
+    # Sort by (timestamp_dir, iteration)
+    def extract_key(f):
+        # Parent dirname is usually timestamp-like "2026-01-25_..."
+        parent = os.path.dirname(f)
+        parent_name = os.path.basename(parent)
+        
+        # Iteration from filename "model_100.pt"
         base = os.path.basename(f)
         try:
-            return int(base.split('_')[1].split('.')[0])
+            iteration = int(base.split('_')[1].split('.')[0])
         except:
-            return -1
+            iteration = -1
+        
+        # We sort by parent dir name (timestamp) then iteration
+        return (parent_name, iteration)
             
-    files.sort(key=extract_iter, reverse=True)
+    files.sort(key=extract_key, reverse=True)
+    print(f"Found latest model: {files[0]}")
     return files[0]
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default=None, help="Path to model checkoint")
+    args = parser.parse_args()
+
     # Config
     num_envs = 16 # Visualizing 16 dogs
     max_steps = 300 # 300 steps
@@ -113,7 +130,11 @@ def main():
     
     # Paths
     logs_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../logs"))
-    model_path = find_latest_model(logs_root)
+    
+    if args.model:
+        model_path = args.model
+    else:
+        model_path = find_latest_model(logs_root)
     
     if not model_path:
         print(f"No model found in {logs_root}")
