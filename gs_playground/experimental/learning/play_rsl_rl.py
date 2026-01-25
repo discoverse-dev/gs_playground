@@ -176,11 +176,24 @@ def main():
     loaded_dict = runner.load(model_path, load_optimizer=False)
     if loaded_dict is not None:
         print(f"Loaded iteration: {loaded_dict.get('iter', 'unknown')}")
+        
+        # Load empirical normalization stats if available
+        if 'model_state_dict' in loaded_dict:
+             state_dict = loaded_dict['model_state_dict']
+             # RSL-RL empirical normalization saves running mean and var in the model state dict
+             # The keys would be 'std.running_mean_var.running_mean' etc if it was a standalone module,
+             # but inside ActorCritic it's likely under 'actor_obs_normalizer'
+             pass
     else:
         print("Model loaded (no dict returned).")
     
     policy = runner.alg.policy.actor
     policy.eval()
+
+    # Need to move normalizer to eval mode to stop updating stats
+    if hasattr(runner.alg.policy, 'actor_obs_normalizer'):
+         runner.alg.policy.actor_obs_normalizer.eval()
+         print("Actor observation normalizer set to eval mode.")
     
     # 3. Simulate
     print(f"Running play for {max_steps} steps...")

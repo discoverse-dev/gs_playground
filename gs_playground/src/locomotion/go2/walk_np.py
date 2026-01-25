@@ -248,16 +248,7 @@ class Go2WalkTaskMj(MjNpEnv):
 
         self.reset_buf = np.ones(self._num_envs, dtype=bool)
         self.gravity_vec = np.array([0, 0, -1], dtype=np.float32)
-        self.commands_scale = np.array(
-            (
-                [
-                    cfg.normalization.lin_vel,
-                    cfg.normalization.lin_vel,
-                    cfg.normalization.ang_vel,
-                ]
-            ),
-            dtype=np.float32,
-        )
+        # self.commands_scale = np.array([1.0, 1.0, 1.0], dtype=np.float32)
 
         self.default_angles = np.zeros(self._num_action, dtype=np.float32)
         self.hip_indices = []
@@ -434,16 +425,16 @@ class Go2WalkTaskMj(MjNpEnv):
             linear_vel = add_noise(linear_vel, noise_cfg.scale_linvel)
         
         diff = dof_pos - self.default_angles
-        command = info["commands"] * self.commands_scale
+        command = info["commands"]
         last_actions = info["current_actions"]
 
         obs = np.hstack(
             [
-                linear_vel * self.cfg.normalization.lin_vel,
-                gyro * self.cfg.normalization.ang_vel,
+                linear_vel,
+                gyro,
                 local_gravity,
-                diff * self.cfg.normalization.dof_pos,
-                dof_vel * self.cfg.normalization.dof_vel,
+                diff,
+                dof_vel,
                 last_actions,
                 command,
             ]

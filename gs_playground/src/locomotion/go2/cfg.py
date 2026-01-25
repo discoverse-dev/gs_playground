@@ -39,13 +39,6 @@ class Commands:
 
 
 @dataclass
-class Normalization:
-    lin_vel = 2.0
-    ang_vel = 0.25
-    dof_pos = 1.0
-    dof_vel = 0.05
-
-@dataclass
 class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
@@ -97,6 +90,8 @@ class RslPolicyCfg:
     critic_hidden_dims: list = field(default_factory=lambda: [512, 256, 128])
     activation: str = "elu"
     class_name: str = "ActorCritic"
+    actor_obs_normalization: bool = True
+    critic_obs_normalization: bool = True
 
 
 @dataclass
@@ -147,7 +142,7 @@ class Go2WalkNpEnvCfg(EnvCfg):
     reward_config: RewardConfig = field(default_factory=RewardConfig)
     init_state: InitState = field(default_factory=InitState)
     commands: Commands = field(default_factory=Commands)
-    normalization: Normalization = field(default_factory=Normalization)
+    # normalization: Normalization = field(default_factory=Normalization)
     asset: Asset = field(default_factory=Asset)
     sensor: Sensor = field(default_factory=Sensor)
     sim_dt: float = 0.004

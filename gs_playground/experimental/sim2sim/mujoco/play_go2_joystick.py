@@ -53,12 +53,12 @@ class OnnxController:
         self.command = np.zeros(3, dtype=np.float32)
 
     def get_obs(self, model, data) -> np.ndarray:
-        linvel = data.sensor("local_linvel").data * 2.0 # Scaling 2.0
-        gyro = data.sensor("gyro").data * 0.25 # Scaling 0.25
+        linvel = data.sensor("local_linvel").data
+        gyro = data.sensor("gyro").data
         imu_xmat = data.site_xmat[model.site("imu").id].reshape(3, 3)
         gravity = imu_xmat.T @ np.array([0, 0, -1])
-        joint_angles = (data.qpos[7:7+_JOINT_NUM] - self._default_angles) * 1.0
-        joint_velocities = data.qvel[6:6+_JOINT_NUM] * 0.05 # Scaling 0.05
+        joint_angles = (data.qpos[7:7+_JOINT_NUM] - self._default_angles)
+        joint_velocities = data.qvel[6:6+_JOINT_NUM]
 
         # if not self.joy_queue is None:
         #     try:
