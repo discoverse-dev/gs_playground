@@ -27,6 +27,28 @@ def quat_rotate_inverse(quats, v):
     cross_im_v = np.cross(im, v)
     return v + 2 * (w[:, np.newaxis] * cross_im_v + np.cross(im, cross_im_v))
 
+def quat_mul(q1, q2):
+    """
+    Multiply two quaternions.
+    """
+    w1, x1, y1, z1 = q1[:, 0], q1[:, 1], q1[:, 2], q1[:, 3]
+    w2, x2, y2, z2 = q2[:, 0], q2[:, 1], q2[:, 2], q2[:, 3]
+    return np.stack([
+        w1*w2 - x1*x2 - y1*y2 - z1*z2,
+        w1*x2 + x1*w2 + y1*z2 - z1*y2,
+        w1*y2 - x1*z2 + y1*w2 + z1*x2,
+        w1*z2 + x1*y2 - y1*x2 + z1*w2
+    ], axis=1)
+
+def axis_angle_to_quat(axis, angle):
+    """
+    Convert axis-angle to quaternion.
+    """
+    half_angle = angle / 2
+    c = np.cos(half_angle)
+    s = np.sin(half_angle)
+    return np.stack([c, axis[:, 0]*s, axis[:, 1]*s, axis[:, 2]*s], axis=1)
+
 
 @registry.env("go2-flat-terrain-walk", sim_backend="mujoco")
 class Go2WalkTaskMj(MjNpEnv):
@@ -239,8 +261,10 @@ class Go2WalkTaskMj(MjNpEnv):
         # Cache joint limits for reward
         if self._model.njnt > 1:
              self.dof_pos_limits = self._model.jnt_range[1:1+self._num_dof_pos].copy()
+             self.soft_dof_pos_limits = self.dof_pos_limits * 0.95
         else:
              self.dof_pos_limits = np.zeros((self._num_dof_pos, 2))
+             self.soft_dof_pos_limits = np.zeros((self._num_dof_pos, 2))
 
     def _init_foot_linvel_sensor_indices(self):
         foot_sites = ["FL", "FR", "RL", "RR"]
@@ -370,12 +394,27 @@ class Go2WalkTaskMj(MjNpEnv):
         info["swing_peak"] *= ~current_contacts
 
     def _get_obs(self, state: MjNpEnvState, info: dict) -> np.ndarray:
-        linear_vel = self.get_local_linvel(state)
-        gyro = self.get_gyro(state)
-        
-        local_gravity = info["local_gravity"] # Use cached logic
+        # Get raw data (copy to allow noise injection without side effects)
+        linear_vel = self.get_local_linvel(state).copy()
+        gyro = self.get_gyro(state).copy()
+        local_gravity = info["local_gravity"].copy()
+        dof_pos = self.get_dof_pos(state).copy()
+        dof_vel = self.get_dof_vel(state).copy()
 
-        diff = self.get_dof_pos(state) - self.default_angles
+        # Apply Observation Noise if enabled
+        noise_cfg = self.cfg.noise_config
+        if noise_cfg.level > 0.0:
+            def add_noise(val, scale):
+                noise = (np.random.rand(*val.shape) * 2 - 1) * noise_cfg.level * scale
+                return val + noise
+
+            gyro = add_noise(gyro, noise_cfg.scale_gyro)
+            local_gravity = add_noise(local_gravity, noise_cfg.scale_gravity)
+            dof_pos = add_noise(dof_pos, noise_cfg.scale_joint_angle)
+            dof_vel = add_noise(dof_vel, noise_cfg.scale_joint_vel)
+            linear_vel = add_noise(linear_vel, noise_cfg.scale_linvel)
+        
+        diff = dof_pos - self.default_angles
         command = info["commands"] * self.commands_scale
         last_actions = info["current_actions"]
 
@@ -385,7 +424,7 @@ class Go2WalkTaskMj(MjNpEnv):
                 gyro * self.cfg.normalization.ang_vel,
                 local_gravity,
                 diff * self.cfg.normalization.dof_pos,
-                self.get_dof_vel(state) * self.cfg.normalization.dof_vel,
+                dof_vel * self.cfg.normalization.dof_vel,
                 last_actions,
                 command,
             ]
@@ -475,6 +514,23 @@ class Go2WalkTaskMj(MjNpEnv):
         
         qvel_batch = np.zeros((num_reset, self.nv), dtype=np.float64)
         qvel_batch[:, 6:] = self._init_dof_vel
+
+        # Domain Randomization (joystick.py reference)
+        # 1. Base Position Noise (x, y) ~ U(-0.5, 0.5)
+        dxy = np.random.uniform(-0.5, 0.5, (num_reset, 2))
+        qpos_batch[:, 0:2] += dxy
+
+        # 2. Base Orientation Noise (yaw) ~ U(-pi, pi)
+        yaw = np.random.uniform(-np.pi, np.pi, num_reset)
+        axis = np.zeros((num_reset, 3))
+        axis[:, 2] = 1.0  # Z-axis
+        quat_yaw = axis_angle_to_quat(axis, yaw)
+        
+        # q_new = q_old * q_yaw (Quaternion multiplication)
+        qpos_batch[:, 3:7] = quat_mul(qpos_batch[:, 3:7], quat_yaw)
+
+        # 3. Base Velocity Noise ~ U(-0.5, 0.5) for 6DoF
+        qvel_batch[:, 0:6] = np.random.uniform(-0.5, 0.5, (num_reset, 6))
         
         if hasattr(self, '_state') and self._state is not None:
             self._state.physics_state[env_indices, 0] = 0.0
@@ -613,10 +669,16 @@ class Go2WalkTaskMj(MjNpEnv):
         return np.exp(-error)
 
     def _cost_joint_pos_limits(self, state: MjNpEnvState):
-        # Penalize joint positions that are close to the limits
+        # Penalize joints if they cross soft limits.
         qpos = self.get_dof_pos(state)
-        out_of_limits = -np.clip(qpos - self.dof_pos_limits[:, 1], 0., None) # Upper limit violation
-        out_of_limits += -np.clip(self.dof_pos_limits[:, 0] - qpos, 0., None) # Lower limit violation
+        soft_lower = self.soft_dof_pos_limits[:, 0]
+        soft_upper = self.soft_dof_pos_limits[:, 1]
+        
+        # Lower violation
+        out_of_limits = -np.clip(qpos - soft_lower, None, 0.0)
+        # Upper violation
+        out_of_limits += np.clip(qpos - soft_upper, 0.0, None)
+        
         return np.sum(out_of_limits, axis=1)
 
     def _cost_feet_slip(self, state, info):
