@@ -48,8 +48,8 @@ class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
             # Tracking
-            "tracking_lin_vel": 2.5,
-            "tracking_ang_vel": 1.5,
+            "tracking_lin_vel": 10.0,
+            "tracking_ang_vel": 10.0,
             # Base
             "lin_vel_z": -0.5,
             "ang_vel_xy": -0.05,
@@ -78,7 +78,8 @@ class RewardConfig:
 class Asset:
     body_name = "base"
     foot_name = "foot"
-    terminate_after_contacts_on = ["base", "hip"] # "thigh"
+    terminate_after_contacts_on = ["base", "hip"]
+    # terminate_after_contacts_on = ["base", "hip", "thigh"]
     ground = "floor"
 
 @dataclass

@@ -95,8 +95,6 @@ class Go2WalkTaskMj(MjNpEnv):
             "tracking_lin_vel": lambda s: self._reward_tracking_lin_vel(s, s.info["commands"]),
             "tracking_ang_vel": lambda s: self._reward_tracking_ang_vel(s, s.info["commands"]),
             "stand_still": lambda s: self._reward_stand_still(s, s.info["commands"]),
-            "hip_pos": lambda s: self._reward_hip_pos(s, s.info["commands"]),
-            "calf_pos": lambda s: self._reward_calf_pos(s, s.info["commands"]),
             "feet_air_time": lambda s: self._reward_feet_air_time(s.info["commands"], s.info),
             "termination": lambda s: self._reward_termination(s.terminated),
             "dof_pos_limits": lambda s: self._cost_joint_pos_limits(s),
@@ -131,6 +129,8 @@ class Go2WalkTaskMj(MjNpEnv):
             possible_parts = []
             if "base" in term_contacts:
                 possible_parts.append("base")
+            if "hip" in term_contacts:
+                possible_parts.extend([f"{p}_hip" for p in prefixes])
             if "thigh" in term_contacts:
                 possible_parts.extend([f"{p}_thigh" for p in prefixes])
 
