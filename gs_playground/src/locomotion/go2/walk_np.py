@@ -103,7 +103,14 @@ class Go2WalkTaskMj(MjNpEnv):
             "feet_clearance": lambda s: self._cost_feet_clearance(s),
             "feet_height": lambda s: self._cost_feet_height(s.info),
             "feet_slip": lambda s: self._cost_feet_slip(s, s.info),
+            "base_height": lambda s: self._reward_base_height(s),
         }
+
+    def _reward_base_height(self, state: MjNpEnvState):
+        # Penalize base height deviation from target
+        base_height = state.physics_state[:, self._idx_qpos + 2]
+        target_height = self._cfg.init_state.pos[2]
+        return np.square(base_height - target_height)
 
     def _init_sensor_indices(self):
         super()._init_sensor_indices()

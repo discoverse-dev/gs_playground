@@ -78,8 +78,8 @@ def render_frame_job(args):
         center_x = np.mean(offsets[:, 0])
         center_y = np.mean(offsets[:, 1])
         cam.lookat = [center_x, center_y, 0.0]
-        cam.distance = 6.0
-        cam.elevation = -45
+        cam.distance = 4.5
+        cam.elevation = -15
         cam.azimuth = 90
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
     else:
@@ -135,7 +135,7 @@ def main():
     args = parser.parse_args()
 
     # Config
-    num_envs = 16 # Visualizing 16 dogs
+    num_envs = 4 # Visualizing 4 dogs
     max_steps = 300 # 300 steps
     grid_spacing = 1.0
     video_fps = 25
@@ -197,7 +197,7 @@ def main():
         with torch.no_grad():
             # Get Action
             actions = policy(obs["policy"])
-            
+            actions[:] = 0.0
             # Step
             obs, rew, done, extras = vec_env.step(actions)
             

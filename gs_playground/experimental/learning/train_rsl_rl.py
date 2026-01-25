@@ -3,6 +3,8 @@ import os
 import datetime
 import numpy as np
 import torch
+import argparse
+import glob
 from dataclasses import asdict
 from tensordict import TensorDict
 
@@ -105,7 +107,71 @@ class RslMjEnvWrapper(VecEnv):
             device=self.device
         )
 
+def find_checkpoint(root_root, run_id=None, ckpt_id=None):
+    """
+    Find checkpoint path.
+    root_root: logs/
+    run_id: timestamp folder name or None (latest)
+    ckpt_id: model_{ckpt_id}.pt or None (latest)
+    """
+    search_dir = root_root
+    task_dirs = glob.glob(os.path.join(root_root, "*")) # e.g. logs/go2_walk
+    if not task_dirs:
+        print(f"No task directories found in {root_root}")
+        return None
+        
+    # Assume first task dir or we need to know task name? 
+    # Current script implies "go2_walk"
+    task_dir = os.path.join(root_root, "go2_walk")
+    if not os.path.exists(task_dir):
+         # Try finding any
+         task_dir = task_dirs[0]
+
+    # Find Run Dir
+    if run_id:
+        run_dir = os.path.join(task_dir, run_id)
+    else:
+        # Find latest timestamp
+        runs = glob.glob(os.path.join(task_dir, "*"))
+        if not runs:
+             print(f"No runs found in {task_dir}")
+             return None
+        runs.sort(key=os.path.getmtime, reverse=True)
+        run_dir = runs[0]
+        
+    print(f"Searching in run: {run_dir}")
+    
+    # Find Model
+    if ckpt_id:
+        # Check specific
+        if str(ckpt_id).endswith(".pt"):
+             model_path = ckpt_id if os.path.isabs(ckpt_id) else os.path.join(run_dir, ckpt_id)
+        else:
+             model_path = os.path.join(run_dir, f"model_{ckpt_id}.pt")
+    else:
+        # Find latest model_*.pt
+        models = glob.glob(os.path.join(run_dir, "model_*.pt"))
+        if not models:
+             print("No models found.")
+             return None
+             
+        def get_iter(f):
+            try:
+                return int(os.path.basename(f).split('_')[1].split('.')[0])
+            except:
+                return -1
+        models.sort(key=get_iter, reverse=True)
+        model_path = models[0]
+        
+    return model_path
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resume", action="store_true", help="Resume training from latest checkpoint")
+    parser.add_argument("--load_run", type=str, default=None, help="Specific run directory name to resume from (e.g. 2024-01-25_...)")
+    parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint filename or full path")
+    args = parser.parse_args()
+
     # 1. Environment Config
     env_cfg = Go2WalkNpEnvCfg()
     # Adjust config for training if needed
@@ -144,7 +210,24 @@ def main():
     
     runner = OnPolicyRunner(vec_env, train_cfg, log_dir=log_dir, device=device)
     
-    # 6. Learn
+    # 6. Resume Handling
+    if args.resume or args.load_run or args.checkpoint:
+        print("Attempting to resume...")
+        ckpt_path = find_checkpoint(root_log_dir, args.load_run, args.checkpoint)
+        if ckpt_path and os.path.exists(ckpt_path):
+            print(f"Loading checkpoint: {ckpt_path}")
+            # load_optimizer=True for resuming training
+            runner.load(ckpt_path, load_optimizer=True)
+            
+            # Update log_dir to continue in the SAME directory if resuming specific run
+            # Note: OnPolicyRunner creates its own internal logging structures. 
+            # If we want to append, we might need more hacky handling or just accept new timestamp folder via 'log_dir'.
+            # RSL RL default behavior updates: current_learning_iteration based on loaded checkpoint.
+            
+        else:
+            print(f"Warning: Checkpoint not found at {ckpt_path}. Starting from scratch.")
+
+    # 7. Learn
     print("Starting training...")
     # Override for testing
     # train_cfg["max_iterations"] = 5
