@@ -17,6 +17,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
 from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
+from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
+from gs_playground.src.locomotion.go1.cfg import Go1WalkNpEnvCfg
 from gs_playground.experimental.learning.train_rsl_rl import RslMjEnvWrapper
 from rsl_rl.runners import OnPolicyRunner
 
@@ -131,6 +133,7 @@ def find_latest_model(log_dir):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--robot", type=str, default="go2", choices=["go1", "go2"], help="Robot type: go1 or go2")
     parser.add_argument("--model", type=str, default=None, help="Path to model checkoint")
     args = parser.parse_args()
 
@@ -147,6 +150,8 @@ def main():
     if args.model:
         model_path = args.model
     else:
+        # Update search logic to filter by robot experiment name if possible, 
+        # or just find latest. Ideally should filter by robot
         model_path = find_latest_model(logs_root)
     
     if not model_path:
@@ -156,10 +161,15 @@ def main():
     print(f"Loading model: {model_path}")
     
     # 1. Environment
-    env_cfg = Go2WalkNpEnvCfg()
+    if args.robot == "go1":
+        env_cfg = Go1WalkNpEnvCfg()
+        env_class = Go1WalkTaskMj
+    elif args.robot == "go2":
+        env_cfg = Go2WalkNpEnvCfg()
+        env_class = Go2WalkTaskMj
     
-    print(f"Initializing Env with {num_envs} envs...")
-    env = Go2WalkTaskMj(env_cfg, num_envs=num_envs)
+    print(f"Initializing Env ({args.robot}) with {num_envs} envs...")
+    env = env_class(env_cfg, num_envs=num_envs)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     vec_env = RslMjEnvWrapper(env, device)

@@ -1,7 +1,7 @@
 <mujoco model="go1 feet only">
   <compiler angle="radian" meshdir="../../../../../mujoco_menagerie/unitree_go1/assets" autolimits="true"/>
 
-  <option iterations="1" ls_iterations="5" timestep="0.004" integrator="Euler">
+  <option timestep="0.004" integrator="Euler">
     <flag eulerdamp="disable"/>
   </option>
 
