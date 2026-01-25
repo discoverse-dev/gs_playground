@@ -163,10 +163,6 @@ class Go1WalkTaskMj(MjNpEnv):
         for p in prefixes:
             self.foot_pos_sensor_indices.append(self._get_sensor_indices(f"{p}_pos"))
             
-        # 5. Termination Sensors (Empty for now as XML has none defined)
-        self.termination_contact_indices = []
-
-
     def _get_sensor_indices(self, name):
         """Helper to get data indices from sensor name."""
         if name not in self.sensor_indices:
@@ -431,16 +427,6 @@ class Go1WalkTaskMj(MjNpEnv):
         
         # 1. Orientation termination
         is_fallen = up_z <= 0.5
-        
-        # 2. Contact termination (if configured via sensors)
-        # Note: Go1 XML might not have trunk_contact used in cfg.
-        # Logic: If sensors found in _init_sensor_indices, this works.
-        
-        if hasattr(self, "termination_contact_indices") and self.termination_contact_indices:
-             # Check if ANY of the termination sensors detected contact (> 0.5)
-             contact_values = state.sensor_data[:, self.termination_contact_indices]
-             has_contact = np.any(contact_values > 0.5, axis=1)
-             is_fallen = np.logical_or(is_fallen, has_contact)
 
         return state.replace(
             terminated=is_fallen,

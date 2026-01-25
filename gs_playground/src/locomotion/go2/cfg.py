@@ -74,7 +74,6 @@ class RewardConfig:
 class Asset:
     body_name = "base"
     foot_name = "foot"
-    terminate_after_contacts_on = ["base"] #"hip", "thigh"]
     ground = "floor"
 
 @dataclass

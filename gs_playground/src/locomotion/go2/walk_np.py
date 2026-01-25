@@ -149,25 +149,6 @@ class Go2WalkTaskMj(MjNpEnv):
             self.contact_sensor_indices.extend(self._get_sensor_indices(name))
             
         print(f"Mapped contact sensors: {expected_names} -> {self.contact_sensor_indices}")
-        
-        # Mapped termination contact sensors
-        self.termination_contact_indices = []
-        term_contacts = self._cfg.asset.terminate_after_contacts_on
-        if term_contacts:
-            possible_parts = []
-            if "base" in term_contacts:
-                possible_parts.append("base")
-            if "hip" in term_contacts:
-                possible_parts.extend([f"{p}_hip" for p in prefixes])
-            if "thigh" in term_contacts:
-                possible_parts.extend([f"{p}_thigh" for p in prefixes])
-
-            expected_term_sensors = [f"{part}_contact" for part in possible_parts]
-            for name in expected_term_sensors:
-                if name not in self.sensor_indices:
-                     raise ValueError(f"Required termination contact sensor '{name}' not found. Verify scene matching 'terminate_after_contacts_on'.")
-                self.termination_contact_indices.extend(self._get_sensor_indices(name))
-            print(f"Mapped termination sensors: {expected_term_sensors}")
 
         # Resolve 'local_linvel' and 'gyro'
         self.idx_linvel = self._get_sensor_indices(self._cfg.sensor.local_linvel)
@@ -449,16 +430,8 @@ class Go2WalkTaskMj(MjNpEnv):
         local_gravity = state.info["local_gravity"]
         up_z = -local_gravity[:, 2]
         
-        # 1. Orientation termination
         is_fallen = up_z <= 0.5
         
-        # 2. Contact termination (if configured via sensors)
-        if hasattr(self, "termination_contact_indices") and self.termination_contact_indices:
-             # Check if ANY of the termination sensors detected contact (> 0.5)
-             contact_values = state.sensor_data[:, self.termination_contact_indices]
-             has_contact = np.any(contact_values > 0.5, axis=1)
-             is_fallen = np.logical_or(is_fallen, has_contact)
-
         return state.replace(
             terminated=is_fallen,
         )
