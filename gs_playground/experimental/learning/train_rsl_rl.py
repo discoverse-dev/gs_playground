@@ -57,12 +57,6 @@ class RslMjEnvWrapper(VecEnv):
         # Handle resets for done environments
         dones = terminated | truncated
         
-        # MjNpEnv auto-resets done environments and updates state.obs
-        # So we don't need to manually reset here.
-        # However, for PPO we might want terminal observations in extras if available.
-        # Currently MjNpEnv doesn't seem to provide them explicitly in info, 
-        # but for simple walking task it might be fine or we add it later.
-        
         # Pass dones to RSL RL (torch) (CPU -> GPU Transfer)
         dones_torch = torch.tensor(dones, device=self.device, dtype=torch.bool)
         rew_torch = torch.tensor(reward, device=self.device, dtype=torch.float)

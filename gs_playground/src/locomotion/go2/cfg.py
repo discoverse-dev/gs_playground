@@ -27,22 +27,6 @@ class InitState:
     # the initial position of the robot in the world frame
     pos = [0.0, 0.0, 0.278]
 
-    # the default angles for all joints. key = joint name, value = target angle [rad]
-    default_joint_angles = {
-        "FL_hip"    :  0.1,  # [rad]
-        "FL_thigh"  :  0.9,  # [rad]
-        "FL_calf"   : -1.8,  # [rad]
-        "FR_hip"    : -0.1,  # [rad]
-        "FR_thigh"  :  0.9,  # [rad]
-        "FR_calf"   : -1.8,  # [rad]
-        "RL_hip"    :  0.1,  # [rad]
-        "RL_thigh"  :  0.9,  # [rad]
-        "RL_calf"   : -1.8,  # [rad]
-        "RR_hip"    : -0.1,  # [rad]
-        "RR_thigh"  :  0.9,  # [rad]
-        "RR_calf"   : -1.8,  # [rad]
-    }
-
 
 @dataclass
 class Commands:
@@ -84,7 +68,6 @@ class RewardConfig:
             "feet_height": -0.2,
             "feet_slip": -0.1,
             "feet_air_time": 0.1,
-            "collision": -0.05,
         }
     )
 
@@ -95,8 +78,7 @@ class RewardConfig:
 class Asset:
     body_name = "base"
     foot_name = "foot"
-    terminate_after_contacts_on = ["base", "hip"]
-    penalize_contacts_on = ["thigh"]
+    terminate_after_contacts_on = ["base", "hip"] # "thigh"
     ground = "floor"
 
 @dataclass
