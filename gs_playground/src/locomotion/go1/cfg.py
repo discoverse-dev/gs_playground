@@ -10,7 +10,7 @@ model_file = (ROOT_PATH / "models" / "robots" / "locomotion" / "go1" / "scene_mj
 class NoiseConfig:
     level: float = 1.0
     scale_joint_angle: float = 0.03
-    scale_joint_vel: float = 0.5
+    scale_joint_vel: float = 1.5
     scale_gyro: float = 0.2
     scale_gravity: float = 0.05
     scale_linvel: float = 0.1
@@ -33,8 +33,8 @@ class InitState:
 @dataclass
 class Commands:
     vel_limit = [
-        [-3.0, -1.5, -6.28],  # min: vel_x [m/s], vel_y [m/s], ang_vel [rad/s]
-        [ 3.0,  1.5,  6.28],  # max
+        [-1.5, -0.8, -1.2],  # min: vel_x [m/s], vel_y [m/s], ang_vel [rad/s]
+        [ 1.5,  0.8,  1.2],  # max
     ]
 
 

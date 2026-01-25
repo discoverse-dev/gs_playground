@@ -191,7 +191,7 @@ def main():
         raise ValueError(f"Unknown robot: {args.robot}")
 
     # Adjust config for training if needed
-    num_envs = 1024 // 2
+    num_envs = 2048
     
     # 2. Create Environment
     # We instantiate directly to bypass registry string parsing if convenient, 
