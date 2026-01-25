@@ -470,8 +470,9 @@ class Go2WalkTaskMj(MjNpEnv):
         # Clip reward
         total_reward = np.clip(total_reward, 0.0, 10000.0)
         
-        # Apply termination masking
-        total_reward = np.where(state.terminated, 0.0, total_reward)
+        # Remove termination masking that forces reward to 0. 
+        # If we have a termination penalty (e.g. -100), we want the agent to receive it.
+        # total_reward = np.where(state.terminated, 0.0, total_reward)
 
         return state.replace(reward=total_reward)
 
@@ -626,7 +627,10 @@ class Go2WalkTaskMj(MjNpEnv):
         # Here air_time_at_contact implies contact is True.
         
         # Standard logic: (time - 0.5) * contact
-        rew_airTime = np.sum((air_time_at_contact - 0.5) * (air_time_at_contact > 0.0), axis=1)
+        # 0.5 is too large for walking/trotting (period ~0.5s total, air ~0.25s).
+        # We want to encourage any air time > 0.0 or a small threshold like 0.2
+        # Using a positive reward linear to air time is usually better for learning gait.
+        rew_airTime = np.sum(air_time_at_contact - 0.3, axis=1)
         
         # no reward for zero command
         rew_airTime *= np.linalg.norm(commands[:, :3], axis=1) > 0.1

@@ -19,7 +19,7 @@ class NoiseConfig:
 @dataclass
 class ControlConfig:
     # action scale: target angle = actionScale * action + defaultAngle
-    action_scale = 0.05
+    action_scale = 0.5
 
 
 @dataclass
@@ -63,19 +63,19 @@ class Normalization:
 class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
-            "termination": -100.0,
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 0.5,
+            "termination": -10.0,
+            "tracking_lin_vel": 5.0,
+            "tracking_ang_vel": 2.5,
             "lin_vel_z": -0.5,
-            "ang_vel_xy": -0.05,
-            "orientation": -0.5,
+            "ang_vel_xy": -0.005,
+            "orientation": -0.2,
             "torques": -0.00001,
             "dof_vel": -0.0,
             "dof_acc": -2.5e-7,
-            "feet_air_time": 1.0,
+            "feet_air_time": 0.2, 
             "action_rate": -0.001,
-            "stand_still": -1.0,
-            "collision": -1.0,
+            "stand_still": -0.5,
+            "collision": -0.05,
         }
     )
 
@@ -86,7 +86,7 @@ class RewardConfig:
 class Asset:
     body_name = "base"
     foot_name = "foot"
-    terminate_after_contacts_on = ["base"]
+    terminate_after_contacts_on = ["base", "hip"]
     penalize_contacts_on = ["thigh"]
     ground = "floor"
 
