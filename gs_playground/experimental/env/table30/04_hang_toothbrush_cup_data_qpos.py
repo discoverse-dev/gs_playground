@@ -85,8 +85,8 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 10
-    num_envs: int = 15
+    data_size: int = 1
+    num_envs: int = 1
 
     seed: int = 1500
     save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_debug"
@@ -189,7 +189,7 @@ class HangToothbrushCupCollector:
 
         self.model = self.env.model
         self.B = int(cfg.num_envs)
-        self.cam_view_key = cfg.cam_view_key or "pixels/view_0"
+        self.cam_view_key = cfg.cam_view_key or "pixels/view_1"
 
         instruction = str(getattr(self.env._cfg, "instruction", "") or "")
         self.ep_subtask = np.array([cfg.subtask or instruction] * self.B, dtype=object)

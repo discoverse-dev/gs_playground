@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Tuple
+from dataclasses import dataclass, field
+from typing import Dict
 
 import numpy as np
 from motrixsim import SceneData
+from scipy.spatial.transform import Rotation
+from typing import Sequence
 
 from gs_playground import ROOT_PATH
 from gs_playground.src.env.registry import envcfg, env
@@ -33,6 +35,7 @@ class HangToothbrushCupEnvCfg(TaskEnvCfg):
     # rendering
     img_width: int = 640
     img_height: int = 480
+    cam_id: Sequence[int] = field(default_factory=lambda: [0, 1])
  
     # instruction
     instruction: str = "Hang the orange toothbrush cup on the cup holder"
