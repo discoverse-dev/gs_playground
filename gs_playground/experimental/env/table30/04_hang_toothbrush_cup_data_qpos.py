@@ -5,8 +5,8 @@ import json
 import time
 import shutil
 import argparse
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Sequence
 
 import numpy as np
 import cv2
@@ -41,14 +41,7 @@ def closest_yaw(target: np.ndarray, curr: np.ndarray) -> np.ndarray:
     return curr + d
 
 
-
 def to_xyzw_from_possible_wxyz(q: np.ndarray, assume: str = "xyzw") -> np.ndarray:
-    """
-    q: (...,4)
-    assume:
-      - "xyzw": already scipy format
-      - "wxyz": convert [w,x,y,z] -> [x,y,z,w]
-    """
     if assume == "xyzw":
         return q
     if assume == "wxyz":
@@ -89,7 +82,7 @@ class CollectorCfg:
     num_envs: int = 1
 
     seed: int = 1500
-    save_dir: str = "./data/table30_hang_toothbrush_cup_collect_yaw_stack_style_debug"
+    save_dir: str = "./data/table30_hang_toothbrush_cup_dual_view"
 
     # env control
     max_ctrl_steps: int = 1200
@@ -130,12 +123,12 @@ class CollectorCfg:
     video_fps: int = 30
     video_w: int = 640
     video_h: int = 480
-    cam_view_key: Optional[str] = None
+    
+    # [MODIFIED] Changed to list of strings for multiple cameras
+    cam_view_key: Sequence[str] = field(default_factory=lambda: ["pixels/view_1", "pixels/view_0"])
 
-    # quat convention for sites/poses (IMPORTANT)
-    # If your get_pose returns [qx,qy,qz,qw], use "xyzw"
-    # If it returns [qw,qx,qy,qz], use "wxyz"
-    site_quat_convention: str = "xyzw"  # change to "wxyz" if needed
+    # quat convention for sites/poses
+    site_quat_convention: str = "xyzw"
 
     # text fields
     subtask: Optional[str] = None
@@ -146,14 +139,6 @@ class CollectorCfg:
 # Collector
 # -----------------------------------------------------------------------------
 class HangToothbrushCupCollector:
-    """
-    “Stack-style yaw logic” for toothbrush cup:
-      - Before descend: rotate to cup yaw (from grasp site)
-      - After close and lift to safe transport Z: rotate back to start yaw (== rotate -delta)
-      - Rest Manhattan position logic matches the no-rotation version.
-      - No symmetry wrapping (cup is non-symmetric).
-    """
-
     # Phase 1: Approach (Manhattan)
     ST_APP_LIFT_Z = 0
     ST_APP_ALIGN_X = 1
@@ -189,7 +174,9 @@ class HangToothbrushCupCollector:
 
         self.model = self.env.model
         self.B = int(cfg.num_envs)
-        self.cam_view_key = cfg.cam_view_key or "pixels/view_1"
+        
+        # Determine camera keys
+        self.cam_keys = list(cfg.cam_view_key)
 
         instruction = str(getattr(self.env._cfg, "instruction", "") or "")
         self.ep_subtask = np.array([cfg.subtask or instruction] * self.B, dtype=object)
@@ -209,7 +196,6 @@ class HangToothbrushCupCollector:
         # Controls
         self.exec_pos = np.zeros((B, 3), dtype=np.float32)
         self.exec_quat = np.zeros((B, 4), dtype=np.float32)  # xyzw
-
         self.home_pos = np.zeros((B, 3), dtype=np.float32)
 
         # Latch positions
@@ -223,8 +209,20 @@ class HangToothbrushCupCollector:
         self.latched_cup_yaw = np.zeros((B,), dtype=np.float32)
 
         self.buffers: List[Dict[str, Any]] = [self._new_buffer() for _ in range(B)]
-        self.video_writers: List[Optional[EpisodeVideoWriter]] = [None] * B
-        self._tmp_video_paths: List[str] = [os.path.join(self.videos_dir, f"_tmp_env{i}.mp4") for i in range(B)]
+        
+        # [MODIFIED] Video writers are now a List of Dicts: List[Dict[str, EpisodeVideoWriter]]
+        # Structure: self.video_writers[env_id][camera_key]
+        self.video_writers: List[Dict[str, EpisodeVideoWriter]] = [{} for _ in range(B)]
+        
+        # [MODIFIED] Temp paths are also keyed by camera name
+        # We replace '/' with '_' in filenames to avoid path errors
+        self._tmp_video_paths: List[Dict[str, str]] = []
+        for i in range(B):
+            paths = {}
+            for key in self.cam_keys:
+                safe_key = key.replace("/", "_")
+                paths[key] = os.path.join(self.videos_dir, f"_tmp_env{i}_{safe_key}.mp4")
+            self._tmp_video_paths.append(paths)
 
         self.saved_success = 0
         self.attempted = 0
@@ -274,7 +272,7 @@ class HangToothbrushCupCollector:
         self.env.robot.update_reference(data)
 
         # --- Robot start pose ---
-        ee_pose_raw = self.env.robot.get_ee_pose(data)  # (B,6) or (B,7)
+        ee_pose_raw = self.env.robot.get_ee_pose(data)
         self.exec_pos[env_ids] = ee_pose_raw[env_ids, :3]
         self.latched_start_pos[env_ids] = ee_pose_raw[env_ids, :3]
         self.home_pos[env_ids] = ee_pose_raw[env_ids, :3]
@@ -308,24 +306,34 @@ class HangToothbrushCupCollector:
 
         for env_id in env_ids.tolist():
             self.buffers[env_id] = self._new_buffer()
-            if self.video_writers[env_id] is not None:
-                self.video_writers[env_id].close()
-                self.video_writers[env_id] = None
+            # Clear old writers
+            self._close_writers_for_env(env_id)
             if self.cfg.save_video:
                 self._reset_video_writer(env_id)
             self._attempt_id[env_id] += 1
             self.attempted += 1
 
+    def _close_writers_for_env(self, env_id: int):
+        writers = self.video_writers[env_id]
+        for key in list(writers.keys()):
+            writers[key].close()
+        self.video_writers[env_id] = {}
+
     def _reset_video_writer(self, env_id: int):
-        tmp_path = self._tmp_video_paths[env_id]
-        if os.path.exists(tmp_path):
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-        self.video_writers[env_id] = EpisodeVideoWriter(
-            tmp_path, int(self.cfg.video_fps), (int(self.cfg.video_w), int(self.cfg.video_h))
-        )
+        # [MODIFIED] Initialize writers for all configured keys
+        for key in self.cam_keys:
+            tmp_path = self._tmp_video_paths[env_id][key]
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+            
+            self.video_writers[env_id][key] = EpisodeVideoWriter(
+                tmp_path, 
+                int(self.cfg.video_fps), 
+                (int(self.cfg.video_w), int(self.cfg.video_h))
+            )
 
     def _capture_step(self, env_id: int) -> None:
         obs = self.env._state.obs
@@ -344,72 +352,129 @@ class HangToothbrushCupCollector:
         buf["is_success"].append(is_success)
 
     def _write_video_frame(self, env_id: int) -> None:
-        vw = self.video_writers[env_id]
-        if vw is None:
+        writers = self.video_writers[env_id]
+        if not writers:
             return
+            
         obs = self.env._state.obs
-        if self.cam_view_key in obs:
-            rgb = obs[self.cam_view_key][env_id]
-            if rgb is not None:
-                vw.write(rgb[..., ::-1].copy())
-                self.buffers[env_id]["video_frames"] += 1
+        frame_written = False
+        
+        # [MODIFIED] Loop through all keys and write to respective video files
+        for key in self.cam_keys:
+            if key in obs and key in writers:
+                rgb = obs[key][env_id]
+                if rgb is not None:
+                    writers[key].write(rgb[..., ::-1].copy())
+                    frame_written = True
+        
+        # Only increment frame count if we actually wrote something
+        if frame_written:
+            self.buffers[env_id]["video_frames"] += 1
 
-    def _flush_jsonl(self, env_id: int, ep_idx: int, vid_path: str):
-        path = os.path.join(self.cfg.save_dir, f"episode_{ep_idx:05d}.jsonl")
-        buf = self.buffers[env_id]
-        n = len(buf["times"])
-        prompt = str(self.ep_prompt[env_id])
+    def _flush_jsonl(self, env_id: int, ep_idx: int, vid_paths_map: Dict[str, str]):
+            path = os.path.join(self.cfg.save_dir, f"episode_{ep_idx:05d}.jsonl")
+            buf = self.buffers[env_id]
+            n = len(buf["times"])
+            prompt = str(self.ep_prompt[env_id])
 
-        with open(path, "w", encoding="utf-8") as f:
-            for i in range(n):
-                rec = {
-                    "images_1": {"url": vid_path, "type": "video", "frame_idx": i},
-                    "prompt": prompt,
-                    "qpos": buf["qpos"][i],
-                    "ee_pose": buf["ee_pose"][i],
-                    "gripper": buf["gripper"][i],
-                    "ctrl": buf["ctrl"][i],
-                    "is_robot": True,
-                    # include per-episode latched yaw in first frame if helpful
-                    # (you can remove if not needed)
-                    **(
-                        {
-                            "latched_cup_yaw": float(self.latched_cup_yaw[env_id]),
-                            "latched_start_yaw": float(self.latched_start_yaw[env_id]),
-                        }
-                        if i == 0
-                        else {}
-                    ),
-                }
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            with open(path, "w", encoding="utf-8") as f:
+                for i in range(n):
+                    # 1. 获取原始数据
+                    raw_pose = buf["ee_pose"][i]   # 仿真原始数据 (通常是 [x,y,z, qx,qy,qz,qw])
+                    raw_gripper = buf["gripper"][i] # 夹爪数据 (通常是 [width])
+                    
+                    # 2. 解析位置和旋转
+                    # 假设 raw_pose 是标准的 7维 [x, y, z, qx, qy, qz, qw]
+                    x, y, z = raw_pose[0], raw_pose[1], raw_pose[2]
+                    
+
+                    euler = raw_pose[3:6]
+
+                    # 3. 应用你的修正公式
+                    # (1) Z轴高度补偿
+                    new_z = z + 0.1525
+                    
+                    # (2) Yaw角修正: -1/2 * pi - value
+                    # euler[0]=roll, euler[1]=pitch, euler[2]=yaw
+                    old_yaw = euler[2]
+                    new_yaw = -0.5 * np.pi - old_yaw
+
+                    # 4. 构造你要求的 7维 ee_pose: [x, y, z, r, p, y, gripper]
+                    # 提取夹爪数值 (如果它是列表)
+                    g_val = raw_gripper[0] if isinstance(raw_gripper, (list, np.ndarray)) else float(raw_gripper)
+                    
+                    # 组合最终的 list
+                    custom_ee_pose_7d = [
+                        x,          # 0: x
+                        y,          # 1: y
+                        new_z,      # 2: z (已修正)
+                        euler[0],   # 3: roll
+                        euler[1],   # 4: pitch
+                        new_yaw,    # 5: yaw (已修正)
+                        g_val       # 6: gripper
+                    ]
+
+                    rec = {
+                        "prompt": prompt,
+                        "qpos": buf["qpos"][i],
+                        "ee_pose": custom_ee_pose_7d,  # <--- 使用修正后的自定义7维格式
+                        "gripper": buf["gripper"][i],  # 这里可以保留原始夹爪数据作为备份
+                        "ctrl": buf["ctrl"][i],
+                        "is_robot": True,
+                    }
+                    
+                    # 处理多视角视频
+                    for k_idx, key in enumerate(self.cam_keys):
+                        json_key = f"images_{k_idx + 1}"
+                        if key in vid_paths_map:
+                            rec[json_key] = {
+                                "url": vid_paths_map[key],
+                                "type": "video", 
+                                "frame_idx": i
+                            }
+
+                    f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     def _finalize_episode(self, env_id: int) -> None:
-        if self.video_writers[env_id]:
-            self.video_writers[env_id].close()
-            self.video_writers[env_id] = None
+        # Close all writers for this env
+        self._close_writers_for_env(env_id)
 
         if self.success[env_id] and (self.saved_success < int(self.cfg.data_size)):
-        # if True :
             ep_idx = int(self.saved_success)
-            final_video_path = f"videos/episode_{ep_idx:05d}.mp4"
-            abs_video_path = os.path.join(self.cfg.save_dir, final_video_path)
+            saved_paths_map = {}
 
-            if self.cfg.save_video and os.path.exists(self._tmp_video_paths[env_id]):
-                shutil.move(self._tmp_video_paths[env_id], abs_video_path)
+            if self.cfg.save_video:
+                # [MODIFIED] Move all temp videos to final paths
+                for key in self.cam_keys:
+                    tmp_path = self._tmp_video_paths[env_id][key]
+                    if os.path.exists(tmp_path):
+                        safe_key = key.replace("/", "_")
+                        final_rel_path = f"videos/episode_{ep_idx:05d}_{safe_key}.mp4"
+                        abs_video_path = os.path.join(self.cfg.save_dir, final_rel_path)
+                        
+                        try:
+                            shutil.move(tmp_path, abs_video_path)
+                            saved_paths_map[key] = final_rel_path
+                        except Exception as e:
+                            print(f"Error moving video file: {e}")
 
-            self._flush_jsonl(env_id, ep_idx, final_video_path)
+            self._flush_jsonl(env_id, ep_idx, saved_paths_map)
             self.saved_success += 1
             print(f"[Saved] episode {ep_idx}. Total saved: {self.saved_success}")
 
-        if os.path.exists(self._tmp_video_paths[env_id]):
-            try:
-                os.remove(self._tmp_video_paths[env_id])
-            except Exception:
-                pass
+        # Clean up any remaining temp files
+        for key in self.cam_keys:
+            tmp_path = self._tmp_video_paths[env_id][key]
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+        
         self.buffers[env_id] = self._new_buffer()
 
     # ----------------------------
-    # Core Logic
+    # Core Logic (Unchanged)
     # ----------------------------
     def _enter_state(self, mask: np.ndarray, new_state: int) -> None:
         if not np.any(mask):
@@ -426,9 +491,7 @@ class HangToothbrushCupCollector:
         if not np.any(running):
             return
 
-        # -------------------------
-        # 1) Manhattan keypoints (same as no-rotation version)
-        # -------------------------
+        # 1) Manhattan keypoints
         start_p = self.latched_start_pos
         grasp_p = self.latched_grasp_pos + np.asarray(cfg.grasp_offset, dtype=np.float32).reshape(1, 3)
         hook_p = self.latched_hook_pos
@@ -462,9 +525,7 @@ class HangToothbrushCupCollector:
 
         reset_p = self.home_pos
 
-        # -------------------------
-        # 2) Target assignment (pos + yaw only in yaw states)
-        # -------------------------
+        # 2) Target assignment
         s = self.states
 
         tgt_pos = self.exec_pos.copy()
@@ -493,14 +554,10 @@ class HangToothbrushCupCollector:
         set_yaw_target(self.ST_APP_ALIGN_YAW, yaw_grasp)
 
         set_target(self.ST_APP_DESCEND, p_app_descend, cfg.gripper_open)
-
-        # Close
         set_target(self.ST_CLOSE, p_app_descend, cfg.gripper_close)
 
         # Transport
         set_target(self.ST_TRP_LIFT_Z, p_trp_lift_z, cfg.gripper_close)
-
-        # Unyaw back to start yaw
         set_target(self.ST_TRP_UNYAW, p_trp_lift_z, cfg.gripper_close)
         yaw_back = self.latched_start_yaw.astype(np.float32) * -1
         set_yaw_target(self.ST_TRP_UNYAW, yaw_back)
@@ -514,12 +571,9 @@ class HangToothbrushCupCollector:
         set_target(self.ST_RETREAT, retreat_p, cfg.gripper_open)
         set_target(self.ST_GO_RESET, reset_p, cfg.gripper_open)
 
-        # -------------------------
-        # 3) Compute control: pos + yaw rotvec (stack-style)
-        # -------------------------
+        # 3) Compute control
         self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, float(cfg.max_dp))
 
-        # Reference pose
         ref_pose = self.env.robot.ref_ee_pose
         ref_pos = ref_pose[:, :3]
 
@@ -531,7 +585,6 @@ class HangToothbrushCupCollector:
         want_rot = running & (~np.isnan(tgt_yaw))
         desired_quat = self.exec_quat.copy()
 
-        # ---- compute curr_yaw early (needed for closest_yaw) ----
         obs = self.env._state.obs
         ee_pose = obs.get("ee_pose", None)
         if ee_pose is not None and ee_pose.shape[1] == 7:
@@ -544,10 +597,7 @@ class HangToothbrushCupCollector:
         curr_yaw = Rotation.from_quat(ee_quat).as_euler("xyz", degrees=False)[:, 2].astype(np.float32)
 
         if np.any(want_rot):
-            # raw targets for the active envs
             target_y_raw = tgt_yaw[want_rot].astype(np.float32)
-
-            # IMPORTANT: map to closest branch around current yaw (avoid +/-pi jumps)
             target_y = closest_yaw(target_y_raw, curr_yaw[want_rot]).astype(np.float32)
 
             start_y = self.latched_start_yaw[want_rot].astype(np.float32)
@@ -555,18 +605,15 @@ class HangToothbrushCupCollector:
 
             r_delta = Rotation.from_euler("z", delta_y)
             r_start = Rotation.from_quat(self.latched_start_quat[want_rot])
-            r_target = r_delta * r_start  # stack-style composition
+            r_target = r_delta * r_start
 
             desired_quat[want_rot] = r_target.as_quat().astype(np.float32)
             self.exec_quat[want_rot] = desired_quat[want_rot]
-
 
         rotvec_cmd = np.zeros((B, 3), dtype=np.float32)
         if np.any(want_rot):
             r_des = Rotation.from_quat(desired_quat[want_rot])
             r_ref = Rotation.from_quat(ref_quat[want_rot])
-
-            # Stack-style error definition:
             r_err = r_des * r_ref.inv()
             rv = r_err.as_rotvec().astype(np.float32)
 
@@ -584,30 +631,15 @@ class HangToothbrushCupCollector:
         self._last_action[:] = action
         self.env.step(action)
 
-        # -------------------------
-        # 4) Checks & FSM transitions (pos dwell + yaw dwell)
-        # -------------------------
+        # 4) Checks & FSM transitions
         def is_reached(p: np.ndarray) -> np.ndarray:
             return np.linalg.norm(self.exec_pos - p, axis=1) < float(cfg.pos_tol)
-
-
-        # if np.any(want_rot):
-        #     i = np.where(want_rot)[0][0]
-        #     print(
-        #         "start_yaw:", float(self.latched_start_yaw[i]),
-        #         "target_yaw:", float(tgt_yaw[i]),
-        #         "delta:", float(wrap_to_pi(tgt_yaw[i] - self.latched_start_yaw[i])),
-        #         "curr_yaw:", float(curr_yaw[i]),
-        #     )
-
 
         def _check_reach_dwell(state_idx, p):
             in_s = running & (self.states == state_idx)
             ok = is_reached(p)
-
             just = in_s & ok & (self.state_reach_step == -1)
             self.state_reach_step[just] = self.ctrl_step[just]
-
             dwell = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
             return in_s & (self.state_reach_step != -1) & dwell & ok
 
@@ -615,41 +647,28 @@ class HangToothbrushCupCollector:
             in_s = running & (self.states == state_idx)
             dy = wrap_to_pi(curr_yaw - y)
             ok = np.abs(dy) < float(cfg.yaw_tol)
-
             just = in_s & ok & (self.state_reach_step == -1)
             self.state_reach_step[just] = self.ctrl_step[just]
-
             dwell = (self.ctrl_step - self.state_reach_step) >= int(cfg.waypoint_dwell_steps)
             return in_s & (self.state_reach_step != -1) & dwell & ok
 
-        # Phase 1
         self._enter_state(_check_reach_dwell(self.ST_APP_LIFT_Z, p_app_lift_z), self.ST_APP_ALIGN_X)
         self._enter_state(_check_reach_dwell(self.ST_APP_ALIGN_X, p_app_align_x), self.ST_APP_ALIGN_Y)
         self._enter_state(_check_reach_dwell(self.ST_APP_ALIGN_Y, p_app_align_y), self.ST_APP_ALIGN_YAW)
-
-        done_app_yaw = _check_yaw_dwell(self.ST_APP_ALIGN_YAW, yaw_grasp)
-        self._enter_state(done_app_yaw, self.ST_APP_DESCEND)
-
+        self._enter_state(_check_yaw_dwell(self.ST_APP_ALIGN_YAW, yaw_grasp), self.ST_APP_DESCEND)
         self._enter_state(_check_reach_dwell(self.ST_APP_DESCEND, p_app_descend), self.ST_CLOSE)
 
-        # Close (timer)
         mask_close = running & (self.states == self.ST_CLOSE)
         if np.any(mask_close):
             done_close = (self.ctrl_step - self.state_enter_step) >= int(cfg.close_hold_steps)
             self._enter_state(mask_close & done_close, self.ST_TRP_LIFT_Z)
 
-        # Transport
-        done_trp_lift = _check_reach_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z)
-        self._enter_state(done_trp_lift, self.ST_TRP_UNYAW)
-
-        done_unyaw = _check_yaw_dwell(self.ST_TRP_UNYAW, yaw_back)
-        self._enter_state(done_unyaw, self.ST_TRP_ALIGN_X)
-
+        self._enter_state(_check_reach_dwell(self.ST_TRP_LIFT_Z, p_trp_lift_z), self.ST_TRP_UNYAW)
+        self._enter_state(_check_yaw_dwell(self.ST_TRP_UNYAW, yaw_back), self.ST_TRP_ALIGN_X)
         self._enter_state(_check_reach_dwell(self.ST_TRP_ALIGN_X, p_trp_align_x), self.ST_TRP_ALIGN_Y)
         self._enter_state(_check_reach_dwell(self.ST_TRP_ALIGN_Y, p_trp_align_y), self.ST_HANG_DOWN)
         self._enter_state(_check_reach_dwell(self.ST_HANG_DOWN, hang_p), self.ST_RELEASE)
 
-        # Release & End
         in_rel = running & (self.states == self.ST_RELEASE)
         done_rel = in_rel & ((self.ctrl_step - self.state_enter_step) >= int(cfg.release_hold_steps))
         self._enter_state(done_rel, self.ST_RETREAT)
@@ -660,7 +679,6 @@ class HangToothbrushCupCollector:
         done_rst = is_reached(reset_p)
         self._enter_state(running & (self.states == self.ST_GO_RESET) & done_rst, self.ST_DONE)
 
-        # Success check
         info = self.env._state.info
         is_success = np.asarray(
             info.get("is_success", info.get("success", np.zeros((B,), dtype=np.bool_))),
@@ -677,8 +695,6 @@ class HangToothbrushCupCollector:
 
         all_ids = np.arange(self.B, dtype=np.int64)
         self.start_episodes(all_ids, seed=int(cfg.seed))
-
-        # print(f"Starting Collection. Target: {target}")
 
         while self.saved_success < target:
             self._step_logic()
@@ -735,9 +751,11 @@ class HangToothbrushCupCollector:
         print(f"Saved to: {cfg.save_dir}")
 
     def close(self) -> None:
-        for vw in self.video_writers:
-            if vw is not None:
-                vw.close()
+        # [MODIFIED] Close all writers in the dictionary structure
+        for env_writers in self.video_writers:
+            for vw in env_writers.values():
+                if vw is not None:
+                    vw.close()
 
 
 # -----------------------------------------------------------------------------

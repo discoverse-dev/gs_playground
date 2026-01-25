@@ -8,8 +8,8 @@ import time
 # =========================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 假设你的视频路径如下（请修改为你实际的视频路径）
-video_path1 = "/home/jyxc/Zhuoyuan/RoboArena/tools/compare/videos/render_video.mp4"
-video_path2 = "/home/jyxc/Zhuoyuan/RoboArena/tools/compare/videos/gt_video.mp4"
+video_path2 = "/home/xyys2003/ws/gs_playground/gs_playground/gs_playground/experimental/env/table30/data/table30_hang_toothbrush_cup_collect_yaw_stack_style_debug/videos/episode_00000.mp4"
+video_path1 = "/home/xyys2003/ws/gs_playground/gs_playground/gs_playground/experimental/env/table30/data/real.mp4"
 
 # 输出视频保存路径
 out_dir = os.path.join(BASE_DIR, "compare_results")

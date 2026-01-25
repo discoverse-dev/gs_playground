@@ -21,7 +21,7 @@
       <geom type="mesh" material="vase_mat" contype="1" conaffinity="1" density="10000" group="1"/>
     </default>
     <default class="flower_part">
-      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="10" group="1"/>
+      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="5" group="1"/>
     </default>
   </default>
 
