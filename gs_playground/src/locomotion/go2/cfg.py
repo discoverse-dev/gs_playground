@@ -54,6 +54,7 @@ class RewardConfig:
             "lin_vel_z": -0.5,
             "ang_vel_xy": -0.05,
             "orientation": -5.0,
+            "base_height": -5.0,
             # Other
             "dof_pos_limits": -1.0,
             "pose": 0.5,
@@ -78,8 +79,7 @@ class RewardConfig:
 class Asset:
     body_name = "base"
     foot_name = "foot"
-    terminate_after_contacts_on = ["base", "hip"]
-    # terminate_after_contacts_on = ["base", "hip", "thigh"]
+    terminate_after_contacts_on = ["base"] #"hip", "thigh"]
     ground = "floor"
 
 @dataclass
