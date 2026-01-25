@@ -43,8 +43,8 @@ class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
             # Tracking
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 0.5,
+            "tracking_lin_vel": 2.0,
+            "tracking_ang_vel": 1.0,
             # Base
             "lin_vel_z": -0.5,
             "ang_vel_xy": -0.05,
