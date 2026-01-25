@@ -22,6 +22,9 @@ class RslMjEnvWrapper(VecEnv):
         self.num_actions = env.action_space.shape[0]
         self.num_obs = env.observation_space.shape[0]
         
+        print(f"[Wrapper] Physics Engine: CPU (MuJoCo/Numpy)")
+        print(f"[Wrapper] RL Training Device: {self.device}")
+        
         # Max episode length
         self.max_episode_length = int(env._cfg.max_episode_seconds / env._cfg.ctrl_dt)
         self.episode_length_buf = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
@@ -41,10 +44,10 @@ class RslMjEnvWrapper(VecEnv):
         self.episode_length_buf[:] = 0
 
     def step(self, actions: torch.Tensor) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict]:
-        # Convert actions to numpy
+        # Convert actions to numpy (GPU -> CPU Transfer)
         actions_np = actions.detach().cpu().numpy()
         
-        # Step environment
+        # Step environment (CPU Physics)
         # MjNpEnv returns a state object, not a tuple
         state = self.env.step(actions_np)
         
@@ -63,7 +66,7 @@ class RslMjEnvWrapper(VecEnv):
         # Currently MjNpEnv doesn't seem to provide them explicitly in info, 
         # but for simple walking task it might be fine or we add it later.
         
-        # Pass dones to RSL RL (torch)
+        # Pass dones to RSL RL (torch) (CPU -> GPU Transfer)
         dones_torch = torch.tensor(dones, device=self.device, dtype=torch.bool)
         rew_torch = torch.tensor(reward, device=self.device, dtype=torch.float)
         
@@ -85,7 +88,7 @@ class RslMjEnvWrapper(VecEnv):
         # Timeouts
         time_outs = torch.tensor(truncated, device=self.device, dtype=torch.bool)
         
-        # Update Torch Buffers
+        # Update Torch Buffers (CPU -> GPU Transfer)
         self._update_buffers(obs)
         
         # Extract log from info
@@ -102,7 +105,8 @@ class RslMjEnvWrapper(VecEnv):
         return self.obs_buf
 
     def _update_buffers(self, obs: np.ndarray):
-        obs_torch = torch.tensor(obs, device=self.device, dtype=torch.float)
+        # Efficiently copy numpy array to GPU
+        obs_torch = torch.as_tensor(obs, device=self.device, dtype=torch.float)
         # Default group is "policy"
         self.obs_buf = TensorDict(
             {"policy": obs_torch}, 
