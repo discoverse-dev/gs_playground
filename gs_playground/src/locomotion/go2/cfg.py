@@ -63,18 +63,27 @@ class Normalization:
 class RewardConfig:
     scales: dict[str, float] = field(
         default_factory=lambda: {
-            "termination": -10.0,
-            "tracking_lin_vel": 5.0,
-            "tracking_ang_vel": 2.5,
+            # Tracking
+            "tracking_lin_vel": 1.0,
+            "tracking_ang_vel": 1.0,
+            # Base
             "lin_vel_z": -0.5,
-            "ang_vel_xy": -0.005,
-            "orientation": -0.2,
-            "torques": -0.00001,
-            "dof_vel": -0.0,
-            "dof_acc": -2.5e-7,
-            "feet_air_time": 0.2, 
-            "action_rate": -0.001,
-            "stand_still": -0.5,
+            "ang_vel_xy": -0.05,
+            "orientation": -5.0,
+            # Other
+            "dof_pos_limits": -1.0,
+            "pose": 0.5,
+            "termination": -1.0,
+            "stand_still": -1.0,
+            # Regularization
+            "torques": -0.0002,
+            "action_rate": -0.01,
+            "energy": -0.001,
+            # Feet
+            "feet_clearance": -2.0,
+            "feet_height": -0.2,
+            "feet_slip": -0.1,
+            "feet_air_time": 0.1,
             "collision": -0.05,
         }
     )
