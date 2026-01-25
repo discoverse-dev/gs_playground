@@ -60,12 +60,7 @@
           <geom size="0.01" fromto="0.02 0 -0.13 0 0 -0.2"/>
         </default>
         <default class="foot">
-          <!--
-          This specific line enables collisions for the feet only.
-          The floor is contype=1, conaffinity=0 so this implies that the feet cannot
-          collide with each other, but they can collide with the floor.
-          -->
-          <geom type="sphere" size="0.023" pos="0 0 -0.213" solimp="0.9 .95 0.023" contype="0" conaffinity="1"/>
+          <geom type="sphere" size="0.023" pos="0 0 -0.213" solimp="0.9 .95 0.023" contype="0" conaffinity="1" condim="3"/>
         </default>
       </default>
     </default>
