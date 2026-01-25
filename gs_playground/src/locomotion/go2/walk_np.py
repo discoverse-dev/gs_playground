@@ -351,21 +351,9 @@ class Go2WalkTaskMj(MjNpEnv):
         info["local_gravity"] = local_gravity
         
         # B. Update Contacts
-        contact_vals = []
-        for idx in self.contact_sensor_indices:
-            adr = self._model.sensor_adr[idx]
-            dim = self._model.sensor_dim[idx]
-            val = state.sensor_data[:, adr:adr+dim]
-            # If we flatten, we handle shape issues
-            val_flat = val.flatten()
-            contact_vals.append(val_flat)
-        
-        # Stack to (num_envs, 4)
-        if len(contact_vals) > 0:
-            current_contacts = np.stack(contact_vals, axis=1)
-            # Thresholding 0.5 because usually contact sensor returns force or boolean-like float
-            # If reduce="netforce", it's a force value. It can be > 0.
-            current_contacts = (current_contacts > 0.1) 
+        if len(self.contact_sensor_indices) > 0:
+            contact_vals = state.sensor_data[:, self.contact_sensor_indices]
+            current_contacts = (contact_vals > 0.1)
         else:
             current_contacts = np.zeros((self._num_envs, 4), dtype=bool)
 
