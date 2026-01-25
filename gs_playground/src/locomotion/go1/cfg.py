@@ -115,7 +115,7 @@ class RslAlgorithmCfg:
 @dataclass
 class RslRunnerCfg:
     num_steps_per_env: int = 24
-    max_iterations: int = 1500
+    max_iterations: int = 1000
     save_interval: int = 50
     experiment_name: str = "go1_walk_rsl"
     run_name: str = "test_run"
