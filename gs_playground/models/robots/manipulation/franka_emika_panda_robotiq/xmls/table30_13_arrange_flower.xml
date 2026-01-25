@@ -21,7 +21,7 @@
       <geom type="mesh" material="vase_mat" contype="1" conaffinity="1" density="10000" group="1"/>
     </default>
     <default class="flower_part">
-      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="5" group="1"/>
+      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="100" group="1"/>
     </default>
   </default>
 
@@ -195,7 +195,7 @@
     <!-- <camera  name="front" pos="0.752 0.014 0.404" xyaxes="0.386 0.923 0.000 -0.486 0.203 0.850"/> -->
 
 
-    <camera fovy="43.365" name="front" pos="1.574 0.022 1.073" xyaxes="-0.029 1.000 0.000 -0.488 -0.014 0.872"/>
+    <camera fovy="43.36" name="front" pos="1.0372 0.0372 0.6834" xyaxes="-0.109 0.993 0.038 -0.6451 -0.1089 0.7563"/>
 
     <!-- <camera  name="front"  pos="1.792 -0.010 0.242" xyaxes="0.007 1.000 -0.000 0.106 -0.001 0.994"/> -->
 
@@ -204,8 +204,8 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
     <geom name="table" pos="0.45 0.06 0.0442" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
 
-    <body name="vase" pos="0.500104 0.155969 0.128147" quat="0.998155 -0.0537224 -0.0272153 -0.00775212" >
-      <joint type="free" frictionloss="0.0001"/>
+    <body mocap="true" name="vase" pos="0.500104 0.155969 0.128147" quat="0.998155 -0.0537224 -0.0272153 -0.00775212" >
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
       <geom mesh="v_00" class="vase_part"/>
       <geom mesh="v_01" class="vase_part"/>
       <geom mesh="v_02" class="vase_part"/>
@@ -265,8 +265,8 @@
       <geom mesh="v_56" class="vase_part"/>
     </body>
 
-    <body name="vase2" pos="0.5 0.0 0.125" >
-      <joint type="free" frictionloss="0.0001"/>
+    <body mocap="true" name="vase2" pos="0.5 0.0 0.125" >
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
       <geom mesh="v_2_00" class="vase_part"/>
       <geom mesh="v_2_01" class="vase_part"/>
       <geom mesh="v_2_02" class="vase_part"/>
@@ -375,8 +375,7 @@
     <key name = "home" 
       qpos='0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 
             0 0 0 0 0 0
-            0.500104 0.155969 0.128147 0.998155 -0.0537224 -0.0272153 -0.00775212 
-            0.495827 0.000949333 0.127613 0.999571 -0.00662342 -0.0285412 0.000397061 
+
             0.546549 0.212547 0.192837 0.325759 -0.0145615 -0.0148738 0.945224'
       ctrl="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 0"
 />
@@ -386,5 +385,7 @@
         ctrl="0.000651506 -0.780348 0.000170309 -2.75423 0.00298 2.64 -0.00757809  0"/> 
                     0.500104 0.155969 0.128147 0.998155 -0.0537224 -0.0272153 -0.00775212 
 -->
+            <!-- 0.500104 0.155969 0.128147 0.998155 -0.0537224 -0.0272153 -0.00775212 
+            0.495827 0.000949333 0.127613 0.999571 -0.00662342 -0.0285412 0.000397061  -->
   </keyframe>
 </mujoco>

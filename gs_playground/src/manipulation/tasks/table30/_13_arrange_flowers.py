@@ -143,21 +143,42 @@ class ArrangeFlowersEnv(TaskEnv):
         """
         Only randomize source/target vase XY with min distance.
         Then move flower XY by the SAME delta as source vase moved.
+
+        NOTE: We intentionally hard-code base vase poses. Therefore we MUST expand them to (n_reset, 7)
+        to match the sliced `data` batch size.
         """
         env_ids = np.where(done_mask)[0]
         n_reset = int(env_ids.size)
         if n_reset == 0:
             return
 
-        # poses in sliced data (n_reset,7) = [x,y,z,qw,qx,qy,qz] (wxyz)
-        vase_src_pose = np.asarray(self.vase_src_body.get_pose(data), dtype=np.float32)
-        vase_dst_pose = np.asarray(self.vase_dst_body.get_pose(data), dtype=np.float32)
+        # -------------------------------------------------------------------------
+        # Hard-coded base poses (shape must be (n_reset, 7) for batched writeback)
+        # pose format assumed: [x, y, z, qw, qx, qy, qz] (wxyz)
+        # -------------------------------------------------------------------------
+        base_vase_src_pose = np.array(
+            [0.500104, 0.155969, 0.128147, -0.05372239, -0.0272153, -0.00775212, 0.9981549],
+            dtype=np.float32,
+        )
+        base_vase_dst_pose = np.array(
+            [0.5, 0.0, 0.125, -0.0, -0.0, -0.0, 1.0],
+            dtype=np.float32,
+        )
+
+        vase_src_pose = np.repeat(base_vase_src_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
+        vase_dst_pose = np.repeat(base_vase_dst_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
+
+        # Flower pose must match sliced data batch
         flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)
+        flower_pose = flower_pose.reshape(n_reset, -1)
 
         new_vase_src = vase_src_pose.copy()
         new_vase_dst = vase_dst_pose.copy()
         new_flower = flower_pose.copy()
 
+        # -------------------------------------------------------------------------
+        # Sampling range and constraint
+        # -------------------------------------------------------------------------
         center = np.array(self._cfg.vase_range_center_xy, dtype=np.float32)       # (2,)
         half = np.array(self._cfg.vase_range_half_size_xy, dtype=np.float32)     # (2,)
         lower = center - half
@@ -174,6 +195,7 @@ class ArrangeFlowersEnv(TaskEnv):
         for _ in range(max_tries):
             if not remaining.any():
                 break
+
             idx = np.where(remaining)[0]
             m = int(idx.size)
 
@@ -187,15 +209,17 @@ class ArrangeFlowersEnv(TaskEnv):
                 cand_dst_xy[good] = dst_xy[ok]
                 remaining[good] = False
 
-        # If still remaining, fall back to current positions (very rare)
+        # Fallback: use hard-coded base XY for remaining envs
         if remaining.any():
             rem = np.where(remaining)[0]
             cand_src_xy[rem] = vase_src_pose[rem, :2]
             cand_dst_xy[rem] = vase_dst_pose[rem, :2]
 
-        # Compute delta of source vase XY, apply same delta to flower XY
-        old_src_xy = vase_src_pose[:, :2]
-        delta_src = cand_src_xy - old_src_xy  # (n_reset,2)
+        # -------------------------------------------------------------------------
+        # Apply: move src/dst vase XY; move flower XY by same delta as src vase
+        # -------------------------------------------------------------------------
+        old_src_xy = vase_src_pose[:, :2]           # (n_reset,2) from hard-coded base
+        delta_src = cand_src_xy - old_src_xy        # (n_reset,2)
 
         new_vase_src[:, 0] = cand_src_xy[:, 0]
         new_vase_src[:, 1] = cand_src_xy[:, 1]
@@ -205,24 +229,14 @@ class ArrangeFlowersEnv(TaskEnv):
 
         new_flower[:, 0] = flower_pose[:, 0] + delta_src[:, 0]
         new_flower[:, 1] = flower_pose[:, 1] + delta_src[:, 1]
-        # Z / quat remain unchanged
 
-        # write back (batched)
-        self.vase_src_body.set_dof_pos(data, new_vase_src, include_floatingbase=True)
-        self.vase_dst_body.set_dof_pos(data, new_vase_dst, include_floatingbase=True)
+        # write back (batched, matches sliced data batch size)
+        self.vase_src_body.mocap.set_pose(data, new_vase_src)
+        self.vase_dst_body.mocap.set_pose(data, new_vase_dst)
         self.flower_body.set_dof_pos(data, new_flower, include_floatingbase=True)
 
-        # Optional: export for debug
-        try:
-            if hasattr(self, "_state") and hasattr(self._state, "info") and isinstance(self._state.info, dict):
-                if "vase_src_xy" not in self._state.info:
-                    self._state.info["vase_src_xy"] = np.zeros((self.num_envs, 2), dtype=np.float32)
-                if "vase_dst_xy" not in self._state.info:
-                    self._state.info["vase_dst_xy"] = np.zeros((self.num_envs, 2), dtype=np.float32)
-                self._state.info["vase_src_xy"][env_ids] = cand_src_xy
-                self._state.info["vase_dst_xy"][env_ids] = cand_dst_xy
-        except Exception:
-            pass
+
+
 
     def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
         data: SceneData = state.data
