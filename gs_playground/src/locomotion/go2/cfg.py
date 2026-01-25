@@ -25,7 +25,7 @@ class ControlConfig:
 @dataclass
 class InitState:
     # the initial position of the robot in the world frame
-    pos = [0.0, 0.0, 0.42] #0.278
+    pos = [0.0, 0.0, 0.278]
 
     # the default angles for all joints. key = joint name, value = target angle [rad]
     default_joint_angles = {
@@ -59,11 +59,35 @@ class Normalization:
     dof_pos = 1
     dof_vel = 0.05
 
+@dataclass
+class RewardConfig:
+    scales: dict[str, float] = field(
+        default_factory=lambda: {
+            "termination": -100.0,
+            "tracking_lin_vel": 1.0,
+            "tracking_ang_vel": 0.5,
+            "lin_vel_z": -0.5,
+            "ang_vel_xy": -0.05,
+            "orientation": -0.5,
+            "torques": -0.00001,
+            "dof_vel": -0.0,
+            "dof_acc": -2.5e-7,
+            "feet_air_time": 1.0,
+            "action_rate": -0.001,
+            "stand_still": -1.0,
+            "collision": -1.0,
+        }
+    )
+
+    tracking_sigma: float = 0.25
+    max_foot_height: float = 0.1
 
 @dataclass
 class Asset:
     body_name = "base"
     foot_name = "foot"
+    terminate_after_contacts_on = ["base"]
+    penalize_contacts_on = ["thigh"]
     ground = "floor"
 
 @dataclass
@@ -117,35 +141,6 @@ class RslTrainCfg:
     algorithm: RslAlgorithmCfg = field(default_factory=RslAlgorithmCfg)
     runner: RslRunnerCfg = field(default_factory=RslRunnerCfg)
     obs_groups: dict = field(default_factory=lambda: {"policy": ["policy"]})
-
-
-@dataclass
-class RewardConfig:
-    scales: dict[str, float] = field(
-        default_factory=lambda: {
-            "termination": -0.0,
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 0.5,
-            "lin_vel_z": -2.0,
-            "ang_vel_xy": -0.05,
-            "orientation": -0.0,
-            "torques": -0.00001,
-            "dof_vel": -0.0,
-            "dof_acc": -2.5e-7,
-            "base_height": -0.0,
-            "feet_air_time": 1.0,
-            "collision": -1.0 * 0,
-            "feet_stumble": -0.0,
-            "action_rate": -0.001,
-            "stand_still": -0.0,
-            "hip_pos": -1,
-            "calf_pos": -0.3 * 0,
-        }
-    )
-
-    tracking_sigma: float = 0.25
-    max_foot_height: float = 0.1
-
 
 @registry.envcfg("go2-flat-terrain-walk")
 @dataclass

@@ -92,6 +92,7 @@ class Go2WalkTaskMj(MjNpEnv):
             "calf_pos": lambda s: self._reward_calf_pos(s, s.info["commands"]),
             "feet_air_time": lambda s: self._reward_feet_air_time(s.info["commands"], s.info),
             "termination": lambda s: self._reward_termination(s.terminated),
+            "collision": lambda s: self._reward_collision(s),
         }
 
     def _init_sensor_indices(self):
@@ -110,11 +111,52 @@ class Go2WalkTaskMj(MjNpEnv):
             self.contact_sensor_indices.append(self.sensor_indices[name])
             
         print(f"Mapped contact sensors: {expected_names} -> {self.contact_sensor_indices}")
+        
+        # Mapped termination contact sensors
+        self.termination_contact_indices = []
+        term_contacts = self._cfg.asset.terminate_after_contacts_on
+        if term_contacts:
+            possible_parts = []
+            if "base" in term_contacts:
+                possible_parts.append("base")
+            if "thigh" in term_contacts:
+                possible_parts.extend([f"{p}_thigh" for p in prefixes])
+
+            expected_term_sensors = [f"{part}_contact" for part in possible_parts]
+            for name in expected_term_sensors:
+                if name not in self.sensor_indices:
+                     # Check if it was optional? The user said "check validness"
+                     # We only added specific ones in XML. If an XML is updated but not code, or vice versa, this catches it.
+                     raise ValueError(f"Required termination contact sensor '{name}' not found. Verify scene matching 'terminate_after_contacts_on'.")
+                self.termination_contact_indices.append(self.sensor_indices[name])
+            print(f"Mapped termination sensors: {expected_term_sensors}")
+
+        # Mapped penalized contact sensors
+        self.penalised_contact_indices = []
+        penalized_contacts = getattr(self._cfg.asset, "penalize_contacts_on", [])
+        if penalized_contacts:
+             possible_parts = []
+             if "thigh" in penalized_contacts:
+                 prefixes = ["FL", "FR", "RL", "RR"]
+                 possible_parts.extend([f"{p}_thigh" for p in prefixes])
+             
+             expected_pen_sensors = [f"{part}_contact" for part in possible_parts]
+             for name in expected_pen_sensors:
+                 if name not in self.sensor_indices:
+                     # Warn or Error? Since we defined it in config, we expect it.
+                     pass 
+                 else:
+                    self.penalised_contact_indices.append(self.sensor_indices[name])
+             print(f"Mapped penalized sensors: {expected_pen_sensors}")
 
         # Resolve 'local_linvel' and 'gyro'
-        # Assuming cfg.sensor.local_linvel is the sensor name string
-        self.idx_linvel = self.sensor_indices.get(self._cfg.sensor.local_linvel, -1)
-        self.idx_gyro = self.sensor_indices.get(self._cfg.sensor.gyro, -1)
+        if self._cfg.sensor.local_linvel not in self.sensor_indices:
+            raise ValueError(f"Sensor '{self._cfg.sensor.local_linvel}' not found.")
+        self.idx_linvel = self.sensor_indices[self._cfg.sensor.local_linvel]
+
+        if self._cfg.sensor.gyro not in self.sensor_indices:
+             raise ValueError(f"Sensor '{self._cfg.sensor.gyro}' not found.")
+        self.idx_gyro = self.sensor_indices[self._cfg.sensor.gyro]
 
 
     def _init_obs_space(self):
@@ -218,20 +260,15 @@ class Go2WalkTaskMj(MjNpEnv):
         return target_jq
 
     def get_local_linvel(self, state: MjNpEnvState) -> np.ndarray:
-        if self.idx_linvel != -1:
-             # If using sensor, need to verify dim (3)
-             # assuming sensors are contiguous? MjData.sensordata is flat.
-             # We should use model.sensor_adr.
-             adr = self._model.sensor_adr[self.idx_linvel]
-             dim = self._model.sensor_dim[self.idx_linvel]
-             return state.sensor_data[:, adr:adr+dim]
-        return np.zeros((self._num_envs, 3))
+        adr = self._model.sensor_adr[self.idx_linvel]
+        dim = self._model.sensor_dim[self.idx_linvel]
+        return state.sensor_data[:, adr:adr+dim]
 
     def get_gyro(self, state: MjNpEnvState) -> np.ndarray:
         if self.idx_gyro != -1:
-             adr = self._model.sensor_adr[self.idx_gyro]
-             dim = self._model.sensor_dim[self.idx_gyro]
-             return state.sensor_data[:, adr:adr+dim]
+            adr = self._model.sensor_adr[self.idx_gyro]
+            dim = self._model.sensor_dim[self.idx_gyro]
+            return state.sensor_data[:, adr:adr+dim]
         return np.zeros((self._num_envs, 3))
 
     def update_state(self, state, obs_required=True):
@@ -257,26 +294,81 @@ class Go2WalkTaskMj(MjNpEnv):
         info["local_gravity"] = local_gravity
         
         # B. Update Contacts
-        if self.contact_sensor_indices:
-             contact_vals = []
-             for idx in self.contact_sensor_indices:
-                  adr = self._model.sensor_adr[idx]
-                  dim = self._model.sensor_dim[idx]
-                  val = state.sensor_data[:, adr:adr+dim]
-                  # Norm if dim > 1 (e.g. 3-axis force)
-                  if dim > 1:
-                       val = np.linalg.norm(val, axis=1)
-                  else:
-                       val = np.abs(val).flatten()
-                  contact_vals.append(val)
-             contact_vals = np.stack(contact_vals, axis=1)
-             threshold = 1.0 
-             info["contacts"] = contact_vals > threshold
+        contact_vals = []
+        for idx in self.contact_sensor_indices:
+            adr = self._model.sensor_adr[idx]
+            dim = self._model.sensor_dim[idx]
+            val = state.sensor_data[:, adr:adr+dim]
+            # Sensor data [num_envs] (scalar) or [num_envs, 1] usually
+            # But let's be robust. 
+            # Note: in Mujoco sensor_data is flat if accessed raw, but here it is shaped (num_envs, nsensordata)
+            # The contact sensor in XML "found" data returns a scalar (1 if found, 0 if not) if dimension is 1
+            # Check scene_flatp.xml: <contact ... num="1" .../>
+            # So val should be (num_envs, 1) or (num_envs,)
+            
+            # If we flatten, we handle shape issues
+            val_flat = val.flatten()
+            contact_vals.append(val_flat)
+        
+        # Stack to (num_envs, 4)
+        if len(contact_vals) > 0:
+            current_contacts = np.stack(contact_vals, axis=1)
+            # Thresholding 0.5 because usually contact sensor returns force or boolean-like float
+            # If reduce="netforce", it's a force value. It can be > 0.
+            current_contacts = (current_contacts > 0.1) 
         else:
-             info["contacts"] = np.zeros((self._num_envs, 4), dtype=bool)
+            current_contacts = np.zeros((self._num_envs, 4), dtype=bool)
 
         # C. Update Air Time
-        info["feet_air_time"] = self.update_feet_air_time(info)
+        # Logic: 
+        # 1. Update feet_air_time += dt (for all feet)
+        # 2. Reset feet_air_time = 0 WHERE contact is True
+        # HOWEVER, the reward function relies on "first contact" logic:
+        # It needs the air time BEFORE it is reset to 0.
+        # But here we update the state cache.
+        
+        # The issue is the order of operations in `_reward_feet_air_time` vs `_update_cache`.
+        # `_update_cache` is called at the beginning of `update_state`.
+        # Then `update_reward` is called.
+        
+        # If we update (reset) the air time here, `_reward_feet_air_time` will see 0 air time for feet that just touched ground!
+        # So we need to store the "last air time upon contact" or similar.
+        
+        # Let's see the implementation of `update_feet_air_time` (helper method):
+        # feet_air_time += dt
+        # feet_air_time *= ~contacts
+        
+        # Correct sequence for reward calculation:
+        # 1. Increment air time for all feet.
+        # 2. Identify feet that JUST touched ground (contact=True, prev_contact=False? Or just Contact=True and AirTime>0)
+        # 3. Calculate reward for these feet using their current accumulated air time.
+        # 4. THEN reset air time for contacting feet.
+        
+        # But `_update_cache` does both increment and reset.
+        # So when `_reward_feet_air_time` is called later, `info["feet_air_time"]` is ALREADY 0 for contacting feet.
+        
+        # FIX: We need to calculate air_time reward logic INSIDE update_cache (or preserve the pre-reset value), 
+        # or change the cache update logic.
+        
+        # Option A: Store `last_air_time` in info specifically for reward.
+        prev_air_time = info.get("feet_air_time", np.zeros_like(current_contacts, dtype=np.float32)).copy()
+        
+        # Update logic logic reproduced here to match flow
+        # Ensure initialization if missing
+        if "feet_air_time" not in info:
+             info["feet_air_time"] = np.zeros((self._num_envs, 4), dtype=np.float32)
+
+        info["feet_air_time"] += self.cfg.ctrl_dt
+        
+        # Capture the air time for feet that are about to reset (contacting now)
+        # We need this for the reward function which is called LATER
+        info["air_time_at_contact"] = info["feet_air_time"] * current_contacts
+        
+        # Now apply reset
+        info["feet_air_time"] *= ~current_contacts
+        
+        # Store contacts for next step / other logic
+        info["contacts"] = current_contacts
 
     def _get_obs(self, state: MjNpEnvState, info: dict) -> np.ndarray:
         linear_vel = self.get_local_linvel(state)
@@ -285,20 +377,16 @@ class Go2WalkTaskMj(MjNpEnv):
         local_gravity = info["local_gravity"] # Use cached logic
 
         diff = self.get_dof_pos(state) - self.default_angles
-        noisy_linvel = linear_vel * self.cfg.normalization.lin_vel
-        noisy_gyro = gyro * self.cfg.normalization.ang_vel
-        noisy_joint_angle = diff * self.cfg.normalization.dof_pos
-        noisy_joint_vel = self.get_dof_vel(state) * self.cfg.normalization.dof_vel
         command = info["commands"] * self.commands_scale
         last_actions = info["current_actions"]
 
         obs = np.hstack(
             [
-                noisy_linvel,
-                noisy_gyro,
+                linear_vel * self.cfg.normalization.lin_vel,
+                gyro * self.cfg.normalization.ang_vel,
                 local_gravity,
-                noisy_joint_angle,
-                noisy_joint_vel,
+                diff * self.cfg.normalization.dof_pos,
+                self.get_dof_vel(state) * self.cfg.normalization.dof_vel,
                 last_actions,
                 command,
             ]
@@ -310,17 +398,23 @@ class Go2WalkTaskMj(MjNpEnv):
         return state.replace(obs=obs)
 
     def update_terminated(self, state: MjNpEnvState) -> MjNpEnvState:
-        # Check termination based on base z or pitch/roll or body contact?
-        # Check up direction of the base (projected Z)
-        # local_gravity = R^T * [0,0,-1]. So local_gravity.z is roughly -1 if upright.
-        # up_z (body Z in world) corresponds to -local_gravity.z
-        
         local_gravity = state.info["local_gravity"]
         up_z = -local_gravity[:, 2]
-        terminated = up_z <= 0.5
         
+        # 1. Orientation termination
+        is_fallen = up_z <= 0.5
+        
+        # 2. Contact termination (if configured via sensors)
+        if hasattr(self, "termination_contact_indices") and self.termination_contact_indices:
+             # Check if ANY of the termination sensors detected contact (> 0.5)
+             # state.sensor_data shape is (num_envs, num_sensors)
+             contact_values = state.sensor_data[:, self.termination_contact_indices]
+             # If any sensor value > 0.5, we consider it a contact
+             has_contact = np.any(contact_values > 0.5, axis=1)
+             is_fallen = np.logical_or(is_fallen, has_contact)
+
         return state.replace(
-            terminated=terminated,
+            terminated=is_fallen,
         )
 
     def update_feet_air_time(self, info: dict):
@@ -335,6 +429,12 @@ class Go2WalkTaskMj(MjNpEnv):
             high=self.cfg.commands.vel_limit[1],
             size=(num_envs, 3),
         )
+
+        # Standard practice: set small percentage of commands to zero to train standing still
+        # e.g. 5-10% chance
+        mask = np.random.random(num_envs) < 0.05
+        commands[mask] = 0.0
+        
         return commands
 
     def update_reward(self, state: MjNpEnvState) -> MjNpEnvState:
@@ -514,12 +614,22 @@ class Go2WalkTaskMj(MjNpEnv):
 
     def _reward_feet_air_time(self, commands: np.ndarray, info: dict):
         # Reward long steps
-        feet_air_time = info["feet_air_time"]
-        first_contact = (feet_air_time > 0.0) * info["contacts"]
-        # reward only on first contact with the ground
-        rew_airTime = np.sum((feet_air_time - 0.5) * first_contact, axis=1)
+        # info["feet_air_time"] is reset to 0 for contacting feet in _update_cache
+        # We use the snapshot "air_time_at_contact" taken just before reset
+        air_time_at_contact = info.get("air_time_at_contact", np.zeros((self._num_envs, 4)))
+        
+        # Determine valid first contacts. 
+        # Note: air_time_at_contact is > 0 only for contacting feet.
+        # To avoid penalizing continuous contact (where air_time would be just dt),
+        # we can optionaly filter for air_time > dt. 
+        # Standard implementation creates 'first_contact' mask.
+        # Here air_time_at_contact implies contact is True.
+        
+        # Standard logic: (time - 0.5) * contact
+        rew_airTime = np.sum((air_time_at_contact - 0.5) * (air_time_at_contact > 0.0), axis=1)
+        
         # no reward for zero command
-        rew_airTime *= np.linalg.norm(commands[:, :2], axis=1) > 0.1
+        rew_airTime *= np.linalg.norm(commands[:, :3], axis=1) > 0.1
         return rew_airTime
 
     def _reward_tracking_lin_vel(self, state, commands: np.ndarray):
@@ -538,14 +648,10 @@ class Go2WalkTaskMj(MjNpEnv):
             np.linalg.norm(commands, axis=1) < 0.1
         )
 
-    def _reward_hip_pos(self, state, commands: np.ndarray):
-        return (0.8 - np.abs(commands[:, 1])) * np.sum(
-            np.square(self.get_dof_pos(state)[:, self.hip_indices] - self.default_angles[self.hip_indices]),
-            axis=1,
-        )
-
-    def _reward_calf_pos(self, state, commands: np.ndarray):
-        return (0.8 - np.abs(commands[:, 1])) * np.sum(
-            np.square(self.get_dof_pos(state)[:, self.calf_indices] - self.default_angles[self.calf_indices]),
-            axis=1,
-        )
+    def _reward_collision(self, state: MjNpEnvState):
+        if not hasattr(self, "penalised_contact_indices") or not self.penalised_contact_indices:
+            return 0.0
+        # Check contact sensors
+        contact_values = state.sensor_data[:, self.penalised_contact_indices]
+        # Return 1.0 if any contact > 0.1
+        return np.any(contact_values > 0.1, axis=1).astype(np.float32)

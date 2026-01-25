@@ -20,15 +20,25 @@
 
   <worldbody>
       <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
-      <geom name="floor" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="0" priority="1"
-        friction="0.6" condim="3"/>
+      <body name="floor">
+        <geom name="floor" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="0" priority="1"
+          friction="0.6" condim="3"/>
+      </body>
   </worldbody>
 
   <sensor>
-    <contact name="FL_foot_contact" geom1="floor" geom2="FL_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
-    <contact name="FR_foot_contact" geom1="floor" geom2="FR_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
-    <contact name="RL_foot_contact" geom1="floor" geom2="RL_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
-    <contact name="RR_foot_contact" geom1="floor" geom2="RR_foot" data="found force pos normal tangent" num="1" reduce="netforce"/>
+    <contact name="FL_foot_contact" geom1="floor" geom2="FL_foot" data="found" num="1" reduce="mindist"/>
+    <contact name="FR_foot_contact" geom1="floor" geom2="FR_foot" data="found" num="1" reduce="mindist"/>
+    <contact name="RL_foot_contact" geom1="floor" geom2="RL_foot" data="found" num="1" reduce="mindist"/>
+    <contact name="RR_foot_contact" geom1="floor" geom2="RR_foot" data="found" num="1" reduce="mindist"/>
+
+    <!-- Collision sensors for termination -->
+    <contact name="base_contact" body1="floor" body2="base" data="found" num="1" reduce="mindist"/>
+    
+    <contact name="FL_thigh_contact" geom1="floor" geom2="fl_thigh_0" data="found" num="1" reduce="mindist"/>
+    <contact name="FR_thigh_contact" geom1="floor" geom2="fr_thigh_0" data="found" num="1" reduce="mindist"/>
+    <contact name="RL_thigh_contact" geom1="floor" geom2="rl_thigh_0" data="found" num="1" reduce="mindist"/>
+    <contact name="RR_thigh_contact" geom1="floor" geom2="rr_thigh_0" data="found" num="1" reduce="mindist"/>
   </sensor>
 
   <keyframe>

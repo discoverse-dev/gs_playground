@@ -1,6 +1,7 @@
 
 import os
 import sys
+import argparse
 import torch
 import torch.onnx
 from dataclasses import asdict
@@ -24,10 +25,35 @@ def find_latest_model(log_dir):
     return files[0]
 
 def main():
-    logs_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../logs"))
-    model_path = find_latest_model(logs_root)
-    if not model_path:
-        print("Model not found")
+    parser = argparse.ArgumentParser(description="Export RSL-RL model to ONNX")
+    parser.add_argument("--load_model", type=str, default=None, help="Path to the model .pt file to load")
+    parser.add_argument("--output_dir", type=str, 
+                      default=os.path.abspath(os.path.join(os.path.dirname(__file__), "../sim2sim/onnx")),
+                      help="Directory to save the ONNX model")
+    args = parser.parse_args()
+
+    if args.load_model:
+        model_path = args.load_model
+    else:
+        # Default fallback: try to find latest in logs/go2_walk
+        logs_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../logs/go2_walk"))
+        # We need to search recursively or just pick the latest timestamp folder
+        # Simplified: just look in logs_root if user didn't structure it, or ask user to provide path if complex.
+        # Given the new structure logs/go2_walk/<timestamp>/model_*.pt
+        # Let's try to find the latest timestamp folder first
+        if os.path.exists(logs_root):
+             timestamps = sorted([d for d in os.listdir(logs_root) if os.path.isdir(os.path.join(logs_root, d))])
+             if timestamps:
+                 latest_log_dir = os.path.join(logs_root, timestamps[-1])
+                 model_path = find_latest_model(latest_log_dir)
+             else:
+                 model_path = None
+        else:
+             model_path = None
+
+    if not model_path or not os.path.exists(model_path):
+        print(f"Model not found: {model_path}")
+        print("Please provide a valid model path using --load_model")
         return
 
     print(f"Loading {model_path}")
@@ -43,7 +69,9 @@ def main():
     train_cfg = asdict(env_cfg.train_cfg)
     if "runner" in train_cfg: train_cfg.update(train_cfg.pop("runner"))
     
-    runner = OnPolicyRunner(vec_env, train_cfg, log_dir=logs_root, device=device)
+    # We need a dummy log_dir for runner init
+    runner_log_dir = os.path.dirname(os.path.dirname(model_path))
+    runner = OnPolicyRunner(vec_env, train_cfg, log_dir=runner_log_dir, device=device)
     runner.load(model_path, load_optimizer=False)
     
     # Correct attribute path based on previous debug
@@ -59,8 +87,8 @@ def main():
     # 3 (linvel) + 3 (gyro) + 3 (grav) + 12 (pos) + 12 (vel) + 12 (action) + 3 (cmd) = 48
     dummy_input = torch.randn(1, 48, device=device)
     
-    output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../sim2sim/motrix/go2_policy.onnx"))
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)
+    output_path = os.path.join(args.output_dir, "go2_policy.onnx")
     
     print(f"Exporting to {output_path}")
     torch.onnx.export(

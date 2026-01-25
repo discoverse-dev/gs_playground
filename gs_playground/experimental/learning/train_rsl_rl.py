@@ -1,13 +1,10 @@
 
 import os
+import datetime
 import numpy as np
 import torch
-import gymnasium as gym
 from dataclasses import asdict
 from tensordict import TensorDict
-
-# Add workspace root to path if needed, though VS Code environment usually handles it.
-# Assuming gs_playground is in python path.
 
 from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
 from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
@@ -118,7 +115,7 @@ def main():
     # 1. Environment Config
     env_cfg = Go2WalkNpEnvCfg()
     # Adjust config for training if needed
-    num_envs = 4096
+    num_envs = 1024
     
     # 2. Create Environment
     # We instantiate directly to bypass registry string parsing if convenient, 
@@ -126,7 +123,15 @@ def main():
     env = Go2WalkTaskMj(env_cfg, num_envs=num_envs)
     
     # 3. Wrap Environment
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    
+    print(f"Using device: {device}")
+    
     vec_env = RslMjEnvWrapper(env, device)
     
     # 4. Train Config
@@ -138,7 +143,11 @@ def main():
         train_cfg.update(train_cfg.pop("runner"))
     
     # 5. Runner
-    log_dir = os.path.join(os.path.dirname(__file__), "../../../logs")
+    root_log_dir = os.path.join(os.path.dirname(__file__), "../../../logs")
+    task_name = "go2_walk"
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_dir = os.path.join(root_log_dir, task_name, timestamp)
+    
     runner = OnPolicyRunner(vec_env, train_cfg, log_dir=log_dir, device=device)
     
     # 6. Learn
