@@ -13,8 +13,8 @@
   <default>
     <default class="go2">
       <geom condim="1"/>
-      <joint axis="0 1 0" damping="2" armature="0.01"/>
-      <general forcerange="-24 24" biastype="affine" gainprm="50 0 0" biasprm="0 -50 -1"/>
+      <joint axis="0 1 0" damping="0.5" armature="0.01"/>
+      <general forcerange="-24 24" biastype="affine" gainprm="35 0 0" biasprm="0 -35 -0.5"/>
 
       <default class="abduction">
         <joint axis="1 0 0" range="-1.0472 1.0472"/>
@@ -38,7 +38,7 @@
       <default class="collision">
         <geom group="3"/>
         <default class="foot">
-          <geom type="sphere" size="0.0175" pos="-0.002 0 -0.213" solimp="0.9 .95 0.023" condim="3"/>
+          <geom type="sphere" size="0.0175" pos="-0.002 0 -0.213" solimp="0.9 .95 0.001" solref="0.02 1" condim="3"/>
         </default>
       </default>
     </default>
