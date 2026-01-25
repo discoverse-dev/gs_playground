@@ -74,8 +74,6 @@ class RewardConfig:
 class Asset:
     body_name = "trunk"
     foot_name = "foot"
-    terminate_after_contacts_on = ["trunk"] # Go1 body name is "trunk", Go2 was "base" -- Check Go1 XML!
-    # I saw body name="trunk" in go1_mjx_fullcollisions.xml line 125
     ground = "floor"
 
 @dataclass
