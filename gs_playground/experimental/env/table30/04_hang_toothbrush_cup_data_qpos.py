@@ -20,13 +20,11 @@ from gs_playground.src.manipulation.tasks.table30._04_hang_toothbrush_cup import
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-def smooth_step_pos(curr: np.ndarray, tgt: np.ndarray, max_dp: float) -> np.ndarray:
-    """Smooth position update with max step."""
+def smooth_step_pos(curr: np.ndarray, tgt: np.ndarray, max_dp: Any) -> np.ndarray:
     dp = tgt - curr
     n = np.linalg.norm(dp, axis=1, keepdims=True)
-    s = np.minimum(1.0, float(max_dp) / (n + 1e-9))
+    s = np.minimum(1.0, max_dp / (n + 1e-9)) 
     return curr + dp * s
-
 
 def wrap_to_pi(a: np.ndarray) -> np.ndarray:
     sym = np.pi
@@ -78,8 +76,9 @@ class EpisodeVideoWriter:
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 10
+    num_envs: int = 2
+
 
     seed: int = 1500
     save_dir: str = "./data/table30_hang_toothbrush_cup_dual_view"
@@ -572,7 +571,9 @@ class HangToothbrushCupCollector:
         set_target(self.ST_GO_RESET, reset_p, cfg.gripper_open)
 
         # 3) Compute control
-        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, float(cfg.max_dp))
+        limit = np.where(self.states[:, None] == self.ST_HANG_DOWN, cfg.max_dp * 0.333, cfg.max_dp)
+
+        self.exec_pos = smooth_step_pos(self.exec_pos, tgt_pos, limit)
 
         ref_pose = self.env.robot.ref_ee_pose
         ref_pos = ref_pose[:, :3]
