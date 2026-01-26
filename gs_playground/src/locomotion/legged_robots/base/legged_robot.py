@@ -69,6 +69,8 @@ class Legged_Robot_Torch:
         self.dt = self.config.control.decimation * self.config.sim.dt
         self.reward_scales = class_to_dict(self.config.rewards.scales)
         self.max_episode_length_s = self.max_episode_length * self.dt
+        self.process_rigid_body_props()
+        self.noise_vec = self._get_noise_scale_vec()
         self._prepare_reward_function()
 
     def buffer_init(self):
@@ -282,6 +284,44 @@ class Legged_Robot_Torch:
 
         # self.model.
 
+    def process_rigid_body_props(self):
+        mass = self.model.get_link(self.config.asset.body_name).get_mass_override(self.datas)
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        print(mass)
+        mass_low = self.config.domain_rand.added_mass_range[0]
+        mass_high = self.config.domain_rand.added_mass_range[1]
+        random_mass = mass + np.random.uniform(mass_low, mass_high, size=(self.num_envs,))
+        self.model.get_link(self.config.asset.body_name).set_mass_override(self.datas, random_mass)
+        mass = self.model.get_link(self.config.asset.body_name).get_mass_override(self.datas)
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        print(mass)
+        # mass_get = self.body#ball.get_mass_override(data)
+        # pass
+
+    def _get_noise_scale_vec(self, cfg):
+        """ Sets a vector used to scale the noise added to the observations.
+            [NOTE]: Must be adapted when changing the observations structure
+
+        Args:
+            cfg (Dict): Environment config file
+
+        Returns:
+            [torch.Tensor]: Vector of scales used to multiply a uniform distribution in [-1, 1]
+        """
+        noise_vec = torch.zeros_like(self.config.env.num_observations)
+        self.add_noise = self.config.noise.add_noise#self.cfg.noise.add_noise
+        noise_scales = self.config.noise.noise_scales
+        noise_level = self.config.noise.noise_level
+        self.obs_scales = self.config.normalization.obs_scales
+        noise_vec[:3] = noise_scales.lin_vel * noise_level * self.obs_scales.lin_vel
+        noise_vec[3:6] = noise_scales.ang_vel * noise_level * self.obs_scales.ang_vel
+        noise_vec[6:9] = noise_scales.gravity * noise_level
+        noise_vec[9:12] = 0. # commands
+        noise_vec[12:12+self.num_actions] = noise_scales.dof_pos * noise_level * self.obs_scales.dof_pos
+        noise_vec[12+self.num_actions:12+2*self.num_actions] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
+        noise_vec[12+2*self.num_actions:12+3*self.num_actions] = 0. # previous actions
+        return noise_vec
+
     def get_observations(self):
         return self.obs
 
@@ -485,7 +525,8 @@ class Legged_Robot_Torch:
         self.obs[:, 21:33] = self.dof_vel * self.config.normalization.obs_scales.dof_vel
         self.obs[:, 33:45] = self.actions
         self.obs[:, 45:48] = self.commands * self.commands_scale
-
+        if self.add_noise:
+            self.obs += (2 * torch.rand_like(self.obs) - 1) * self.noise_vec
     def resample_commands(self, env_ids):
         commands = self.commands
 
