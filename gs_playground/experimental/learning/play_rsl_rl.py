@@ -16,10 +16,6 @@ from functools import partial
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
 from gs_playground.src.env import registry
-# Import envs to trigger registration
-from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
-from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
-from gs_playground.src.manipulation.tasks.eef.pick_cartesian import FrankaPickCartesian
 from gs_playground.experimental.learning.train_rsl_rl import RslMjEnvWrapper
 from rsl_rl.runners import OnPolicyRunner
 
@@ -104,7 +100,7 @@ def render_frame_job(args):
         # cam.lookat = [0.65, 0, 0.2]
         cam.distance = 3.0
         cam.elevation = -20
-        cam.azimuth = 15
+        cam.azimuth = 90
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
     else:
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE

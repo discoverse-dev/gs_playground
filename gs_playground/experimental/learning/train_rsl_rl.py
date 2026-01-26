@@ -9,10 +9,6 @@ from dataclasses import asdict
 from tensordict import TensorDict
 
 from gs_playground.src.env import registry
-# Import envs to trigger registration
-from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
-from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
-from gs_playground.src.manipulation.tasks.eef.pick_cartesian import FrankaPickCartesian
 from rsl_rl.runners import OnPolicyRunner
 from rsl_rl.env import VecEnv
 

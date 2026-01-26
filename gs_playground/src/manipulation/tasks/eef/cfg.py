@@ -82,9 +82,8 @@ class RslTrainCfg:
     obs_groups: dict = field(default_factory=lambda: {"policy": ["policy"]})
 
 
-@registry.envcfg("franka-pick-cartesian")
 @dataclass
-class FrankaPickCartesianCfg(EnvCfg):
+class FrankaCartesianBaseCfg(EnvCfg):
     train_cfg: RslTrainCfg = field(default_factory=RslTrainCfg)
     max_episode_seconds: float = 10.0 # approx 200 steps * 0.05
     model_file: str = model_file

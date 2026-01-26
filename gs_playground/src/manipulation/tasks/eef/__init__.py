@@ -1,2 +1,2 @@
-from .pick_cartesian import FrankaPickCartesian
-from .cfg import FrankaPickCartesianCfg
+from .pick_cartesian import FrankaPickCartesian, FrankaPickCartesianCfg
+from .pick_cartesian_3d import FrankaPickCartesian3D, FrankaPick3DCfg

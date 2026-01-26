@@ -6,8 +6,30 @@ import mujoco
 
 from gs_playground.src.env import registry
 from gs_playground.src.env.mujoco_env.mj_env import MjNpEnv, MjNpEnvState
-from gs_playground.src.manipulation.tasks.eef.cfg import FrankaPickCartesianCfg
+from gs_playground.src.manipulation.tasks.eef.cfg import FrankaCartesianBaseCfg, RewardConfig
 
+from dataclasses import dataclass, field
+
+@registry.envcfg("franka-pick-cartesian")
+@dataclass
+class FrankaPickCartesianCfg(FrankaCartesianBaseCfg):
+    reward_config: RewardConfig = field(
+        default_factory=lambda: RewardConfig(
+            scales={
+                # Gripper goes to the box.
+                "gripper_box": 4.0,
+                # Box goes to the target mocap.
+                "box_target": 8.0,
+                # Do not collide the gripper with the floor.
+                "no_floor_collision": 5.0,
+                
+                "action_rate": -0.0005,
+                "lifted_reward": 1.5,
+                "success_reward": 20.0,
+                "gripper_ctrl": 3.0,
+            }
+        )
+    )
 
 @registry.env("franka-pick-cartesian", sim_backend="mujoco")
 class FrankaPickCartesian(MjNpEnv):
