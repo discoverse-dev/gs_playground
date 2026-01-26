@@ -54,8 +54,7 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
 
     # observation / prompt
     instruction: str = (
-        "Pick up the flower from the source vase, place it into the target vase, "
-        "then pick it up again and place it back into the source vase."
+        "Take the flower out of the transparent vase and put it into the green vase, then take it out of the green vase and put it back into the transparent vase."
     )
 
     # task entities

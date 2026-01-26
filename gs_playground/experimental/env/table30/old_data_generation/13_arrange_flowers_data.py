@@ -211,10 +211,7 @@ class CollectorCfg:
     motrix_video_height: int = 480
 
     instruction: str = (
-        "Pick up the flower from the source vase, place it into the target vase, "
-        "then pick it up again and place it back into the source vase. "
-        "Each motion first aligns XY, then performs Z motion. Rotation only changes yaw. "
-        "Before grasp, do a pregrasp descend then fine-align (Z->Y->X), then final descend and grasp."
+        "Take the flower out of the transparent vase and put it into the green vase, then take it out of the green vase and put it back into the transparent vase."
     )
 
 
