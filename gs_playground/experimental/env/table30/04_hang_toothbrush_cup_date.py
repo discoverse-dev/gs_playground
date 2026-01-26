@@ -578,7 +578,7 @@ class HangToothbrushCupCollector:
                     self.saved_success += 1
                     print(f"[Saved] episode {ep_idx}. Total saved: {self.saved_success}")
                 else:
-                    self.io.discard_episode(env_id=i)
+                    self.io.finalize_episode(env_id=i, ep_idx=int(self.saved_success), prompt=str(self.ep_prompt[i]), success=False)
 
                 self.active[i] = False
 

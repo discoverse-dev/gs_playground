@@ -28,8 +28,8 @@ from table30_collect_common import (
 @dataclass(frozen=True)
 class CollectorCfg:
     # dataset
-    data_size: int = 1
-    num_envs: int = 1
+    data_size: int = 5
+    num_envs: int = 5
     seed: int = 0
     save_dir: str = "./data/table30_arrange_flowers_refactored"
 
@@ -693,10 +693,9 @@ class ArrangeFlowersCollector:
 
             if cfg.save_video:
                 render_mask = running & ((self.ctrl_step % int(cfg.render_every_steps)) == 0)
-                env_ids = np.where(render_mask)[0].astype(np.int64)
-                if env_ids.size > 0:
-                    self.io.maybe_write_video(obs=obs, env_ids=env_ids, ctrl_step=self.ctrl_step)
-
+                for env_id in np.where(render_mask)[0].tolist():
+                    self.io.maybe_write_video(env_id=int(env_id), obs=obs)
+                    
             self.ctrl_step[running] += 1
 
             # termination conditions
