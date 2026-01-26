@@ -42,3 +42,5 @@ output/
 third-party
 agent.md
 rsl_rl/
+*.onnx
+mujoco_playground/
