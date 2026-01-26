@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import motrixsim as mtx
 import numpy as np
 
-from .base import ABEnv, EnvCfg
+from ..base import ABEnv, EnvCfg
 
 
 @dataclass

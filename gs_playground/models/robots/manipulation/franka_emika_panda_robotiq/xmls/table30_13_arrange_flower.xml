@@ -1,0 +1,391 @@
+<mujoco model="panda cup on coaster">
+  <include file="panda_robotiq.xml"/>
+  <statistic center="0.3 0 0.4" extent="1"/>
+
+  <option timestep="0.005" iterations="100" ls_iterations="20" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="12" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <default>
+    <default class="vase_part">
+      <geom type="mesh" material="vase_mat" contype="1" conaffinity="1" density="10000" group="1"/>
+    </default>
+    <default class="flower_part">
+      <geom type="mesh" material="flower_mat" contype="1" conaffinity="1" density="100" group="1"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    
+    <material name="vase_mat" rgba="0.9 0.9 0.9 0.3" specular="0.9" shininess="0.9" reflectance="0.1"/>
+    <material name="flower_mat" rgba="0.8 0.2 0.2 1" specular="0.2" shininess="0.1"/>
+
+    <mesh name="v_00" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_000.obj"/>
+    <mesh name="v_01" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_001.obj"/>
+    <mesh name="v_02" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_002.obj"/>
+    <mesh name="v_03" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_003.obj"/>
+    <mesh name="v_04" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_004.obj"/>
+    <mesh name="v_05" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_005.obj"/>
+    <mesh name="v_06" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_006.obj"/>
+    <mesh name="v_07" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_007.obj"/>
+    <mesh name="v_08" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_008.obj"/>
+    <mesh name="v_09" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_009.obj"/>
+    <mesh name="v_10" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_010.obj"/>
+    <mesh name="v_11" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_011.obj"/>
+    <mesh name="v_12" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_012.obj"/>
+    <mesh name="v_13" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_013.obj"/>
+    <mesh name="v_14" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_014.obj"/>
+    <mesh name="v_15" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_015.obj"/>
+    <mesh name="v_16" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_016.obj"/>
+    <mesh name="v_17" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_017.obj"/>
+    <mesh name="v_18" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_018.obj"/>
+    <mesh name="v_19" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_019.obj"/>
+    <mesh name="v_20" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_020.obj"/>
+    <mesh name="v_21" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_021.obj"/>
+    <mesh name="v_22" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_022.obj"/>
+    <mesh name="v_23" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_023.obj"/>
+    <mesh name="v_24" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_024.obj"/>
+    <mesh name="v_25" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_025.obj"/>
+    <mesh name="v_26" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_026.obj"/>
+    <mesh name="v_27" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_027.obj"/>
+    <mesh name="v_28" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_028.obj"/>
+    <mesh name="v_29" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_029.obj"/>
+    <mesh name="v_30" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_030.obj"/>
+    <mesh name="v_31" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_031.obj"/>
+    <mesh name="v_32" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_032.obj"/>
+    <mesh name="v_33" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_033.obj"/>
+    <mesh name="v_34" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_034.obj"/>
+    <mesh name="v_35" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_035.obj"/>
+    <mesh name="v_36" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_036.obj"/>
+    <mesh name="v_37" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_037.obj"/>
+    <mesh name="v_38" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_038.obj"/>
+    <mesh name="v_39" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_039.obj"/>
+    <mesh name="v_40" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_040.obj"/>
+    <mesh name="v_41" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_041.obj"/>
+    <mesh name="v_42" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_042.obj"/>
+    <mesh name="v_43" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_043.obj"/>
+    <mesh name="v_44" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_044.obj"/>
+    <mesh name="v_45" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_045.obj"/>
+    <mesh name="v_46" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_046.obj"/>
+    <mesh name="v_47" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_047.obj"/>
+    <mesh name="v_48" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_048.obj"/>
+    <mesh name="v_49" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_049.obj"/>
+    <mesh name="v_50" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_050.obj"/>
+    <mesh name="v_51" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_051.obj"/>
+    <mesh name="v_52" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_052.obj"/>
+    <mesh name="v_53" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_053.obj"/>
+    <mesh name="v_54" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_054.obj"/>
+    <mesh name="v_55" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_055.obj"/>
+    <mesh name="v_56" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase/part_056.obj"/>
+
+
+    <mesh name="v_2_00" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_000.obj"/>
+    <mesh name="v_2_01" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_001.obj"/>
+    <mesh name="v_2_02" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_002.obj"/>
+    <mesh name="v_2_03" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_003.obj"/>
+    <mesh name="v_2_04" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_004.obj"/>
+    <mesh name="v_2_05" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_005.obj"/>
+    <mesh name="v_2_06" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_006.obj"/>
+    <mesh name="v_2_07" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_007.obj"/>
+    <mesh name="v_2_08" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_008.obj"/>
+    <mesh name="v_2_09" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_009.obj"/>
+    <mesh name="v_2_10" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_010.obj"/>
+    <mesh name="v_2_11" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_011.obj"/>
+    <mesh name="v_2_12" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_012.obj"/>
+    <mesh name="v_2_13" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_013.obj"/>
+    <mesh name="v_2_14" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_014.obj"/>
+    <mesh name="v_2_15" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_015.obj"/>
+    <mesh name="v_2_16" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_016.obj"/>
+    <mesh name="v_2_17" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_017.obj"/>
+    <mesh name="v_2_18" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_018.obj"/>
+    <mesh name="v_2_19" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_019.obj"/>
+    <mesh name="v_2_20" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_020.obj"/>
+    <mesh name="v_2_21" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_021.obj"/>
+    <mesh name="v_2_22" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_022.obj"/>
+    <mesh name="v_2_23" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_023.obj"/>
+    <mesh name="v_2_24" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_024.obj"/>
+    <mesh name="v_2_25" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_025.obj"/>
+    <mesh name="v_2_26" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_026.obj"/>
+    <mesh name="v_2_27" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_027.obj"/>
+    <mesh name="v_2_28" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_028.obj"/>
+    <mesh name="v_2_29" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_029.obj"/>
+    <mesh name="v_2_30" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_030.obj"/>
+    <mesh name="v_2_31" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_031.obj"/>
+    <mesh name="v_2_32" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_032.obj"/>
+    <mesh name="v_2_33" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_033.obj"/>
+    <mesh name="v_2_34" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_034.obj"/>
+    <mesh name="v_2_35" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_035.obj"/>
+    <mesh name="v_2_36" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_036.obj"/>
+    <mesh name="v_2_37" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_037.obj"/>
+    <mesh name="v_2_38" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_038.obj"/>
+    <mesh name="v_2_39" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_039.obj"/>
+    <mesh name="v_2_40" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_040.obj"/>
+    <mesh name="v_2_41" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_041.obj"/>
+    <mesh name="v_2_42" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_042.obj"/>
+    <mesh name="v_2_43" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_043.obj"/>
+    <mesh name="v_2_44" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_044.obj"/>
+    <mesh name="v_2_45" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_045.obj"/>
+    <mesh name="v_2_46" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_046.obj"/>
+    <mesh name="v_2_47" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_047.obj"/>
+    <mesh name="v_2_48" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_048.obj"/>
+    <mesh name="v_2_49" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_049.obj"/>
+    <mesh name="v_2_50" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_050.obj"/>
+    <mesh name="v_2_51" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_051.obj"/>
+    <mesh name="v_2_52" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_052.obj"/>
+    <mesh name="v_2_53" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_053.obj"/>
+    <mesh name="v_2_54" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_054.obj"/>
+    <mesh name="v_2_55" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_055.obj"/>
+    <mesh name="v_2_56" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_056.obj"/>
+    <mesh name="v_2_57" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_057.obj"/>
+    <mesh name="v_2_58" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_058.obj"/>
+    <mesh name="v_2_59" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_059.obj"/>
+    <mesh name="v_2_60" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_060.obj"/>
+    <mesh name="v_2_61" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_061.obj"/>
+    <mesh name="v_2_62" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_062.obj"/>
+    <mesh name="v_2_63" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/vase2/part_063.obj"/>
+
+
+    <mesh name="f_00" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_000.obj"/>
+    <mesh name="f_01" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_001.obj"/>
+    <mesh name="f_02" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_002.obj"/>
+    <mesh name="f_03" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_003.obj"/>
+    <mesh name="f_04" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_004.obj"/>
+    <mesh name="f_05" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_005.obj"/>
+    <mesh name="f_06" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_006.obj"/>
+    <mesh name="f_07" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_007.obj"/>
+    <mesh name="f_08" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_008.obj"/>
+    <mesh name="f_09" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_009.obj"/>
+    <mesh name="f_10" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_010.obj"/>
+    <mesh name="f_11" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_011.obj"/>
+    <mesh name="f_12" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_012.obj"/>
+    <mesh name="f_13" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_013.obj"/>
+    <mesh name="f_14" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_014.obj"/>
+    <mesh name="f_15" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_015.obj"/>
+    <mesh name="f_16" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_016.obj"/>
+    <mesh name="f_17" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_017.obj"/>
+    <mesh name="f_18" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_018.obj"/>
+    <mesh name="f_19" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_019.obj"/>
+    <mesh name="f_20" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_020.obj"/>
+    <mesh name="f_21" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_021.obj"/>
+    <mesh name="f_22" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_022.obj"/>
+    <mesh name="f_23" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_023.obj"/>
+    <mesh name="f_24" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_024.obj"/>
+    <mesh name="f_25" file="../../../../../../models/tasks/table30/_13_arrange_flowers/meshes/flower1/part_025.obj"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    
+    <!-- <camera fovy="43.365" name="front" pos="1.516 0.044 1.111" xyaxes="-0.043 0.999 -0.000 -0.551 -0.023 0.834"/> -->
+    <!-- <camera fovy="43.36" name="front" pos="1.070 0.029 0.747" xyaxes="-0.109 0.993 0.038 -0.659 -0.101 0.745"/> -->
+    <!-- <camera  name="front"  pos="-0.177 1.006 0.619" xyaxes="-0.863 -0.506 -0.000 0.162 -0.276 0.947"/> -->
+    <!-- <camera  name="front" pos="0.752 0.014 0.404" xyaxes="0.386 0.923 0.000 -0.486 0.203 0.850"/> -->
+
+
+    <camera fovy="43.36" name="front" pos="1.0372 0.0372 0.6834" xyaxes="-0.109 0.993 0.038 -0.6451 -0.1089 0.7563"/>
+
+    <!-- <camera  name="front"  pos="1.792 -0.010 0.242" xyaxes="0.007 1.000 -0.000 0.106 -0.001 0.994"/> -->
+
+    <geom name="range" type="box" pos="0.45 0 0.055" size="0.05 0.2 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
+
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    <geom name="table" pos="0.45 0.06 0.0442" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+
+    <body mocap="true" name="vase" pos="0.500104 0.155969 0.128147" quat="0.998155 -0.0537224 -0.0272153 -0.00775212" >
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
+      <geom mesh="v_00" class="vase_part"/>
+      <geom mesh="v_01" class="vase_part"/>
+      <geom mesh="v_02" class="vase_part"/>
+      <geom mesh="v_03" class="vase_part"/>
+      <geom mesh="v_04" class="vase_part"/>
+      <geom mesh="v_05" class="vase_part"/>
+      <geom mesh="v_06" class="vase_part"/>
+      <geom mesh="v_07" class="vase_part"/>
+      <geom mesh="v_08" class="vase_part"/>
+      <geom mesh="v_09" class="vase_part"/>
+      <geom mesh="v_10" class="vase_part"/>
+      <geom mesh="v_11" class="vase_part"/>
+      <geom mesh="v_12" class="vase_part"/>
+      <geom mesh="v_13" class="vase_part"/>
+      <geom mesh="v_14" class="vase_part"/>
+      <geom mesh="v_15" class="vase_part"/>
+      <geom mesh="v_16" class="vase_part"/>
+      <geom mesh="v_17" class="vase_part"/>
+      <geom mesh="v_18" class="vase_part"/>
+      <geom mesh="v_19" class="vase_part"/>
+      <geom mesh="v_20" class="vase_part"/>
+      <geom mesh="v_21" class="vase_part"/>
+      <geom mesh="v_22" class="vase_part"/>
+      <geom mesh="v_23" class="vase_part"/>
+      <geom mesh="v_24" class="vase_part"/>
+      <geom mesh="v_25" class="vase_part"/>
+      <geom mesh="v_26" class="vase_part"/>
+      <geom mesh="v_27" class="vase_part"/>
+      <geom mesh="v_28" class="vase_part"/>
+      <geom mesh="v_29" class="vase_part"/>
+      <geom mesh="v_30" class="vase_part"/>
+      <geom mesh="v_31" class="vase_part"/>
+      <geom mesh="v_32" class="vase_part"/>
+      <geom mesh="v_33" class="vase_part"/>
+      <geom mesh="v_34" class="vase_part"/>
+      <geom mesh="v_35" class="vase_part"/>
+      <geom mesh="v_36" class="vase_part"/>
+      <geom mesh="v_37" class="vase_part"/>
+      <geom mesh="v_38" class="vase_part"/>
+      <geom mesh="v_39" class="vase_part"/>
+      <geom mesh="v_40" class="vase_part"/>
+      <geom mesh="v_41" class="vase_part"/>
+      <geom mesh="v_42" class="vase_part"/>
+      <geom mesh="v_43" class="vase_part"/>
+      <geom mesh="v_44" class="vase_part"/>
+      <geom mesh="v_45" class="vase_part"/>
+      <geom mesh="v_46" class="vase_part"/>
+      <geom mesh="v_47" class="vase_part"/>
+      <geom mesh="v_48" class="vase_part"/>
+      <geom mesh="v_49" class="vase_part"/>
+      <geom mesh="v_50" class="vase_part"/>
+      <geom mesh="v_51" class="vase_part"/>
+      <geom mesh="v_52" class="vase_part"/>
+      <geom mesh="v_53" class="vase_part"/>
+      <geom mesh="v_54" class="vase_part"/>
+      <geom mesh="v_55" class="vase_part"/>
+      <geom mesh="v_56" class="vase_part"/>
+    </body>
+
+    <body mocap="true" name="vase2" pos="0.5 0.0 0.125" >
+      <!-- <joint type="free" frictionloss="0.0001"/> -->
+      <geom mesh="v_2_00" class="vase_part"/>
+      <geom mesh="v_2_01" class="vase_part"/>
+      <geom mesh="v_2_02" class="vase_part"/>
+      <geom mesh="v_2_03" class="vase_part"/>
+      <geom mesh="v_2_04" class="vase_part"/>
+      <geom mesh="v_2_05" class="vase_part"/>
+      <geom mesh="v_2_06" class="vase_part"/>
+      <geom mesh="v_2_07" class="vase_part"/>
+      <geom mesh="v_2_08" class="vase_part"/>
+      <geom mesh="v_2_09" class="vase_part"/>
+      <geom mesh="v_2_10" class="vase_part"/>
+      <geom mesh="v_2_11" class="vase_part"/>
+      <geom mesh="v_2_12" class="vase_part"/>
+      <geom mesh="v_2_13" class="vase_part"/>
+      <geom mesh="v_2_14" class="vase_part"/>
+      <geom mesh="v_2_15" class="vase_part"/>
+      <geom mesh="v_2_16" class="vase_part"/>
+      <geom mesh="v_2_17" class="vase_part"/>
+      <geom mesh="v_2_18" class="vase_part"/>
+      <geom mesh="v_2_19" class="vase_part"/>
+      <geom mesh="v_2_20" class="vase_part"/>
+      <geom mesh="v_2_21" class="vase_part"/>
+      <geom mesh="v_2_22" class="vase_part"/>
+      <geom mesh="v_2_23" class="vase_part"/>
+      <geom mesh="v_2_24" class="vase_part"/>
+      <geom mesh="v_2_25" class="vase_part"/>
+      <geom mesh="v_2_26" class="vase_part"/>
+      <geom mesh="v_2_27" class="vase_part"/>
+      <geom mesh="v_2_28" class="vase_part"/>
+      <geom mesh="v_2_29" class="vase_part"/>
+      <geom mesh="v_2_30" class="vase_part"/>
+      <geom mesh="v_2_31" class="vase_part"/>
+      <geom mesh="v_2_32" class="vase_part"/>
+      <geom mesh="v_2_33" class="vase_part"/>
+      <geom mesh="v_2_34" class="vase_part"/>
+      <geom mesh="v_2_35" class="vase_part"/>
+      <geom mesh="v_2_36" class="vase_part"/>
+      <geom mesh="v_2_37" class="vase_part"/>
+      <geom mesh="v_2_38" class="vase_part"/>
+      <geom mesh="v_2_39" class="vase_part"/>
+      <geom mesh="v_2_40" class="vase_part"/>
+      <geom mesh="v_2_41" class="vase_part"/>
+      <geom mesh="v_2_42" class="vase_part"/>
+      <geom mesh="v_2_43" class="vase_part"/>
+      <geom mesh="v_2_44" class="vase_part"/>
+      <geom mesh="v_2_45" class="vase_part"/>
+      <geom mesh="v_2_46" class="vase_part"/>
+      <geom mesh="v_2_47" class="vase_part"/>
+      <geom mesh="v_2_48" class="vase_part"/>
+      <geom mesh="v_2_49" class="vase_part"/>
+      <geom mesh="v_2_50" class="vase_part"/>
+      <geom mesh="v_2_51" class="vase_part"/>
+      <geom mesh="v_2_52" class="vase_part"/>
+      <geom mesh="v_2_53" class="vase_part"/>
+      <geom mesh="v_2_54" class="vase_part"/>
+      <geom mesh="v_2_55" class="vase_part"/>
+      <geom mesh="v_2_56" class="vase_part"/>
+      <geom mesh="v_2_57" class="vase_part"/>
+      <geom mesh="v_2_58" class="vase_part"/>
+      <geom mesh="v_2_59" class="vase_part"/>
+      <geom mesh="v_2_60" class="vase_part"/>
+      <geom mesh="v_2_61" class="vase_part"/>
+      <geom mesh="v_2_62" class="vase_part"/>
+      <geom mesh="v_2_63" class="vase_part"/>
+
+    </body>
+
+    <body name="flower" pos="0.50923735  0.09158508  0.3088754" quat="0.79761565 -0.56622934 -0.1156914   0.17265323 ">
+      <joint type="free" frictionloss="0.0001"/>
+      
+        <geom mesh="f_00" class="flower_part"/>
+        <geom mesh="f_01" class="flower_part"/>
+        <geom mesh="f_02" class="flower_part"/>
+        <geom mesh="f_03" class="flower_part"/>
+        <geom mesh="f_04" class="flower_part"/>
+        <geom mesh="f_05" class="flower_part"/>
+        <geom mesh="f_06" class="flower_part"/>
+        <geom mesh="f_07" class="flower_part"/>
+        <geom mesh="f_08" class="flower_part"/>
+        <geom mesh="f_09" class="flower_part"/>
+        <geom mesh="f_10" class="flower_part"/>
+        <geom mesh="f_11" class="flower_part"/>
+        <geom mesh="f_12" class="flower_part"/>
+        <geom mesh="f_13" class="flower_part"/>
+        <geom mesh="f_14" class="flower_part"/>
+        <geom mesh="f_15" class="flower_part"/>
+        <geom mesh="f_16" class="flower_part"/>
+        <geom mesh="f_17" class="flower_part"/>
+        <geom mesh="f_18" class="flower_part"/>
+        <geom mesh="f_19" class="flower_part"/>
+        <geom mesh="f_20" class="flower_part"/>
+        <geom mesh="f_21" class="flower_part"/>
+        <geom mesh="f_22" class="flower_part"/>
+        <geom mesh="f_23" class="flower_part"/>
+        <geom mesh="f_24" class="flower_part"/>
+        <geom mesh="f_25" class="flower_part"/>
+    </body>
+    
+    <body mocap="true" name="mocap_target">
+      <site name="mocap_target_site" size='0.001' type='sphere'/>
+      <geom name="mocap_target_box" type="box" size="0.02 0.02 0.02" density="0" contype="0" conaffinity="0" rgba="0.3 0.6 0.3 0.2"/>
+    </body>
+  </worldbody>
+  
+  <keyframe>
+    <key name = "home" 
+      qpos='0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 
+            0 0 0 0 0 0
+
+            0.546549 0.212547 0.192837 0.325759 -0.0145615 -0.0148738 0.945224'
+      ctrl="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 0"
+/>
+      <!-- <key name = "home"  qpos='0.000651506 -0.780348 0.000170309 -2.75423 0.00298 2.64 -0.00757809
+        0.025934 0.026237 0.0265545 0.0261839 0.0264856 0.0268017 
+        0.45 -0.06 0.0814799 0.519306 -0.559584 0.47483 0.437862'
+        ctrl="0.000651506 -0.780348 0.000170309 -2.75423 0.00298 2.64 -0.00757809  0"/> 
+                    0.500104 0.155969 0.128147 0.998155 -0.0537224 -0.0272153 -0.00775212 
+-->
+            <!-- 0.500104 0.155969 0.128147 0.998155 -0.0537224 -0.0272153 -0.00775212 
+            0.495827 0.000949333 0.127613 0.999571 -0.00662342 -0.0285412 0.000397061  -->
+  </keyframe>
+</mujoco>

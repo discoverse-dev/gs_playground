@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
-from .motrix_env.base import ABEnv, EnvCfg
+from .base import ABEnv, EnvCfg
 
 TEnvCfg = TypeVar("TEnvCfg", bound=EnvCfg)
 
@@ -55,8 +55,8 @@ def envcfg(name: str) -> Callable[[Type[TEnvCfg]], Type[TEnvCfg]]:
 
 def register_env(name: str, env_cls: Type[ABEnv], sim_backend: str):
     """Register an environment class with a name and simulation backend."""
-    if sim_backend not in ["np"]:
-        raise ValueError(f"Unsupported simulation backend: {sim_backend}. Only 'np' is supported yet.")
+    if sim_backend not in ["np", "mujoco"]:
+        raise ValueError(f"Unsupported simulation backend: {sim_backend}. Only 'np' and 'mujoco' are supported.")
 
     if name not in _envs:
         raise ValueError(f"Environment '{name}' is not registered. Please register the config first.")

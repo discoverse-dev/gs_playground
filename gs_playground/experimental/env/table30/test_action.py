@@ -30,7 +30,7 @@ def _extract_rgb(obs: dict) -> np.ndarray:
     """Pick RGB batch from obs; prefer pixels/view_0."""
     view_keys = sorted([k for k in obs.keys() if k.startswith("pixels/view_")])
     if view_keys:
-        return np.asarray(obs[view_keys[0]], dtype=np.uint8)
+        return np.asarray(obs[view_keys[1]], dtype=np.uint8)
     return None
 
 def _get_robot_state(obs: dict, mode: str) -> np.ndarray:
@@ -161,7 +161,7 @@ def run_test_mode(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env", type=str, default="table30/stack_color_blocks_franka")
+    parser.add_argument("--env", type=str, default="table30/hang_toothbrush_cup")
     parser.add_argument("--output_dir", type=str, default="output/test_action")
     args = parser.parse_args()
 

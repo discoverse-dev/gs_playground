@@ -2,7 +2,7 @@
   <!-- Robot -->
   <include file="panda_robotiq.xml"/>
 
-  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+  <option timestep="0.005"  ls_iterations="8" integrator="implicitfast">
     <flag eulerdamp="disable"/>
   </option>
 
@@ -101,6 +101,9 @@
     <mesh name="toothbrush_cup_mesh_62" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_062.obj"/>
     <mesh name="toothbrush_cup_mesh_63" file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/toothbrush_cup/part_063.obj"/>
 
+
+
+
     <mesh name="rack_mesh_0"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_000.obj"/>
     <mesh name="rack_mesh_1"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_001.obj"/>
     <mesh name="rack_mesh_2"       file="../../../../../tasks/table30/_04_hang_toothbrush_cup/meshes/rack/part_002.obj"/>
@@ -117,16 +120,18 @@
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
 
-    <camera fovy="43.365" name="front" pos="1.574 0.022 1.073" xyaxes="-0.029 1.000 0.000 -0.488 -0.014 0.872"/>
+    <camera fovy="43.36" name="front" pos="1.0372 0.0372 0.6834" xyaxes="-0.109 0.993 0.038 -0.6451 -0.1089 0.7563"/>
+    <!-- <geom name="range" type="box" pos="0.45 -0.05 0.055" size="0.14 0.14 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
+     -->
+    <geom name="range" type="box" pos="0.44 0.02 0.055" size="0.125 0.225 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
-    <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
-
-    <geom name="range" type="box" pos="0.45 0 0.075" size="0.14 0.14 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
+    <geom name="table" pos="0.45 0.06 0.0442" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
 
     <!-- Rack/Hooks: static body -->
-    <body name="rack" pos="0.539524 0.323790 0.174200" quat="0.721105 0 0 -0.692826">
+    <body name="rack" pos="0.5 0.233790 0.154200" quat="0.721105 0 0 -0.692826">
       <!-- <joint type="free" frictionloss="0.0001"/> -->
+
       <!-- collision + visual. If your rack mesh is non-convex, prefer primitive colliders in code. -->
       <geom name="rack_geom_0" type="mesh" mesh="rack_mesh_0" material="rack_mat" contype="1" conaffinity="1"/>
       <geom name="rack_geom_1" type="mesh" mesh="rack_mesh_1" material="rack_mat" contype="1" conaffinity="1"/>
@@ -142,7 +147,7 @@
     </body>
 
     <!-- Red bottle: dynamic free body -->
-    <body name="toothbrush_cup" pos="0.515367 0.056162 0.105959" quat="1 0 0 0">    
+    <body name="toothbrush_cup" pos="0.515367 0.056162 0.085959" quat="1 0 0 0">    
       <joint type="free"/>
       <geom name="toothbrush_cup_geom_0" type="mesh" mesh="toothbrush_cup_mesh_0" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <geom name="toothbrush_cup_geom_1" type="mesh" mesh="toothbrush_cup_mesh_1" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
@@ -215,7 +220,7 @@
       <geom name="toothbrush_cup_geom_62" type="mesh" mesh="toothbrush_cup_mesh_62" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <geom name="toothbrush_cup_geom_63" type="mesh" mesh="toothbrush_cup_mesh_63" material="toothbrush_cup_mat"  contype="1" conaffinity="1" class = "cup"/>
       <!-- site for detecting bottle grasping -->
-      <site name="bottle_grasp_site" pos="0.0 0.0 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 1" group="3"/>
+      <site name="bottle_grasp_site" pos="0.039945 -0.002089 0.0"  type="box" size="0.04 0.06 0.02"  rgba="0.1 0.1 0.8 1" group="3"/>
     </body>
 
     <!-- Mocap target -->
@@ -236,9 +241,10 @@
 
   <keyframe>
     <key name="home"
-      qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
-        0.515367 0.056162 0.105959 -0.725325 -0.00304526 0.00311753 0.688392"
-      ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
+      qpos="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414  
+       0 0 0 0 0 0
+        0.515367 0.056162 0.085959 -0.725325 -0.00304526 0.00311753 0.688392"
+      ctrl="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414   0"
     />
     <!-- <key name ="pick"
       qpos="0.144298 -0.0181929 -0.0260173 -2.69614 -0.00500998 2.73329 -0.0455701 

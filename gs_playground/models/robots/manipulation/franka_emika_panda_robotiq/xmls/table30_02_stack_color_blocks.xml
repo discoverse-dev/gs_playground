@@ -4,7 +4,7 @@
 
   <statistic center="0.5 0 0.2" extent="0.8"/>
 
-  <option timestep="0.002" iterations="50" ls_iterations="20" integrator="implicitfast">
+  <option timestep="0.002" iterations="100" ls_iterations="20" integrator="implicitfast">
     <flag eulerdamp="disable"/>
   </option>
 
@@ -31,27 +31,27 @@
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
     
-    <camera fovy="43.365" name="front" pos="1.516 0.044 1.111" xyaxes="-0.043 0.999 -0.000 -0.551 -0.023 0.834"/>
-
-    <geom name="range" type="box" pos="0.5 0.02 0.075" size="0.125 0.225 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
+    <!-- <camera fovy="43.365" name="front" pos="1.516 0.044 1.111" xyaxes="-0.043 0.999 -0.000 -0.551 -0.023 0.834"/> -->
+    <camera fovy="43.36" name="front" pos="1.070 0.029 0.747" xyaxes="-0.109 0.993 0.038 -0.659 -0.101 0.745"/>
+    <geom name="range" type="box" pos="0.5 0.02 0.055" size="0.125 0.225 0.001" quat="1 0 0 0.02" contype="0" conaffinity="0" rgba="0 1 1 0.2"/>
 
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
-    <geom name="table" pos="0.45 0.06 0.0642" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
-    <body name="cube_blue" pos="0.497742 -0.100449 0.0990922" >
+    <geom name="table" pos="0.45 0.06 0.0442" quat="1 0 0 0.02" size="0.33 0.525 0.01" type="box" contype="1" rgba="0.6 0.6 0.6 1"/>
+    <body name="cube_blue" pos="0.497742 -0.100449 0.08" >
       <joint type="free" frictionloss="0.0001"/>
       <geom name="cube_blue_vis" type="mesh" mesh="cube_blue_mesh" material="cube_blue_mat" contype="0" conaffinity="0"/>
       <geom name="cube_blue_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1"  contype="1" conaffinity="1" group="3"/>
       <site name="cube_blue_center" pos="0 0 0" type="box" size="0.03 0.03 0.02"  rgba="1 0 0 0.6" group="4"/>
     </body>
 
-    <body name="cube_yellow" pos="0.5145 0.0267 0.1">
+    <body name="cube_yellow" pos="0.5145 0.0267 0.8">
         <joint type="free" frictionloss="0.0001"/>
         <geom name="cube_yellow_vis" type="mesh" mesh="cube_yellow_mesh" material="cube_yellow_mat" contype="0" conaffinity="0"/>
         <geom name="cube_yellow_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1" contype="1" conaffinity="1" group="3"/>
         <site name="cube_yellow_center" pos="0 0 0" type="box" size="0.03 0.03 0.02" rgba="1 1 1 1" group="4"/>
     </body>
 
-    <body name="cube_orange" pos="0.5230 0.1418 0.1" >
+    <body name="cube_orange" pos="0.5230 0.1418 0.8" >
       <joint type="free" frictionloss="0.0001"/>
       <geom name="cube_orange_vis" type="mesh" mesh="cube_orange_mesh" material="cube_orange_mat" contype="0" conaffinity="0"/>
       <geom name="cube_orange_box" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1" contype="1" conaffinity="1" group="3"/>
@@ -73,11 +73,12 @@
   
   <keyframe>
     <key name="home"
-      qpos="0 -0.76219644 0 -2.75629741 0 1.96083466 0 0 0 0 0 0 0
-            0.497741 -0.100448 0.0990922 1 0 0 0
-            0.5145 0.0267016 0.0990922  1 0 0 0
-            0.522999 0.141801 0.0990922  1 0 0 0"
-       ctrl="-0.0246302 -0.29971 -0.0252932 -2.77454 -0.00471172 2.7329 -0.0455642 0"
+      qpos="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 
+            0 0 0 0 0 0
+            0.497741 -0.100448 0.0790922 1 0 0 0
+            0.5145 0.0267016 0.0790922  1 0 0 0
+            0.522999 0.141801 0.0790922  1 0 0 0"
+       ctrl="0.0006515062070403818 -0.7803480700396634 0.00017030853030599173 -2.75422728452774 0.0029799970628169147 1.95947888200644 -0.007578092728450414 0"
     />
   </keyframe>
   
