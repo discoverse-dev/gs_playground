@@ -1,0 +1,72 @@
+<mujoco model="panda single cube camera">
+  <include file="robotiq_mocap.xml"/>
+  <statistic center="0.3 0 0.4" extent="1"/>
+
+  <option timestep="0.002" integrator="implicitfast" noslip_iterations="2" noslip_tolerance="1e-5">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <camera fovy="42" name="front" pos="1.176 0.001 0.483" xyaxes="0.006 1.000 -0.000 -0.720 0.004 0.694"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    <geom name="init_space" size="0.02 1 0.01" type="plane" pos="0.65 0 0.001" rgba="1 1 1 1" contype="0" conaffinity="0"/>
+    <body name="box" pos="0.65 0 0.03">
+      <freejoint/>
+      <site name="box_site" size="0.01" type="sphere" rgba="0 1 0 0.3"/>
+      <geom type="box" name="box" size="0.02 0.02 0.03" friction="1.5 0.005 0.0001" rgba="1 0 0 1" contype="1" conaffinity="1" solref="0.002 1.0" solimp="0.9 0.95 0.001"/>
+    </body>
+    <!-- <body name="mocap_target" pos="0.65 0.15 0.15" gravcomp="1"> -->
+    <body name="mocap_target" gravcomp="1">
+      <joint type="slide" axis="1 0 0" name="target_x" damping="0.1"/>
+      <joint type="slide" axis="0 1 0" name="target_y" damping="0.1"/>
+      <joint type="slide" axis="0 0 1" name="target_z" damping="0.1"/>
+      <!-- Fixed orientation for now, or add ball/hinge if needed -->
+      <site name="mocap_target_site" size="0.01" type="sphere" rgba="0 1 0 0.3"/>
+      <geom type="box" size="0.02 0.02 0.03" rgba="0 1 0 0.15" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <contact name="left_finger_pad_floor_found" geom1="left_finger_pad" geom2="floor" reduce="mindist" num="1" data="found"/>
+    <contact name="right_finger_pad_floor_found" geom1="right_finger_pad" geom2="floor" reduce="mindist" num="1" data="found"/>
+    <framepos objtype="site" objname="box_site" name="box_pos"/>
+    <framequat objtype="site" objname="box_site" name="box_quat"/>
+    <framepos objtype="site" objname="mocap_target_site" name="mocap_target_pos"/>
+    <framequat objtype="site" objname="mocap_target_site" name="mocap_target_quat"/>
+    <jointpos name="root_x_pos" joint="root_x"/>
+    <jointpos name="root_y_pos" joint="root_y"/>
+    <jointpos name="root_z_pos" joint="root_z"/>
+    <framezaxis objtype="site" objname="box_site" name="box_zaxis"/>
+  </sensor>
+
+  <keyframe>
+    <!-- QPos Order: 
+         0-2: Root Translate (X,Y,Z)
+         3-5: Root Rotate (Z,Y,X)
+         6-11: Gripper Joints (Driver, Spring, Follower...)
+         12-18: Box Joint (X,Y,Z, QW,QX,QY,QZ)
+    -->
+    <key name="home"
+      qpos="0.65 0 0.35  0 0 0  0 0 0 0 0 0  0.65 0 0.03 1 0 0 0"
+      ctrl="0.65 0 0.35 0 0 0 0"
+    />
+    <key name="pick"
+      qpos="0.65 0 0.2  0 0 0  0.51 0.51 0.51 0.51 0.51 0.51  0.65 0 0.03 1 0 0 0"
+      ctrl="0.65 0 0.2 0 0 0 0.55"
+    />
+
+  </keyframe>
+</mujoco>

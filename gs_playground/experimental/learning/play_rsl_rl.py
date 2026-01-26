@@ -15,10 +15,11 @@ from functools import partial
 # Add paths
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
+from gs_playground.src.env import registry
+# Import envs to trigger registration
 from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
-from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
 from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
-from gs_playground.src.locomotion.go1.cfg import Go1WalkNpEnvCfg
+from gs_playground.src.manipulation.tasks.eef.pick_cartesian import FrankaPickCartesian
 from gs_playground.experimental.learning.train_rsl_rl import RslMjEnvWrapper
 from rsl_rl.runners import OnPolicyRunner
 
@@ -65,8 +66,28 @@ def render_frame_job(args):
         d.qpos[:] = s[1:1+model.nq]
         d.qvel[:] = s[1+model.nq:1+model.nq+model.nv]
         if offset is not None:
+            # 1. Robot root (assumed 0, 1)
             d.qpos[0] += offset[0]
             d.qpos[1] += offset[1]
+
+            # 2. Box offset
+            box_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "box")
+            if box_id >= 0:
+                jnt_adr = model.body_jntadr[box_id]
+                if jnt_adr >= 0:
+                    qpos_adr = model.jnt_qposadr[jnt_adr]
+                    d.qpos[qpos_adr] += offset[0]
+                    d.qpos[qpos_adr+1] += offset[1]
+
+            # 3. Target offset (target_x, target_y)
+            target_x = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "target_x")
+            if target_x >= 0:
+                 d.qpos[model.jnt_qposadr[target_x]] += offset[0]
+            
+            target_y = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "target_y")
+            if target_y >= 0:
+                 d.qpos[model.jnt_qposadr[target_y]] += offset[1]
+
         mujoco.mj_forward(model, d)
         
     num_envs = state_batch.shape[0]
@@ -80,9 +101,10 @@ def render_frame_job(args):
         center_x = np.mean(offsets[:, 0])
         center_y = np.mean(offsets[:, 1])
         cam.lookat = [center_x, center_y, 0.0]
-        cam.distance = 4.5
-        cam.elevation = -15
-        cam.azimuth = 90
+        # cam.lookat = [0.65, 0, 0.2]
+        cam.distance = 3.0
+        cam.elevation = -20
+        cam.azimuth = 15
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
     else:
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
@@ -131,16 +153,17 @@ def find_latest_model(log_dir):
     print(f"Found latest model: {files[0]}")
     return files[0]
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", type=str, default="go2", choices=["go1", "go2"], help="Robot type: go1 or go2")
+    parser.add_argument("--task", type=str, required=True, help="Task name registered in registry")
     parser.add_argument("--model", type=str, default=None, help="Path to model checkoint")
     args = parser.parse_args()
 
     # Config
-    num_envs = 4 # Visualizing 4 dogs
+    num_envs = 64
     max_steps = 300 # 300 steps
-    grid_spacing = 1.0
+    grid_spacing = 1.0 / 2.
     video_fps = 25
     decimation = 2 # Render every 2nd step (50Hz control -> 25fps)
     
@@ -160,21 +183,22 @@ def main():
         
     print(f"Loading model: {model_path}")
     
-    # 1. Environment
-    if args.robot == "go1":
-        env_cfg = Go1WalkNpEnvCfg()
-        env_class = Go1WalkTaskMj
-    elif args.robot == "go2":
-        env_cfg = Go2WalkNpEnvCfg()
-        env_class = Go2WalkTaskMj
+    # 1. Environment using Registry
+    if not registry.contains(args.task):
+         print(f"Error: Task '{args.task}' not found in registry. Available tasks:")
+         print(list(registry._envs.keys()))
+         return
 
-    # Force zero commands for playback
-    # env_cfg.commands.vel_limit is a list [[min], [max]]
-    # We set min and max to 0 to ensure sampled commands are always 0
-    env_cfg.commands.vel_limit = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    print(f"Initializing Env ({args.task}) with {num_envs} envs...")
+    env = registry.make(args.task, num_envs=num_envs)
+    env_cfg = env._cfg # Get config from instance
     
-    print(f"Initializing Env ({args.robot}) with {num_envs} envs...")
-    env = env_class(env_cfg, num_envs=num_envs)
+    # Force zero commands for playback if applicable
+    if hasattr(env_cfg, "commands"):
+        # env_cfg.commands.vel_limit is a list [[min], [max]]
+        # We set min and max to 0 to ensure sampled commands are always 0
+        if hasattr(env_cfg.commands, "vel_limit"):
+             env_cfg.commands.vel_limit = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
     
     if torch.cuda.is_available():
         device = "cuda"
