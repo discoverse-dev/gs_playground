@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, Tuple ,Sequence
 
 import gymnasium as gym
 import motrixsim as mtx
@@ -36,7 +36,7 @@ class StackColorBlocksEnvCfg(TaskEnvCfg):
     # rendering
     img_width: int = 640
     img_height: int = 480
- 
+    cam_id: Sequence[int] = field(default_factory=lambda: [0, 1])
     # observation / prompt
     instruction: str = "Stack the yellow block on top of the orange block."
 

@@ -34,7 +34,7 @@ class CollectorCfg:
     save_dir: str = "./data/table30_arrange_flowers_refactored"
 
     # env control
-    max_ctrl_steps: int = 1700
+    max_ctrl_steps: int = 2000
 
     # motion params
     max_dp: float = 0.005
@@ -730,8 +730,8 @@ class ArrangeFlowersCollector:
                         prompt=prompt,
                         extra_episode=extra_ep,
                     )
-                    if saved:
-                        self.saved_count += 1
+                    
+                    self.saved_count += 1
                 else:
                     self.io.finalize_episode(
                         env_id=int(i),

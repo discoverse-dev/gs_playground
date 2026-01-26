@@ -353,7 +353,7 @@ class StackColorBlocksCollector:
         p_trp_align_y[:, 0] = base_p[:, 0] - 0.015
 
         p_stack = base_p + np.array([0.0, 0.0, 2.0 * float(cfg.cube_half) + 0.005], dtype=np.float32)
-        p_stack[:, 0] = base_p[:, 0] - 0.015
+        p_stack[:, 0] = base_p[:, 0] 
 
         p_retreat = base_p + np.array([0.0, 0.0, float(cfg.lift_dz) + 0.10], dtype=np.float32)
 
