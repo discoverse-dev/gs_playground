@@ -23,7 +23,7 @@ ASSETS_UR5E_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "universal_
 class TaskEnvCfg(RenderEnvCfg):
     # control
     ctrl_dt: float = 0.02
-    max_episode_steps: int = 1500
+    max_episode_steps: int = 2000
     action_mode: str = "joint"  # "joint" or "eef"
 
     # observation / prompt

@@ -3,13 +3,13 @@
 # =============================================================================
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict
 
 import numpy as np
 from motrixsim import SceneData
 from scipy.spatial.transform import Rotation
-
+from typing import Sequence
 from gs_playground import ROOT_PATH
 from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
@@ -22,7 +22,8 @@ _ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "table30" / "_13_arrange_flo
 
 TASK_GAUSSIANS = {
     "flower": _ASSETS_TASK_DIR / "3dgs" / "flower1.ply",
-    "vase": _ASSETS_TASK_DIR / "3dgs" / "transparent_vase.ply",
+    "vase": _ASSETS_TASK_DIR / "3dgs" / "vase.ply",
+    "vase2": _ASSETS_TASK_DIR / "3dgs" / "vase2.ply",
 }
 
 
@@ -49,258 +50,270 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
     # rendering
     img_width: int = 320
     img_height: int = 240
-    cam_id: int = 0
+    cam_id: Sequence[int] = field(default_factory=lambda: [0, 1])
 
     # observation / prompt
-    instruction: str = "Pick up the flower, orient its -Y axis upwards, and insert it into the vase."
+    instruction: str = (
+        "Pick up the flower from the source vase, place it into the target vase, "
+        "then pick it up again and place it back into the source vase."
+    )
 
     # task entities
     flower_name: str = "flower"
-    vase_name: str = "vase"
+    vase_name: str = "vase"       # source vase
+    vase2_name: str = "vase2"     # target vase
 
-    # task params
+    # success checks
     success_dist_xy: float = 0.10
-    success_z_depth: float = 0.02  # 插入深度阈值
-    safe_z = -0.20
+    success_z_depth: float = 0.02
+    safe_z: float = -0.20
 
     gripper_close_thresh: float = 0.2
     grasp_dist_thresh: float = 0.05
 
     vase_rim_height: float = 0.35
 
-    # Sensors (需要在 XML 定义)
-    touch_name_flower: str = "flower_touch"
+    # Alignment (可保留，但此任务你主要 yaw-only；如果想完全不看对齐，可把 alignment_thresh 设到 0)
+    alignment_thresh: float = 0.0
 
-    # Alignment Threshold (cos theta > 0.9 is approx < 25 degrees error)
-    alignment_thresh: float = 0.6
-
-    # Randomization: flower yaw about WORLD Z
-    rand_yaw_deg_min: float = -45.0
-    rand_yaw_deg_max: float = 45.0
+    # -------------------------
+    # Randomization (UPDATED)
+    # -------------------------
+    vase_min_xy_dist: float = 0.15
+    vase_range_center_xy: tuple[float, float] = (0.45, -0.0)
+    vase_range_half_size_xy: tuple[float, float] = (0.05, 0.2)
 
 
 @env("table30/arrange_flowers_franka", "np")
 class ArrangeFlowersEnv(TaskEnv):
     """
-    Task: Arrange Flowers.
-    Target Alignment: Flower's local -Y axis should verify with World Z axis.
-    Randomization: Within geom 'range2' box, with yaw noise around world-Z.
+    Task: Move flower vase -> vase2 -> vase.
+    Randomization: only vase / vase2 XY, with min distance constraint.
+    Flower follows source vase XY by the SAME delta (offset), so flower starts inside source vase.
     """
 
     def __init__(self, cfg: ArrangeFlowersEnvCfg, num_envs: int = 32):
         super().__init__(cfg, num_envs=num_envs)
 
         self.flower_body = self.model.get_body(self.model.get_body_index(cfg.flower_name))
-        self.vase_body = self.model.get_body(self.model.get_body_index(cfg.vase_name))
+        self.vase_src_body = self.model.get_body(self.model.get_body_index(cfg.vase_name))
+        self.vase_dst_body = self.model.get_body(self.model.get_body_index(cfg.vase2_name))
+
+        # Backward compatibility (if some old code expects env.vase_body)
+        self.vase_body = self.vase_src_body
 
         # State trackers
         self.grasp_latched = np.zeros((self.num_envs,), dtype=bool)
         self.inserted_latched = np.zeros((self.num_envs,), dtype=bool)
         self.success_latched = np.zeros((self.num_envs,), dtype=bool)
 
-        # Random yaw caches (full env size; indexed by global env id)
-        self.rand_yaw_rad = np.zeros((self.num_envs,), dtype=np.float32)
-        self.rand_yaw_deg = np.zeros((self.num_envs,), dtype=np.float32)
+        # NEW: stage tracker for two-place task
+        # 0: not placed to dst yet
+        # 1: placed to dst
+        # 2: placed back to src => success
+        self.place_stage = np.zeros((self.num_envs,), dtype=np.int32)
 
     # ---- Task hooks ----
     def task_gaussians(self) -> Dict[str, str]:
         return TASK_GAUSSIANS
 
-    @staticmethod
-    def _wxyz_to_xyzw(q_wxyz: np.ndarray) -> np.ndarray:
-        # q_wxyz: (..., 4) -> (..., 4) xyzw
-        out = np.empty_like(q_wxyz)
-        out[..., 0] = q_wxyz[..., 1]
-        out[..., 1] = q_wxyz[..., 2]
-        out[..., 2] = q_wxyz[..., 3]
-        out[..., 3] = q_wxyz[..., 0]
-        return out
+    def _reset_task_state(self, done: np.ndarray):
+        """Reset latches & stage."""
+        self.grasp_latched[done] = False
+        self.inserted_latched[done] = False
+        self.success_latched[done] = False
+        self.place_stage[done] = 0
 
-    @staticmethod
-    def _xyzw_to_wxyz(q_xyzw: np.ndarray) -> np.ndarray:
-        out = np.empty_like(q_xyzw)
-        out[..., 0] = q_xyzw[..., 3]
-        out[..., 1] = q_xyzw[..., 0]
-        out[..., 2] = q_xyzw[..., 1]
-        out[..., 3] = q_xyzw[..., 2]
-        return out
+    def _check_flower_alignment(self, flower_quat_wxyz: np.ndarray) -> np.ndarray:
+        """
+        Alignment score: -Y(local) aligned with +Z(world).
+        flower_quat_wxyz: (B,4) wxyz
+        """
+        w, x, y, z = (
+            flower_quat_wxyz[:, 0],
+            flower_quat_wxyz[:, 1],
+            flower_quat_wxyz[:, 2],
+            flower_quat_wxyz[:, 3],
+        )
+        vec_y_z_comp = 2.0 * (y * z + w * x)
+        alignment_score = -vec_y_z_comp
+        return alignment_score
 
     def _randomize(self, data: SceneData, done_mask: np.ndarray, phase: str = "reset"):
         """
-        Randomize flower position and yaw. Yaw is about WORLD Z axis, uniform in [-45, 45] deg.
-        Note:
-          - 'data' is typically a sliced SceneData containing only done envs.
-          - done_mask is full-size (num_envs,) mask; use it to map back to global env indices.
+        Only randomize source/target vase XY with min distance.
+        Then move flower XY by the SAME delta as source vase moved.
+
+        NOTE: We intentionally hard-code base vase poses. Therefore we MUST expand them to (n_reset, 7)
+        to match the sliced `data` batch size.
         """
         env_ids = np.where(done_mask)[0]
         n_reset = int(env_ids.size)
         if n_reset == 0:
             return
 
-        # 1) Position Randomization (XY in a box)
-        center_pos = np.array([0.45, -0.1], dtype=np.float32)
-        half_size = np.array([0.05, 0.05], dtype=np.float32)
-
-        rand_xy_offset = self._rng.uniform(-half_size, half_size, size=(n_reset, 2)).astype(np.float32)
-        target_xy = center_pos + rand_xy_offset
-
-        # 2) Current pose in sliced data: (n_reset, 7) = [x,y,z, qw,qx,qy,qz] (wxyz)
-        current_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)
-        new_flower_poses = current_pose.copy()
-
-        new_flower_poses[:, 0] = target_xy[:, 0]
-        new_flower_poses[:, 1] = target_xy[:, 1]
-        new_flower_poses[:, 2] = 0.08  # fixed Z
-
-        # 3) Yaw randomization about WORLD Z
-        yaw_deg = self._rng.uniform(
-            float(self._cfg.rand_yaw_deg_min),
-            float(self._cfg.rand_yaw_deg_max),
-            size=(n_reset,),
-        ).astype(np.float32)
-        yaw_rad = (yaw_deg * np.pi / 180.0).astype(np.float32)
-
-        # cache to full env arrays
-        self.rand_yaw_deg[env_ids] = yaw_deg
-        self.rand_yaw_rad[env_ids] = yaw_rad
-
-        # Apply yaw rotation to object quaternion using scipy Rotation
-        # Object quat in pose is assumed wxyz; scipy uses xyzw.
-        q_cur_wxyz = new_flower_poses[:, 3:7]
-        q_cur_xyzw = self._wxyz_to_xyzw(q_cur_wxyz)
-
-        r_cur = Rotation.from_quat(q_cur_xyzw)                  # (n_reset,)
-        r_yaw = Rotation.from_euler("z", yaw_rad, degrees=False)  # (n_reset,)
-        r_new = r_yaw * r_cur  # left-mul: world/extrinsic Z yaw
-        q_new_xyzw = r_new.as_quat().astype(np.float32)
-        q_new_wxyz = self._xyzw_to_wxyz(q_new_xyzw)
-
-        new_flower_poses[:, 3:7] = q_new_wxyz
-
-        # 4) Apply to sim (sliced data)
-        self.flower_body.set_dof_pos(
-            data,
-            new_flower_poses,
-            include_floatingbase=True,
+        # -------------------------------------------------------------------------
+        # Hard-coded base poses (shape must be (n_reset, 7) for batched writeback)
+        # pose format assumed: [x, y, z, qw, qx, qy, qz] (wxyz)
+        # -------------------------------------------------------------------------
+        base_vase_src_pose = np.array(
+            [0.500104, 0.155969, 0.128147, -0.05372239, -0.0272153, -0.00775212, 0.9981549],
+            dtype=np.float32,
+        )
+        base_vase_dst_pose = np.array(
+            [0.5, 0.0, 0.125, -0.0, -0.0, -0.0, 1.0],
+            dtype=np.float32,
         )
 
-        # 5) Best-effort: write into state.info immediately (so reset() can expose it)
-        try:
-            if hasattr(self, "_state") and hasattr(self._state, "info") and isinstance(self._state.info, dict):
-                if "rand_yaw_rad" not in self._state.info:
-                    self._state.info["rand_yaw_rad"] = np.zeros((self.num_envs,), dtype=np.float32)
-                if "rand_yaw_deg" not in self._state.info:
-                    self._state.info["rand_yaw_deg"] = np.zeros((self.num_envs,), dtype=np.float32)
-                self._state.info["rand_yaw_rad"][env_ids] = yaw_rad
-                self._state.info["rand_yaw_deg"][env_ids] = yaw_deg
-        except Exception:
-            pass
+        vase_src_pose = np.repeat(base_vase_src_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
+        vase_dst_pose = np.repeat(base_vase_dst_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
 
-    def _reset_task_state(self, done: np.ndarray):
-        """Reset latches."""
-        self.grasp_latched[done] = False
-        self.inserted_latched[done] = False
-        self.success_latched[done] = False
+        # Flower pose must match sliced data batch
+        flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)
+        flower_pose = flower_pose.reshape(n_reset, -1)
 
-    def _check_flower_alignment(self, flower_quat: np.ndarray) -> np.ndarray:
-        """
-        Check if flower's negative Y axis is aligned with World Z axis.
+        new_vase_src = vase_src_pose.copy()
+        new_vase_dst = vase_dst_pose.copy()
+        new_flower = flower_pose.copy()
 
-        Here flower_quat is assumed in wxyz (scalar first), consistent with MotrixSim usage in this project.
-        """
-        w, x, y, z = flower_quat[:, 0], flower_quat[:, 1], flower_quat[:, 2], flower_quat[:, 3]
+        # -------------------------------------------------------------------------
+        # Sampling range and constraint
+        # -------------------------------------------------------------------------
+        center = np.array(self._cfg.vase_range_center_xy, dtype=np.float32)       # (2,)
+        half = np.array(self._cfg.vase_range_half_size_xy, dtype=np.float32)     # (2,)
+        lower = center - half
+        upper = center + half
 
-        # Z component of the local Y axis: 2*(y*z + w*x)
-        vec_y_z_comp = 2.0 * (y * z + w * x)
+        min_dist = float(self._cfg.vase_min_xy_dist)
+        max_tries = 200
 
-        # Want -Y pointing up => alignment score = dot(-Y_world, Z_world) = -vec_y_z_comp
-        alignment_score = -vec_y_z_comp
-        return alignment_score  # [-1, 1], 1 is perfect
+        # Sample per-env vase positions with distance constraint
+        cand_src_xy = np.zeros((n_reset, 2), dtype=np.float32)
+        cand_dst_xy = np.zeros((n_reset, 2), dtype=np.float32)
+
+        remaining = np.ones((n_reset,), dtype=bool)
+        for _ in range(max_tries):
+            if not remaining.any():
+                break
+
+            idx = np.where(remaining)[0]
+            m = int(idx.size)
+
+            src_xy = self._rng.uniform(lower, upper, size=(m, 2)).astype(np.float32)
+            dst_xy = self._rng.uniform(lower, upper, size=(m, 2)).astype(np.float32)
+
+            ok = np.linalg.norm(src_xy - dst_xy, axis=1) >= min_dist
+            if ok.any():
+                good = idx[ok]
+                cand_src_xy[good] = src_xy[ok]
+                cand_dst_xy[good] = dst_xy[ok]
+                remaining[good] = False
+
+        # Fallback: use hard-coded base XY for remaining envs
+        if remaining.any():
+            rem = np.where(remaining)[0]
+            cand_src_xy[rem] = vase_src_pose[rem, :2]
+            cand_dst_xy[rem] = vase_dst_pose[rem, :2]
+
+        # -------------------------------------------------------------------------
+        # Apply: move src/dst vase XY; move flower XY by same delta as src vase
+        # -------------------------------------------------------------------------
+        old_src_xy = vase_src_pose[:, :2]           # (n_reset,2) from hard-coded base
+        delta_src = cand_src_xy - old_src_xy        # (n_reset,2)
+
+        new_vase_src[:, 0] = cand_src_xy[:, 0]
+        new_vase_src[:, 1] = cand_src_xy[:, 1]
+
+        new_vase_dst[:, 0] = cand_dst_xy[:, 0]
+        new_vase_dst[:, 1] = cand_dst_xy[:, 1]
+
+        new_flower[:, 0] = flower_pose[:, 0] + delta_src[:, 0]
+        new_flower[:, 1] = flower_pose[:, 1] + delta_src[:, 1]
+
+        # write back (batched, matches sliced data batch size)
+        self.vase_src_body.mocap.set_pose(data, new_vase_src)
+        self.vase_dst_body.mocap.set_pose(data, new_vase_dst)
+        self.flower_body.set_dof_pos(data, new_flower, include_floatingbase=True)
+
+
+
 
     def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
         data: SceneData = state.data
         info: Dict[str, np.ndarray] = state.info
 
-        # 1. Robot State
-        ee_pos = self.robot.get_ee_pose(data)[:, :3]
+        ee_pose = self.robot.get_ee_pose(data)
+        ee_pos = ee_pose[:, :3]
+
         grip_cmd = np.asarray(data.actuator_ctrls)[:, self.robot.gripper_act_id]
         grip_closed = grip_cmd > float(self._cfg.gripper_close_thresh)
+        grip_open = ~grip_closed
 
-        # 2. Object States
         flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)
         flower_pos = flower_pose[:, :3]
-        flower_quat = flower_pose[:, 3:]
+        flower_quat = flower_pose[:, 3:]  # wxyz
 
-        vase_pos = np.asarray(self.vase_body.get_pose(data), dtype=np.float32)[:, :3]
-        vase_rim_pos = vase_pos.copy()
-        vase_rim_pos[:, 2] = self._cfg.vase_rim_height
+        vase_src_pos = np.asarray(self.vase_src_body.get_pose(data), dtype=np.float32)[:, :3]
+        vase_dst_pos = np.asarray(self.vase_dst_body.get_pose(data), dtype=np.float32)[:, :3]
 
-        # 3. Distances & Alignment
+        vase_src_rim = vase_src_pos.copy()
+        vase_src_rim[:, 2] = float(self._cfg.vase_rim_height)
+        vase_dst_rim = vase_dst_pos.copy()
+        vase_dst_rim[:, 2] = float(self._cfg.vase_rim_height)
+
         dist_ee_flower = np.linalg.norm(ee_pos - flower_pos, axis=1)
-        dist_xy_flower_vase = np.linalg.norm(flower_pos[:, :2] - vase_rim_pos[:, :2], axis=1)
 
-        # vertical distance: <0 means below rim plane
-        dist_z_flower_vase = flower_pos[:, 2] - vase_rim_pos[:, 2]
+        dist_xy_src = np.linalg.norm(flower_pos[:, :2] - vase_src_rim[:, :2], axis=1)
+        dist_xy_dst = np.linalg.norm(flower_pos[:, :2] - vase_dst_rim[:, :2], axis=1)
+
+        dz_src = flower_pos[:, 2] - vase_src_rim[:, 2]
+        dz_dst = flower_pos[:, 2] - vase_dst_rim[:, 2]
 
         align_score = self._check_flower_alignment(flower_quat)
-        is_aligned_pose = np.abs(align_score) > self._cfg.alignment_thresh
+        is_aligned_pose = np.abs(align_score) > float(self._cfg.alignment_thresh)
 
-        # 4. Status Checks
-        # A. Grasp
-        is_grasp_dist = dist_ee_flower < self._cfg.grasp_dist_thresh
+        # Grasp latch (optional)
+        is_grasp_dist = dist_ee_flower < float(self._cfg.grasp_dist_thresh)
         is_grasped = is_grasp_dist & grip_closed
         self.grasp_latched = self.grasp_latched | is_grasped
 
-        # B. Insert Logic
-        is_xy_near = dist_xy_flower_vase < self._cfg.success_dist_xy
-        is_deep_enough = (dist_z_flower_vase < self._cfg.success_z_depth) & (dist_z_flower_vase > self._cfg.safe_z)
-        is_inserted = is_xy_near & is_deep_enough & is_aligned_pose
-        self.inserted_latched = self.inserted_latched | is_inserted
+        # In-vase checks
+        is_xy_near_src = dist_xy_src < float(self._cfg.success_dist_xy)
+        is_xy_near_dst = dist_xy_dst < float(self._cfg.success_dist_xy)
 
-        # C. Success
-        is_released = ~grip_closed
-        is_retracted = (np.linalg.norm(ee_pos - vase_pos, axis=1) > 0.2) | (ee_pos[:, 2] > 0.4)
-        is_success = self.inserted_latched & is_released & is_retracted
-        self.success_latched = self.success_latched | is_success
-        print("is_success",self.success_latched)
-        print("flower_pose",flower_pose)
-        print("vase_pos",vase_pos)
-        print("dist_xy_flower_vase",dist_xy_flower_vase)
-        print("dist_z_flower_vase",dist_z_flower_vase)
-        print("align_score",align_score)
-        # 5. Reward Calculation
+        is_deep_src = (dz_src < float(self._cfg.success_z_depth)) & (dz_src > float(self._cfg.safe_z))
+        is_deep_dst = (dz_dst < float(self._cfg.success_z_depth)) & (dz_dst > float(self._cfg.safe_z))
+
+        in_src = is_xy_near_src & is_deep_src & is_aligned_pose
+        in_dst = is_xy_near_dst & is_deep_dst & is_aligned_pose
+
+        # Retracted: EE away from both vases OR high enough
+        ee_far_src = np.linalg.norm(ee_pos - vase_src_pos, axis=1) > 0.2
+        ee_far_dst = np.linalg.norm(ee_pos - vase_dst_pos, axis=1) > 0.2
+        is_retracted = (ee_far_src & ee_far_dst) | (ee_pos[:, 2] > 0.4)
+
+        # Stage updates: only count "placed" when released AND retracted
+        st = self.place_stage
+
+        placed_to_dst = (st == 0) & in_dst & grip_open & is_retracted
+        st = np.where(placed_to_dst, 1, st)
+
+        placed_back_src = (st == 1) & in_src & grip_open & is_retracted
+        st = np.where(placed_back_src, 2, st)
+
+        self.place_stage[:] = st
+        self.success_latched = self.success_latched | (self.place_stage >= 2)
+
+        # Reward: simple shaped (for debug), not critical for collector
         reward = np.zeros(self.num_envs, dtype=np.float32)
-
-        # Stage 1: Reach
         reward += 1.0 * (1.0 / (1.0 + dist_ee_flower))
-
-        # Stage 2: Grasp
         reward += 2.0 * self.grasp_latched.astype(np.float32)
+        reward += 3.0 * (self.place_stage >= 1).astype(np.float32)
+        reward += 5.0 * (self.place_stage >= 2).astype(np.float32)
 
-        # Stage 3: Align & Move to Vase Rim
-        manipulating_mask = self.grasp_latched & (~self.inserted_latched)
-        if manipulating_mask.any():
-            reward[manipulating_mask] += 1.5 * np.clip(align_score[manipulating_mask], 0, 1)
-            reward[manipulating_mask] += 2.0 * (1.0 / (1.0 + dist_xy_flower_vase[manipulating_mask]))
-
-        # Stage 4: Insert
-        ready_to_insert = manipulating_mask & is_xy_near & is_aligned_pose
-        if ready_to_insert.any():
-            z_err = np.abs(dist_z_flower_vase[ready_to_insert] + self._cfg.success_z_depth)
-            reward[ready_to_insert] += 3.0 * (1.0 / (1.0 + 5.0 * z_err))
-
-        # Stage 5: Completion
-        reward += 5.0 * self.inserted_latched.astype(np.float32)
-        reward += 10.0 * self.success_latched.astype(np.float32)
-
-        # 6. Info
+        # Info
         info["is_success"] = self.success_latched.copy()
-        info["is_grasped"] = self.grasp_latched.copy()
-        info["is_inserted"] = self.inserted_latched.copy()
-        info["align_score"] = align_score
-
-        # NEW: export random yaw to collector
-        info["rand_yaw_deg"] = self.rand_yaw_deg.copy()
-        info["rand_yaw_rad"] = self.rand_yaw_rad.copy()
+        info["place_stage"] = self.place_stage.copy()
+        info["align_score"] = align_score.copy()
 
         return reward.astype(np.float32)

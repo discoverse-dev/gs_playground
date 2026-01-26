@@ -182,7 +182,8 @@ class NpRenderEnv(NpEnv):
         W = int(self._img_w)
 
         # Background cached once (similar to MjxBatchGSRendererWithBGCache)
-        if self._bg_renderer is not None and self._bg_imgs is None:
+        # if self._bg_renderer is not None and self._bg_imgs is None:
+        if True :
             bg_gsb = self._bg_renderer.batch_update_gaussians(body_pos, body_quat)
             self._bg_imgs, _ = self._bg_renderer.batch_env_render(
                 bg_gsb, cam_xpos, cam_xmat, H, W, fovy
