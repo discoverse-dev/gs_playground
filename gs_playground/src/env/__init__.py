@@ -9,9 +9,8 @@ from gs_playground.src.manipulation.tasks.table30 import _05_wipe_the_table
 from gs_playground.src.manipulation.tasks.table30 import _06_put_cup_on_coaster
 from gs_playground.src.manipulation.tasks.table30 import _13_arrange_flowers
 
-from gs_playground.src.manipulation.tasks.eef import pick_cartesian
-from gs_playground.src.manipulation.tasks.eef import pick_cartesian_3d
-from gs_playground.src.manipulation.tasks.eef import pick_cartesian_6d
+from gs_playground.src.manipulation.tasks.virtual_gripper import pick_cartesian
+from gs_playground.src.manipulation.tasks.virtual_gripper import pick_cartesian_3d
+from gs_playground.src.manipulation.tasks.virtual_gripper import pick_cartesian_6d
 
-
-
+from gs_playground.src.manipulation.tasks.ppo.pick_cube import pick_cube_airbot_play

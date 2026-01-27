@@ -7,14 +7,27 @@
 
     <body name="box" pos="0.3 0 0.03">
       <freejoint/>
+      <site name="box_site" size="0.01" type="sphere" rgba="0 1 0 0.3" group="1"/>
       <geom type="box" name="box" size="0.015 0.015 0.03" condim="3"
-       friction="1 .03 .003" rgba="0 1 0 1" contype="2" conaffinity="1" solref="0.01 1" group="1"/>
+       friction="1.5 .03 .003" rgba="0 1 0 1" contype="2" conaffinity="1" solref="0.002 1" group="1"/>
     </body>
-    <body mocap="true" name="mocap_target">
+    <body name="mocap_target" gravcomp="1">
+      <joint type="slide" axis="1 0 0" name="target_x" damping="0.1"/>
+      <joint type="slide" axis="0 1 0" name="target_y" damping="0.1"/>
+      <joint type="slide" axis="0 0 1" name="target_z" damping="0.1"/>
+      <site name="mocap_target_site" size="0.01" type="sphere" rgba="1 0 0 0.2" group="1"/>
       <geom name="mocap_target_box" type="box" size="0.015 0.015 0.03" rgba="1 0 0 0.2" contype="0" conaffinity="0" group="1"/>
     </body>
     <geom name="init_space" size="0.02 1 0.01" type="plane" pos="0.3 0 0.001" rgba="0 0 1 1" contype="0" conaffinity="0"/>
   </worldbody>
+
+  <sensor>
+    <framepos objtype="site" objname="box_site" name="box_pos"/>
+    <framequat objtype="site" objname="box_site" name="box_quat"/>
+    <framepos objtype="site" objname="mocap_target_site" name="mocap_target_pos"/>
+    <framequat objtype="site" objname="mocap_target_site" name="mocap_target_quat"/>
+    <framezaxis objtype="site" objname="box_site" name="box_zaxis"/>
+  </sensor>
 
   <include file="sensor.xml"/>
 
@@ -26,8 +39,9 @@
       ctrl="0 -1.1466 1.1161 1.5815 -1.4836 0.0 0.04"/>
     <key name="home"
       qpos="
-        0 -0.3 0.47 1.5708 -0.8 -1.5708 0 0
-        0.35 0 0.03  1 0 0 0"
+        0 -0.3 0.48 1.5708 -0.8 -1.5708 0 0
+        0.3 0 0.03  1 0 0 0
+        0 0 0"
       ctrl="0 -0.3 0.48 1.5708 -0.8 -1.5708 0"/>
     <key name="pick1"
       qpos="

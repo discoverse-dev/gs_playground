@@ -5,7 +5,7 @@
     <default class="airbot_play">
       <material specular="0.5" shininess="0.25"/>
       <joint armature="0.1" damping="1" axis="0 0 1" range="-3.151 2.089"/>
-      <general dyntype="none" biastype="affine" ctrlrange="-3.151 2.089" forcerange="-87 87"/>
+      <general dyntype="none" biastype="affine"/>
       <position forcerange="-100 100"/>
 
       <default class="finger">
@@ -175,19 +175,19 @@
   </sensor>
 
   <actuator>
-    <position class="joint1" name="joint1" joint="joint1" kp="1000" kv="20" ctrlrange="-3.151 2.089"/>
-    <position class="joint2" name="joint2" joint="joint2" kp="1000" kv="20" ctrlrange="-2.963 0.181"/>
-    <position class="joint3" name="joint3" joint="joint3" kp="750" kv="4" ctrlrange="-0.094 3.161"/>
-    <position class="joint4" name="joint4" joint="joint4" kp="750" kv="4" ctrlrange="-3.012 4.711"/>
+    <!-- <position class="joint1" name="joint1" joint="joint1" kp="500" kv="5" ctrlrange="-3.151 2.089"/>
+    <position class="joint2" name="joint2" joint="joint2" kp="500" kv="5" ctrlrange="-2.963 0.181"/>
+    <position class="joint3" name="joint3" joint="joint3" kp="500" kv="5" ctrlrange="-0.094 3.161"/>
+    <position class="joint4" name="joint4" joint="joint4" kp="300" kv="2" ctrlrange="-3.012 4.711"/>
     <position class="joint5" name="joint5" joint="joint5" kp="300" kv="2" ctrlrange="-1.859 1.859"/>
-    <position class="joint6" name="joint6" joint="joint6" kp="300" kv="2" ctrlrange="-4.711 3.017"/>
+    <position class="joint6" name="joint6" joint="joint6" kp="300" kv="2" ctrlrange="-4.711 3.017"/> -->
 
-    <!-- <position name="joint1" class='joint1' joint="joint1" kp="350" kv="7"/>
-    <position name="joint2" class='joint2' joint="joint2" kp="350" kv="7"/>
-    <position name="joint3" class='joint3' joint="joint3" kp="350" kv="7"/>
-    <position name="joint4" class='joint4' joint="joint4" kp="175" kv="3"/>
-    <position name="joint5" class='joint5' joint="joint5" kp="175" kv="3"/>
-    <position name="joint6" class='joint6' joint="joint6" kp="175" kv="3"/> -->
+    <position name="joint1" class='joint1' joint="joint1" kp="350" kv="7" ctrlrange="-3.151 2.089"/>
+    <position name="joint2" class='joint2' joint="joint2" kp="350" kv="7" ctrlrange="-2.963 0.181"/>
+    <position name="joint3" class='joint3' joint="joint3" kp="350" kv="7" ctrlrange="-0.094 3.161"/>
+    <position name="joint4" class='joint4' joint="joint4" kp="175" kv="3" ctrlrange="-3.012 4.711"/>
+    <position name="joint5" class='joint5' joint="joint5" kp="175" kv="3" ctrlrange="-1.859 1.859"/>
+    <position name="joint6" class='joint6' joint="joint6" kp="175" kv="3" ctrlrange="-4.711 3.017"/>
 
     <general class="airbot_play" name="gripper" joint="endleft"
      ctrlrange="0 0.04" gainprm="350 0 0" biasprm="0 -350 -10" forcerange="-200 200"/>

@@ -8,9 +8,9 @@ from scipy.spatial.transform import Rotation as R
 from dataclasses import dataclass, field
 from gs_playground.src.env import registry
 from gs_playground.src.env.mujoco_env.mj_env import MjNpEnv, MjNpEnvState
-from gs_playground.src.manipulation.tasks.eef.cfg import FrankaCartesianBaseCfg, RewardConfig
+from gs_playground.src.manipulation.tasks.virtual_gripper.cfg import FrankaCartesianBaseCfg, RewardConfig
 
-from gs_playground.src.manipulation.tasks.eef.pick_cartesian_3d import FrankaPickCartesian3D
+from gs_playground.src.manipulation.tasks.virtual_gripper.pick_cartesian_3d import FrankaPickCartesian3D
 
 @registry.envcfg("franka-pick-cartesian-6d")
 @dataclass

@@ -7,9 +7,9 @@ import mujoco
 from dataclasses import dataclass, field
 from gs_playground.src.env import registry
 from gs_playground.src.env.mujoco_env.mj_env import MjNpEnv, MjNpEnvState
-from gs_playground.src.manipulation.tasks.eef.cfg import FrankaCartesianBaseCfg, RewardConfig
+from gs_playground.src.manipulation.tasks.virtual_gripper.cfg import FrankaCartesianBaseCfg, RewardConfig
 
-from gs_playground.src.manipulation.tasks.eef.pick_cartesian import FrankaPickCartesian
+from gs_playground.src.manipulation.tasks.virtual_gripper.pick_cartesian import FrankaPickCartesian
 
 @registry.envcfg("franka-pick-cartesian-3d")
 @dataclass
