@@ -11,5 +11,7 @@ from gs_playground.src.manipulation.tasks.table30 import _13_arrange_flowers
 
 from gs_playground.src.manipulation.tasks.eef import pick_cartesian
 from gs_playground.src.manipulation.tasks.eef import pick_cartesian_3d
+from gs_playground.src.manipulation.tasks.eef import pick_cartesian_6d
+
 
 

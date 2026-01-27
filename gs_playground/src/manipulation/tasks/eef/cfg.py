@@ -3,7 +3,7 @@ from gs_playground import ROOT_PATH
 from gs_playground.src.env import registry
 from gs_playground.src.env.base import EnvCfg
 
-model_file = (ROOT_PATH / "models" / "robots" / "manipulation" / "franka_emika_panda_robotiq" / "xmls" / "singel_cube_camera.xml").as_posix()
+model_file = (ROOT_PATH / "models" / "robots" / "manipulation" / "franka_emika_panda_robotiq" / "xmls" / "single_cube_camera.xml").as_posix()
 
 @dataclass
 class RewardConfig:

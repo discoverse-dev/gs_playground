@@ -108,7 +108,7 @@ class FrankaPickCartesian(MjNpEnv):
         self.idx_root_z_pos = self._get_sensor_slice("root_z_pos")
         
         self.idx_global_gripper_pos = self._get_sensor_slice("global_gripper_pos")
-        # self.idx_global_gripper_quat = self._get_sensor_slice("global_gripper_quat")
+        self.idx_global_gripper_quat = self._get_sensor_slice("global_gripper_quat")
         
         self.idx_box_pos = self._get_sensor_slice("box_pos")
         self.idx_box_quat = self._get_sensor_slice("box_quat")
@@ -249,6 +249,7 @@ class FrankaPickCartesian(MjNpEnv):
         state.info["box_target_dist"] = box_target_dist
         state.info["gripper_box_dist"] = gripper_box_dist
         state.info["pos_err"] = box_target_dist
+        state.info["is_lifted"] = (box_pos[:, 2] > 0.04)
         
         # Success
         success = box_target_dist < self._cfg.reward_config.success_threshold
@@ -291,9 +292,7 @@ class FrankaPickCartesian(MjNpEnv):
 
     def _reward_box_target(self, state):
         dist = state.info["box_target_dist"]
-        # Allow rewards even if grasp is slightly loose, but penalize large separations implicitly
-        # Rely on 'gripper_box' reward to maintain grasp.
-        return (1.0 - np.tanh(10.0 * dist))
+        return (1.0 - np.tanh(10.0 * dist)) * state.info["is_lifted"]
 
     def _reward_no_floor_collision(self, state):
         c1 = state.sensor_data[:, self.idx_left_finger_pad]
@@ -308,10 +307,9 @@ class FrankaPickCartesian(MjNpEnv):
         box_pos = state.info["box_pos"]
         target_pos = state.sensor_data[:, self.idx_mocap_target_pos]
         
-        is_lifted = (box_pos[:, 2] > 0.045)
         z_dist = np.abs(box_pos[:, 2] - target_pos[:, 2])
         
-        return is_lifted * (1.0 - np.tanh(5.0 * z_dist))
+        return (1.0 - np.tanh(5.0 * z_dist)) * state.info["is_lifted"]
 
     def _reward_gripper_ctrl(self, state):
         gripper_box_dist = state.info["gripper_box_dist"]
