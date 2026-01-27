@@ -21,6 +21,7 @@ class RewardConfig:
             "lifted_reward": 1.5,
             "success_reward": 20.0,
             "gripper_ctrl": 3.0,
+            "box_orientation": 1.0,
         }
     )
     success_threshold: float = 0.05
@@ -129,6 +130,22 @@ class AirbotPickCube(MjNpEnv):
         return self._observation_space
 
     def update_state(self, state: MjNpEnvState, obs_required: bool = True) -> MjNpEnvState:
+        self._update_cache(state)
+
+        # Obs
+        if obs_required:
+            obs = self._compute_obs(state)
+            if state.obs is not None:
+                state.obs[:] = obs
+            else:
+                state = state.replace(obs=obs)
+        
+        state = self.update_terminated(state)
+        state = self.update_reward(state)
+        
+        return state
+
+    def _update_cache(self, state: MjNpEnvState):
         # Cache useful info for logging
         box_pos = state.sensor_data[:, self.idx_box_pos]
         target_pos = state.sensor_data[:, self.idx_target_pos]
@@ -140,17 +157,33 @@ class AirbotPickCube(MjNpEnv):
         state.info["box_target_dist"] = box_target_dist
         state.info["gripper_box_dist"] = gripper_box_dist
         state.info["is_lifted"] = (box_pos[:, 2] > 0.04).astype(float)
-        
-        success = box_target_dist < self._cfg.reward_config.success_threshold
-        state.info["success"] = success.astype(float)
+        state.info["box_pos"] = box_pos
+        state.info["box_zaxis"] = state.sensor_data[:, self.idx_box_zaxis]
 
-        # 1. Rewards
+        success = (box_target_dist < self._cfg.reward_config.success_threshold) & (state.info["box_zaxis"][:, 2] > 0.9)
+        state.info["success"] = success.astype(float) # (B,)
+    
+    def update_terminated(self, state: MjNpEnvState) -> MjNpEnvState:
+        box_pos = state.info["box_pos"]
+        
+        # Fall off table check
+        out_of_bounds = (box_pos[:, 2] < 0.0) | (box_pos[:, 2] > 0.3)
+        
+        box_zaxis = state.info["box_zaxis"]
+        # Terminate if box z-axis (up vector) is less than 0.5 (tilted too much)
+        bad_orientation = box_zaxis[:, 2] < 0.5
+        done = out_of_bounds | bad_orientation
+        
+        truncated = np.zeros_like(done)
+        return state.replace(terminated=done.astype(bool), truncated=truncated.astype(bool))
+
+    def update_reward(self, state: MjNpEnvState) -> MjNpEnvState:
         total_reward = np.zeros(self.num_envs, dtype=np.float32)
         log = {}
 
         actions = getattr(self, "_last_action", None)
         if actions is None:
-             actions = np.zeros((self.num_envs, 7))
+            actions = np.zeros((self.num_envs, 7))
         
         for name, weight in self._cfg.reward_config.scales.items():
             if name in self._reward_fns:
@@ -159,24 +192,12 @@ class AirbotPickCube(MjNpEnv):
                 log[f"reward/{name}"] = np.mean(r_i * weight)
         
         # Log extra info
-        log["metric/dist_box_target"] = np.mean(box_target_dist)
-        log["metric/dist_gripper_box"] = np.mean(gripper_box_dist)
-        log["metric/success_rate"] = np.mean(success.astype(float))
+        log["metric/dist_box_target"] = np.mean(state.info["box_target_dist"])
+        log["metric/dist_gripper_box"] = np.mean(state.info["gripper_box_dist"])
+        log["metric/success_rate"] = np.mean(state.info["success"])
         
         state.info["log"] = log
-        
-        obs = self._compute_obs(state) if obs_required else state.obs
-        
-        terminated = np.zeros(self.num_envs, dtype=bool)
-        truncated = np.zeros(self.num_envs, dtype=bool)
-        
-        state = state.replace(
-            obs=obs,
-            reward=total_reward,
-            terminated=terminated,
-            truncated=truncated
-        )
-        return state
+        return state.replace(reward=total_reward)
 
     def _init_action_space(self):
         # 6 joints + 1 gripper, total 7
@@ -193,12 +214,45 @@ class AirbotPickCube(MjNpEnv):
         # Box pos (3) | quat (4) -> 7
         # Target pos (3)
         # Relative: Gripper-Box (3), Box-Target (3)
-        obs_dim = 7 + 7 + 7 + 7 + 3 + 3 + 3
         
-        low = np.full((obs_dim,), -np.inf, dtype=np.float32)
-        high = np.full((obs_dim,), np.inf, dtype=np.float32)
+        joint_ids = [self._model.joint(f"joint{i}").id for i in range(1, 7)]
+        j_ranges = self._model.jnt_range[joint_ids]
+        j_pos_min, j_pos_max = j_ranges[:, 0], j_ranges[:, 1]
+
+        g_pos_min, g_pos_max = 0.0, 0.04
+        j_vel_min, j_vel_max = -20.0, 20.0
+        g_vel_min, g_vel_max = -2.0, 2.0
+        pos_min, pos_max = -5.0, 5.0
+        quat_min, quat_max = -1.0, 1.0
+
+        # Structure of obs
+        # Helper to broadcast scalars
+        def make_bound(dim, val):
+            if np.isscalar(val):
+                return np.full((dim,), val)
+            return np.array(val)
+
+        dims_spec = [
+            (6, j_pos_min, j_pos_max), (1, g_pos_min, g_pos_max), # Joint pos, Gripper pos
+            (6, j_vel_min, j_vel_max), (1, g_vel_min, g_vel_max), # Joint vel, Gripper vel
+            (3, pos_min, pos_max), (4, quat_min, quat_max),       # EE pos, EE quat
+            (3, pos_min, pos_max), (4, quat_min, quat_max),       # Box pos, Box quat
+            (3, pos_min, pos_max),                                # Target pos
+            (3, pos_min, pos_max),                                # Rel Gripper-Box
+            (3, pos_min, pos_max),                                # Rel Box-Target
+        ]
+        
+        low = []
+        high = []
+        for dim, mn, mx in dims_spec:
+            low.append(make_bound(dim, mn))
+            high.append(make_bound(dim, mx))
+            
+        low = np.concatenate(low).astype(np.float32)
+        high = np.concatenate(high).astype(np.float32)
+        
         self._observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
-        self._num_observation = obs_dim
+        self._num_observation = len(low)
 
     def _init_sensor_indices(self):
         super()._init_sensor_indices()
@@ -219,11 +273,7 @@ class AirbotPickCube(MjNpEnv):
         
         self.idx_left_pad_contact = self._get_sensor_slice("left_finger_pad_floor_found")
         self.idx_right_pad_contact = self._get_sensor_slice("right_finger_pad_floor_found")
-        
-        if "box_zaxis" in self.sensor_indices:
-             self.idx_box_zaxis = self._get_sensor_slice("box_zaxis")
-        else:
-             self.idx_box_zaxis = None
+        self.idx_box_zaxis = self._get_sensor_slice("box_zaxis")
 
     def _get_sensor_slice(self, name):
         if name not in self.sensor_indices:
@@ -241,6 +291,7 @@ class AirbotPickCube(MjNpEnv):
             "lifted_reward": self._reward_lifted,
             "success_reward": self._reward_success,
             "gripper_ctrl": self._reward_gripper_ctrl,
+            "box_orientation": self._reward_box_orientation,
         }
 
     def reset(self, env_indices: np.ndarray) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -253,7 +304,6 @@ class AirbotPickCube(MjNpEnv):
         qvel = np.zeros((num_resets, self.nv))
         
         # 2. Randomize Box & Target
-        box_body_id = self._model.body("box").id
         box_qpos_adr = self._model.jnt_qposadr[self._model.body("box").jntadr[0]]
         init_box_pos = self._init_qpos[box_qpos_adr : box_qpos_adr + 3]
         
@@ -266,10 +316,10 @@ class AirbotPickCube(MjNpEnv):
         target_body = self._model.body("mocap_target")
         target_jnt_adr = target_body.jntadr[0]
         if target_jnt_adr != -1:
-             target_qpos_adr = self._model.jnt_qposadr[target_jnt_adr]
-             # Random offsets relative to BOX
-             target_random = rng.uniform([-0.05, -0.1, 0.1], [0.05, 0.1, 0.2], size=(num_resets, 3))
-             qpos[:, target_qpos_adr : target_qpos_adr + 3] = curr_box_pos + target_random
+            target_qpos_adr = self._model.jnt_qposadr[target_jnt_adr]
+            # Random offsets relative to BOX
+            target_random = rng.uniform([-0.05, -0.1, 0.1], [0.05, 0.1, 0.2], size=(num_resets, 3))
+            qpos[:, target_qpos_adr : target_qpos_adr + 3] = curr_box_pos + target_random
 
         # Construct new state
         nstate = self.physics_state_dim
@@ -289,11 +339,11 @@ class AirbotPickCube(MjNpEnv):
             sensor_batch[i] = mj_data.sensordata
             
         if hasattr(self, "_state") and self._state is not None:
-             self._state.sensor_data[env_indices] = sensor_batch
+            self._state.sensor_data[env_indices] = sensor_batch
 
         obs_state = MjNpEnvState(
-             physics_state=new_states, sensor_data=sensor_batch,
-             obs=None, reward=None, terminated=None, truncated=None, ctrl=None, info={}
+            physics_state=new_states, sensor_data=sensor_batch,
+            obs=None, reward=None, terminated=None, truncated=None, ctrl=None, info={}
         )
         obs_batch = self._compute_obs(obs_state)
         info = { "success": np.zeros(num_resets) }
@@ -373,11 +423,14 @@ class AirbotPickCube(MjNpEnv):
         return (1.0 - np.tanh(5.0 * z_dist)) * state.info["is_lifted"]
         
     def _reward_success(self, actions, state):
-         return state.info["success"]
+        return state.info["success"]
          
     def _reward_gripper_ctrl(self, actions, state):
-         gripper_box_dist = state.info["gripper_box_dist"]
-         # gripper ctrl (actuator 6)
-         gripper_ctrl = state.ctrl[:, 6]
-         # reward if near box, proportional to gripper strength (closing)
-         return (gripper_box_dist < 0.02) * (gripper_ctrl > 0.01)
+        gripper_box_dist = state.info["gripper_box_dist"]
+        # gripper ctrl (actuator 6)
+        gripper_ctrl = state.ctrl[:, 6]
+        # reward if near box, proportional to gripper strength (closing)
+        return (gripper_box_dist < 0.02) * (gripper_ctrl < 0.01)
+
+    def _reward_box_orientation(self, actions, state):
+        return state.info["box_zaxis"][:, 2]

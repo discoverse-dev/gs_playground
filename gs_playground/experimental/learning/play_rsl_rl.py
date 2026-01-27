@@ -109,48 +109,48 @@ def render_frame_job(args):
         
         # Post-process: Shift all geometries if robot root wasn't moved
         if apply_root_offset and offset is not None:
-             # Shift all geoms? 
-             # We should shift Everything that is PART OF THE ROBOT.
-             # Or just everything? 
-             # Box and Target were already shifted via qpos. 
-             # BUT qpos shift updates body_pos which updates geom_pos.
-             # If we shift ALL geom_pos, we double shift Box and Target!
+            # Shift all geoms? 
+            # We should shift Everything that is PART OF THE ROBOT.
+            # Or just everything? 
+            # Box and Target were already shifted via qpos. 
+            # BUT qpos shift updates body_pos which updates geom_pos.
+            # If we shift ALL geom_pos, we double shift Box and Target!
+            
+            # So we need to shift geoms that belong to bodies which are NOT Box or Target.
+            # Or simpler: Shift everything, but subtract offset from Box/Target qpos first? No.
+            
+            # Let's iterate bodies.
+            # Simple heuristic: Shift everything except Box and Target?
+            box_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "box")
+            target_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "mocap_target")
+            
+            # Also target might be just a body named "mocap_target"
              
-             # So we need to shift geoms that belong to bodies which are NOT Box or Target.
-             # Or simpler: Shift everything, but subtract offset from Box/Target qpos first? No.
-             
-             # Let's iterate bodies.
-             # Simple heuristic: Shift everything except Box and Target?
-             box_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "box")
-             target_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "mocap_target")
-             
-             # Also target might be just a body named "mocap_target"
-             
-             for i in range(model.ngeom):
-                 body_id = model.geom_bodyid[i]
-                 # If it is robot body. 
-                 # We want to shift generally everything that wasn't shifted by Qpos.
-                 # Box and Target were shifted by Qpos.
-                 # Floor (Plane) should usually NOT be shifted (infinite).
-                 # Everything else (Robot Base, Robot Links, Decoration) should be shifted.
-                 
-                 is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
-                 is_plane = (model.geom_type[i] == mujoco.mjtGeom.mjGEOM_PLANE)
-                 
-                 if not is_box_or_target and not is_plane:
-                      d.geom_xpos[i, 0] += offset[0]
-                      d.geom_xpos[i, 1] += offset[1]
-             
-             # Also update site positions if they are visualized
-             for i in range(model.nsite):
-                 body_id = model.site_bodyid[i]
-                 
-                 is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
-                 
-                 if not is_box_or_target:
-                      d.site_xpos[i, 0] += offset[0]
-                      d.site_xpos[i, 1] += offset[1]
+            for i in range(model.ngeom):
+                body_id = model.geom_bodyid[i]
+                # If it is robot body. 
+                # We want to shift generally everything that wasn't shifted by Qpos.
+                # Box and Target were shifted by Qpos.
+                # Floor (Plane) should usually NOT be shifted (infinite).
+                # Everything else (Robot Base, Robot Links, Decoration) should be shifted.
+                
+                is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
+                is_plane = (model.geom_type[i] == mujoco.mjtGeom.mjGEOM_PLANE)
+                
+                if not is_box_or_target and not is_plane:
+                    d.geom_xpos[i, 0] += offset[0]
+                    d.geom_xpos[i, 1] += offset[1]
         
+             # Also update site positions if they are visualized
+            for i in range(model.nsite):
+                body_id = model.site_bodyid[i]
+                
+                is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
+                
+                if not is_box_or_target:
+                    d.site_xpos[i, 0] += offset[0]
+                    d.site_xpos[i, 1] += offset[1]
+    
     num_envs = state_batch.shape[0]
 
     # 1. Clear/Init Scene
@@ -162,8 +162,7 @@ def render_frame_job(args):
         center_x = np.mean(offsets[:, 0])
         center_y = np.mean(offsets[:, 1])
         cam.lookat = [center_x, center_y, 0.0]
-        # cam.lookat = [0.65, 0, 0.2]
-        cam.distance = 3.0
+        cam.distance = 6.0
         cam.elevation = -20
         cam.azimuth = 90
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
@@ -222,9 +221,9 @@ def main():
     args = parser.parse_args()
 
     # Config
-    num_envs = 4 #64
+    num_envs = 64
     max_steps = 300 # 300 steps
-    grid_spacing = 1.0 / 2.
+    grid_spacing = 1.0
     video_fps = 25
     decimation = 2 # Render every 2nd step (50Hz control -> 25fps)
     
@@ -252,9 +251,9 @@ def main():
     
     # 1. Environment using Registry
     if not registry.contains(args.task):
-         print(f"Error: Task '{args.task}' not found in registry. Available tasks:")
-         print(list(registry._envs.keys()))
-         return
+        print(f"Error: Task '{args.task}' not found in registry. Available tasks:")
+        print(list(registry._envs.keys()))
+        return
 
     print(f"Initializing Env ({args.task}) with {num_envs} envs...")
     env = registry.make(args.task, num_envs=num_envs)
@@ -292,11 +291,11 @@ def main():
         
         # Load empirical normalization stats if available
         if 'model_state_dict' in loaded_dict:
-             state_dict = loaded_dict['model_state_dict']
-             # RSL-RL empirical normalization saves running mean and var in the model state dict
-             # The keys would be 'std.running_mean_var.running_mean' etc if it was a standalone module,
-             # but inside ActorCritic it's likely under 'actor_obs_normalizer'
-             pass
+            state_dict = loaded_dict['model_state_dict']
+            # RSL-RL empirical normalization saves running mean and var in the model state dict
+            # The keys would be 'std.running_mean_var.running_mean' etc if it was a standalone module,
+            # but inside ActorCritic it's likely under 'actor_obs_normalizer'
+            pass
     else:
         print("Model loaded (no dict returned).")
     
