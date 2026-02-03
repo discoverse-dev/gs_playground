@@ -8,10 +8,7 @@ import glob
 from dataclasses import asdict
 from tensordict import TensorDict
 
-from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
-from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
-from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
-from gs_playground.src.locomotion.go1.cfg import Go1WalkNpEnvCfg
+from gs_playground.src.env import registry
 from rsl_rl.runners import OnPolicyRunner
 from rsl_rl.env import VecEnv
 
@@ -115,40 +112,47 @@ def find_checkpoint(root_root, task_name, run_id=None, ckpt_id=None):
     Find checkpoint path.
     root_root: logs/
     task_name: e.g. go2_walk
-    run_id: timestamp folder name or None (latest)
-    ckpt_id: model_{ckpt_id}.pt or None (latest)
+    run_id: timestamp folder name or None (latest), OR absolute/relative path to run dir or file
+    ckpt_id: model_{ckpt_id}.pt or None (latest), OR absolute/relative path to file
     """
-    search_dir = root_root
-    task_dirs = glob.glob(os.path.join(root_root, "*")) # e.g. logs/go2_walk
-    if not task_dirs:
-        print(f"No task directories found in {root_root}")
-        return None
-        
-    task_dir = os.path.join(root_root, task_name)
-    if not os.path.exists(task_dir):
-        # If specific task dir doesn't exist, we can't resume for that task
-        print(f"Task directory {task_dir} not found.")
-        return None
+    # 1. Direct file check
+    if run_id and os.path.isfile(run_id):
+        return run_id
+    if ckpt_id and os.path.isfile(ckpt_id):
+        return ckpt_id
 
-    # Find Run Dir
-    if run_id:
-        run_dir = os.path.join(task_dir, run_id)
-    else:
-        # Find latest timestamp
-        runs = glob.glob(os.path.join(task_dir, "*"))
-        if not runs:
-             print(f"No runs found in {task_dir}")
-             return None
-        runs.sort(key=os.path.getmtime, reverse=True)
-        run_dir = runs[0]
+    # 2. Locate Run Directory
+    run_dir = None
+    
+    # If run_id is provided and looks like a directory path
+    if run_id and os.path.isdir(run_id):
+        run_dir = run_id
+    
+    # If not resolved, assume standard structure (logs/task_name/run_id)
+    if not run_dir:
+        task_dir = os.path.join(root_root, task_name)
+        if not os.path.exists(task_dir):
+            print(f"Task directory {task_dir} not found.")
+            return None
+
+        if run_id:
+            # run_id is name of folder inside task_dir
+            run_dir = os.path.join(task_dir, run_id)
+        else:
+            # Find latest timestamp
+            runs = glob.glob(os.path.join(task_dir, "*"))
+            if not runs:
+                 print(f"No runs found in {task_dir}")
+                 return None
+            runs.sort(key=os.path.getmtime, reverse=True)
+            run_dir = runs[0]
         
     print(f"Searching in run: {run_dir}")
     
-    # Find Model
+    # Find Model in run_dir
     if ckpt_id:
-        # Check specific
         if str(ckpt_id).endswith(".pt"):
-             model_path = ckpt_id if os.path.isabs(ckpt_id) else os.path.join(run_dir, ckpt_id)
+             model_path = os.path.join(run_dir, ckpt_id)
         else:
              model_path = os.path.join(run_dir, f"model_{ckpt_id}.pt")
     else:
@@ -170,33 +174,35 @@ def find_checkpoint(root_root, task_name, run_id=None, ckpt_id=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", type=str, default="go2", choices=["go1", "go2"], help="Robot to train: go1 or go2")
+    parser.add_argument("--task", type=str, required=True, help="Task name registered in registry (e.g. go2-flat-terrain-walk, franka-pick-cartesian)")
     parser.add_argument("--resume", action="store_true", help="Resume training from latest checkpoint")
     parser.add_argument("--load_run", type=str, default=None, help="Specific run directory name to resume from (e.g. 2024-01-25_...)")
     parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint filename or full path")
     args = parser.parse_args()
 
-    # 1. Environment Config
-    if args.robot == "go1":
-        env_cfg = Go1WalkNpEnvCfg()
-        EnvClass = Go1WalkTaskMj
-        task_name = "go1_walk"
-        env_cfg.train_cfg.runner.experiment_name = task_name
-    elif args.robot == "go2":
-        env_cfg = Go2WalkNpEnvCfg()
-        EnvClass = Go2WalkTaskMj
-        task_name = "go2_walk"
-        env_cfg.train_cfg.runner.experiment_name = task_name
-    else:
-        raise ValueError(f"Unknown robot: {args.robot}")
-
     # Adjust config for training if needed
-    num_envs = 2048
+    # num_envs = 2048
+    num_envs = 1024
     
-    # 2. Create Environment
-    # We instantiate directly to bypass registry string parsing if convenient, 
-    # but using registry class is fine.
-    env = EnvClass(env_cfg, num_envs=num_envs)
+    # 2. Create Environment using Registry
+    # Ensure imports above have triggered registration
+    if not registry.contains(args.task):
+         print(f"Error: Task '{args.task}' not found in registry. Available tasks:")
+         print(list(registry._envs.keys()))
+         return
+
+    env = registry.make(args.task, num_envs=num_envs)
+    
+    # Access internally stored config
+    # MjNpEnv stores it in self._cfg
+    env_cfg = env._cfg
+    task_name = args.task
+    
+    # Update experiment name for logging
+    if hasattr(env_cfg, "train_cfg") and hasattr(env_cfg.train_cfg, "runner"):
+        env_cfg.train_cfg.runner.experiment_name = task_name
+
+    # 3. Wrap Environment
     
     # 3. Wrap Environment
     if torch.cuda.is_available():

@@ -44,3 +44,5 @@ agent.md
 rsl_rl/
 *.onnx
 mujoco_playground/
+mujoco/
+play_rollout.mp4

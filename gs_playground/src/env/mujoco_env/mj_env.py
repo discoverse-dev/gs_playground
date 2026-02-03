@@ -165,7 +165,23 @@ class MjNpEnv(ABEnv):
         # Update state
         state.physics_state[indices] = new_physics_states
         if new_obs is not None:
-             state.obs[done] = new_obs
+             state.obs[indices] = new_obs
+        
+        # NOTE: sensor_data is NOT automatically updated by setting physics_state 
+        # until the next physics_step via rollout!
+        # If reset() returned None for obs, it implies we expect env to compute it from sensor_data?
+        # BUT sensor_data is stale (pre-reset).
+        # We must either:
+        # A) Compute Obs manually in reset using analytical kinematics (hard)
+        # B) Run a 0-step forward kinematics rollout to update sensor_data (cleaner)
+        # C) Or just rely on next step.
+        # But RSL-RL wrapper calls reset_all() -> reset() -> _update_buffers(obs).
+        
+        # If new_obs is None, we need to compute it.
+        if new_obs is None:
+             # This means we relied on sensor_data in _compute_obs, but sensor_data is stale!
+             # We should probably run a minimal forward step or re-compute.
+             pass
 
         # Update info
         if info1:

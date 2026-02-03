@@ -15,10 +15,7 @@ from functools import partial
 # Add paths
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
-from gs_playground.src.locomotion.go2.walk_np import Go2WalkTaskMj
-from gs_playground.src.locomotion.go2.cfg import Go2WalkNpEnvCfg
-from gs_playground.src.locomotion.go1.walk_np import Go1WalkTaskMj
-from gs_playground.src.locomotion.go1.cfg import Go1WalkNpEnvCfg
+from gs_playground.src.env import registry
 from gs_playground.experimental.learning.train_rsl_rl import RslMjEnvWrapper
 from rsl_rl.runners import OnPolicyRunner
 
@@ -64,11 +61,96 @@ def render_frame_job(args):
         d.time = s[0]
         d.qpos[:] = s[1:1+model.nq]
         d.qvel[:] = s[1+model.nq:1+model.nq+model.nv]
+        
+        apply_root_offset = False
+        
         if offset is not None:
-            d.qpos[0] += offset[0]
-            d.qpos[1] += offset[1]
+            # Check if Root (Body 1) has a free joint or slide joints allowing X/Y movement
+            # Body 0 is world. Body 1 is usually the robot base.
+            robot_moved = False
+            
+            # Heuristic: Check joint at qpos 0, 1. 
+            # If jnt_type[0] is free (0), fine.
+            # If jnt_type[0] is slide (2) and axis is x/y...
+            
+            # Better check: Does the first body have a joint?
+            first_body_jnt = model.body_jntadr[1] if model.nbody > 1 else -1
+            if first_body_jnt >= 0:
+                jnt_type = model.jnt_type[first_body_jnt]
+                # mjJNT_FREE=0
+                if jnt_type == 0:
+                     d.qpos[0] += offset[0]
+                     d.qpos[1] += offset[1]
+                     robot_moved = True
+            
+            # If robot wasn't moved via qpos, we need to manually offset geometries later
+            if not robot_moved:
+                apply_root_offset = True
+
+            # 2. Box offset
+            box_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "box")
+            if box_id >= 0:
+                jnt_adr = model.body_jntadr[box_id]
+                if jnt_adr >= 0:
+                    qpos_adr = model.jnt_qposadr[jnt_adr]
+                    d.qpos[qpos_adr] += offset[0]
+                    d.qpos[qpos_adr+1] += offset[1]
+
+            # 3. Target offset (target_x, target_y)
+            target_x = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "target_x")
+            if target_x >= 0:
+                 d.qpos[model.jnt_qposadr[target_x]] += offset[0]
+            
+            target_y = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "target_y")
+            if target_y >= 0:
+                 d.qpos[model.jnt_qposadr[target_y]] += offset[1]
+
         mujoco.mj_forward(model, d)
         
+        # Post-process: Shift all geometries if robot root wasn't moved
+        if apply_root_offset and offset is not None:
+            # Shift all geoms? 
+            # We should shift Everything that is PART OF THE ROBOT.
+            # Or just everything? 
+            # Box and Target were already shifted via qpos. 
+            # BUT qpos shift updates body_pos which updates geom_pos.
+            # If we shift ALL geom_pos, we double shift Box and Target!
+            
+            # So we need to shift geoms that belong to bodies which are NOT Box or Target.
+            # Or simpler: Shift everything, but subtract offset from Box/Target qpos first? No.
+            
+            # Let's iterate bodies.
+            # Simple heuristic: Shift everything except Box and Target?
+            box_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "box")
+            target_body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "mocap_target")
+            
+            # Also target might be just a body named "mocap_target"
+             
+            for i in range(model.ngeom):
+                body_id = model.geom_bodyid[i]
+                # If it is robot body. 
+                # We want to shift generally everything that wasn't shifted by Qpos.
+                # Box and Target were shifted by Qpos.
+                # Floor (Plane) should usually NOT be shifted (infinite).
+                # Everything else (Robot Base, Robot Links, Decoration) should be shifted.
+                
+                is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
+                is_plane = (model.geom_type[i] == mujoco.mjtGeom.mjGEOM_PLANE)
+                
+                if not is_box_or_target and not is_plane:
+                    d.geom_xpos[i, 0] += offset[0]
+                    d.geom_xpos[i, 1] += offset[1]
+        
+             # Also update site positions if they are visualized
+            for i in range(model.nsite):
+                body_id = model.site_bodyid[i]
+                
+                is_box_or_target = (body_id == box_body_id) or (body_id == target_body_id)
+                
+                if not is_box_or_target:
+                    d.site_xpos[i, 0] += offset[0]
+                    d.site_xpos[i, 1] += offset[1]
+    
     num_envs = state_batch.shape[0]
 
     # 1. Clear/Init Scene
@@ -80,8 +162,8 @@ def render_frame_job(args):
         center_x = np.mean(offsets[:, 0])
         center_y = np.mean(offsets[:, 1])
         cam.lookat = [center_x, center_y, 0.0]
-        cam.distance = 4.5
-        cam.elevation = -15
+        cam.distance = 6.0
+        cam.elevation = -20
         cam.azimuth = 90
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
     else:
@@ -131,19 +213,26 @@ def find_latest_model(log_dir):
     print(f"Found latest model: {files[0]}")
     return files[0]
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", type=str, default="go2", choices=["go1", "go2"], help="Robot type: go1 or go2")
+    parser.add_argument("--task", type=str, required=True, help="Task name registered in registry")
     parser.add_argument("--model", type=str, default=None, help="Path to model checkoint")
     args = parser.parse_args()
 
     # Config
-    num_envs = 4 # Visualizing 4 dogs
+    num_envs = 64
     max_steps = 300 # 300 steps
     grid_spacing = 1.0
     video_fps = 25
     decimation = 2 # Render every 2nd step (50Hz control -> 25fps)
     
+    # # Check if task is fixed base
+    # is_fixed_base = "airbot" in args.task or "franka" in args.task # Simple heuristic or check model
+    # if is_fixed_base:
+    #     print("Detected fixed base robot. Disabling grid offset.")
+    #     grid_spacing = 0.0
+        
     # Paths
     logs_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../logs"))
     
@@ -160,21 +249,22 @@ def main():
         
     print(f"Loading model: {model_path}")
     
-    # 1. Environment
-    if args.robot == "go1":
-        env_cfg = Go1WalkNpEnvCfg()
-        env_class = Go1WalkTaskMj
-    elif args.robot == "go2":
-        env_cfg = Go2WalkNpEnvCfg()
-        env_class = Go2WalkTaskMj
+    # 1. Environment using Registry
+    if not registry.contains(args.task):
+        print(f"Error: Task '{args.task}' not found in registry. Available tasks:")
+        print(list(registry._envs.keys()))
+        return
 
-    # Force zero commands for playback
-    # env_cfg.commands.vel_limit is a list [[min], [max]]
-    # We set min and max to 0 to ensure sampled commands are always 0
-    env_cfg.commands.vel_limit = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    print(f"Initializing Env ({args.task}) with {num_envs} envs...")
+    env = registry.make(args.task, num_envs=num_envs)
+    env_cfg = env._cfg # Get config from instance
     
-    print(f"Initializing Env ({args.robot}) with {num_envs} envs...")
-    env = env_class(env_cfg, num_envs=num_envs)
+    # Force zero commands for playback if applicable
+    if hasattr(env_cfg, "commands"):
+        # env_cfg.commands.vel_limit is a list [[min], [max]]
+        # We set min and max to 0 to ensure sampled commands are always 0
+        if hasattr(env_cfg.commands, "vel_limit"):
+             env_cfg.commands.vel_limit = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
     
     if torch.cuda.is_available():
         device = "cuda"
@@ -201,11 +291,11 @@ def main():
         
         # Load empirical normalization stats if available
         if 'model_state_dict' in loaded_dict:
-             state_dict = loaded_dict['model_state_dict']
-             # RSL-RL empirical normalization saves running mean and var in the model state dict
-             # The keys would be 'std.running_mean_var.running_mean' etc if it was a standalone module,
-             # but inside ActorCritic it's likely under 'actor_obs_normalizer'
-             pass
+            state_dict = loaded_dict['model_state_dict']
+            # RSL-RL empirical normalization saves running mean and var in the model state dict
+            # The keys would be 'std.running_mean_var.running_mean' etc if it was a standalone module,
+            # but inside ActorCritic it's likely under 'actor_obs_normalizer'
+            pass
     else:
         print("Model loaded (no dict returned).")
     
