@@ -46,3 +46,4 @@ rsl_rl/
 mujoco_playground/
 mujoco/
 play_rollout.mp4
+*.mp4
