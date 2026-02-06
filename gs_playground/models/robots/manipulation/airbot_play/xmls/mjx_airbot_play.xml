@@ -72,7 +72,7 @@
 
   <!-- ======= AITBOT PLAY ======= -->
   <worldbody>
-    <light name="top" pos="0 0 2" mode="trackcom"/>
+    <!-- <light name="top" pos="0 0 2" mode="trackcom"/> -->
     <body name="arm_base" childclass="airbot_play" gravcomp="1">
       <site name="armbase"/>
       <geom mesh="arm_base_0" pos="0 0 -0.0015" material="Gree_Light_Base" class="visual"/>
@@ -111,7 +111,7 @@
                   <joint name="joint6" class="joint6"/>
                   <geom name="hand_box" type="box" pos="0 0 -0.07" size="0.025 0.08 0.015" rgba="1 0 0 1" class="collision"/>
                   <geom type="mesh" material="Paint_Matte_Black" mesh="link6" class="visual"/>
-                  <geom type="mesh" material="Paint_Matte_Black" mesh="camera_stand" class="visual"/>
+                  <!-- <geom type="mesh" material="Paint_Matte_Black" mesh="camera_stand" class="visual"/> -->
                   <site name="endpoint" pos='0 0 0.023' euler="0 0 1.5708"/>
                   <body name="left" gravcomp="1">
                     <inertial pos="0 0.018307 -0.012505" quat="0.95 0.1 0 0" mass="0.027004" diaginertia="2.55732e-05 2.9e-05 1.12468e-05"/>

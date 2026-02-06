@@ -1,0 +1,86 @@
+<mujoco model="airbot_play single cube">
+  <include file="mjx_airbot_play.xml"/>
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast" noslip_iterations="2">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <visual>
+    <!-- <headlight diffuse=".8 .8 .8" ambient=".2 .2 .2" specular="1 1 1"/> -->
+    <rgba force="1 0 0 1"/>
+    <global azimuth="-40" elevation="-30"/>
+    <map force="0.01"/>
+    <quality shadowsize="8192"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <!-- <texture type="skybox" builtin="gradient" rgb1="0.66 0.67 0.67" rgb2="0.66 0.67 0.67" width="800" height="800"/> -->
+    <texture type="skybox" builtin="gradient" rgb1="0.5 0.5 0.5" rgb2="0.6 0.6 0.6" width="800" height="800"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="1 1 1" rgb2="1 1 1" markrgb="0 0 0"
+      width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0"/>
+  </asset>
+
+  <worldbody>
+    <!-- <light pos="0 -1 2" dir="0 1 -1"/> -->
+    <!-- <light pos="0 1 2" dir="0 -1 -1"/> -->
+
+    <light pos="0 0 10" directional="true"/>
+    <light directional="false" pos="0 -1 2" diffuse=".7 .8 .7" ambient=".2 .3 .2" specular="0.8 0.8 0.8"/>
+    <light directional="false" pos="0 1 2" diffuse=".8 .9 .8" ambient=".4 .3 .3" specular="0.8 0.8 0.8"/>
+    <body name="ground">
+      <geom name="floor" pos="0 0 -0.75" size="0 0 0.05" type="plane" material="groundplane" contype="1"/>
+    </body>
+
+    <camera name="left" pos="0.281 -0.654 0.253" xyaxes="1.000 0.021 -0.000 -0.005 0.212 0.977"/>
+    <camera name="front_right" pos="0.660 0.409 0.259" xyaxes="-0.727 0.687 0.000 -0.188 -0.199 0.962"/>
+    <camera name="free" pos="0.226 -0.811 0.428" xyaxes="1.000 0.002 -0.000 -0.001 0.368 0.930"/>
+
+    <!-- 底板：16✘28✘0.5cm
+    钢板：60✘60✘1cm
+    桌子：80✘90✘75cm -->
+    <geom name="arm_box" pos="-0.02 0 0.001" size="0.08 0.14 0.0025" type="box" contype="1" rgba="0.1 0.1 0.1 1"/>
+    <body name="steel_plate" pos="0.19 -0.06 -0.005">
+      <geom size="0.3 0.3 0.005" type="box" contype="1" rgba="0.64 0.66 0.66 1"/>
+      <!-- <geom size="0.3 0.3 0.005" type="box" contype="1" rgba="0.6 0.6 0.6 1"/> -->
+      <!-- <replicate count="23" offset="0.025 0 0">
+        <replicate count="23" offset="0 0.025 0">
+          <geom type="cylinder" size=".003 .0005" pos="-0.27 -0.27 0.005" rgba="0.3 0.3 0.3 1"/>
+        </replicate>
+      </replicate> -->
+    </body>
+    <geom name="table_green" pos="0.34 0.085 -0.02" size="0.45 0.44 0.01" type="box" contype="1" rgba="0.1 0.3 0.2 1"/>
+
+    <!-- <body name="box" pos="0.3 0 0.03">
+      <freejoint/>
+      <geom type="box" name="box" size="0.015 0.015 0.03" condim="3"
+       friction="1.5 .03 .003" rgba="0.24 0.54 0.15 1" contype="2" conaffinity="1" solref="0.002 1" group="1"/>
+    </body> -->
+    <!-- <body name="mocap_target" gravcomp="1">
+      <joint type="slide" axis="1 0 0" name="target_x" damping="0.1"/>
+      <joint type="slide" axis="0 1 0" name="target_y" damping="0.1"/>
+      <joint type="slide" axis="0 0 1" name="target_z" damping="0.1"/>
+      <site name="mocap_target_site" size="0.01" type="sphere" rgba="1 0 0 0.2" group="1"/>
+      <geom name="mocap_target_box" type="box" size="0.015 0.015 0.03" rgba="1 0 0 0.2" contype="0" conaffinity="0" group="1"/>
+    </body> -->
+  </worldbody>
+
+  <sensor>
+    <!-- <framepos objtype="site" objname="box_site" name="box_pos"/>
+    <framequat objtype="site" objname="box_site" name="box_quat"/>
+    <framepos objtype="site" objname="mocap_target_site" name="mocap_target_pos"/>
+    <framequat objtype="site" objname="mocap_target_site" name="mocap_target_quat"/>
+    <framezaxis objtype="site" objname="box_site" name="box_zaxis"/> -->
+  </sensor>
+
+  <!-- <include file="sensor.xml"/> -->
+
+  <keyframe>
+    <key name="init"
+      qpos="0 -1.1466 1.1161 1.5815 -1.4836 0.0 0.04 0.04"
+      ctrl="0 -1.1466 1.1161 1.5815 -1.4836 0.0 0.04"
+    />
+  </keyframe>
+
+</mujoco>
