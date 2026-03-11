@@ -18,6 +18,7 @@ _SYNC = True
 
 H = 300; W = 400
 _ASSETS_AIRBOT_PLAY_DIR = ROOT_PATH / "models" / "robots" / "manipulation" / "airbot_play"
+_ASSETS_TASK_DIR = ROOT_PATH / "models" / "tasks" / "build_blocks" / "pick_cube"
 
 def update_assets(
     assets: Dict[str, Any],
@@ -108,7 +109,7 @@ class AirbotPlayBase:
 if __name__ == "__main__":
     cfg = AirbotPlayCfg()
     cfg.gaussians["background"] = AirbotPlay.robot_background_ply()
-    # cfg.gaussians["cube_blue"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_blue.ply").as_posix()
+    cfg.gaussians["box"] = (_ASSETS_TASK_DIR / "3dgs" / "green_cube.ply").as_posix()
     # cfg.gaussians["cube_orange"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_orange.ply").as_posix()
     # cfg.gaussians["cube_yellow"] = (_ASSETS_TASK_DIR / "3dgs" / "cube_yellow.ply").as_posix()
 
