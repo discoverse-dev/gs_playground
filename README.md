@@ -14,6 +14,7 @@ It supports an end-to-end workflow from **expert data generation**, **large-scal
 
 - [Installation](#installation)
 - [Quick Start (5-minute sanity check)](#quick-start-5-minute-sanity-check)
+- [**🚀 Navigation Demo (3DGS + Robot Control)**](examples/navigation/README.md)
 - [Locomotion: Training & Playback](#locomotion-training--playback)
 - [Manipulation: Table30 Data & Validation](#manipulation-table30-data--validation)
 - [Benchmarks](#benchmarks)
