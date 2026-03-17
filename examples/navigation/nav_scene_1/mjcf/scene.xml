@@ -1,0 +1,369 @@
+<mujoco model="temp_preview_env">
+  <option gravity="0 0 -9.81" />
+  <compiler meshdir="../meshes" texturedir="../meshes/" />
+
+  <asset>
+    <mesh name="mesh_sim_part_0" file="part_0.obj" />
+    <mesh name="mesh_sim_part_1" file="part_1.obj" />
+    <mesh name="mesh_sim_part_2" file="part_2.obj" />
+    <mesh name="mesh_sim_part_3" file="part_3.obj" />
+    <mesh name="mesh_sim_part_4" file="part_4.obj" />
+    <mesh name="mesh_sim_part_5" file="part_5.obj" />
+    <mesh name="mesh_sim_part_6" file="part_6.obj" />
+    <mesh name="mesh_sim_part_7" file="part_7.obj" />
+    <mesh name="mesh_sim_part_8" file="part_8.obj" />
+    <mesh name="mesh_sim_part_9" file="part_9.obj" />
+    <mesh name="mesh_sim_part_10" file="part_10.obj" />
+    <mesh name="mesh_sim_part_11" file="part_11.obj" />
+    <mesh name="mesh_sim_part_12" file="part_12.obj" />
+    <mesh name="mesh_sim_part_13" file="part_13.obj" />
+    <mesh name="mesh_sim_part_14" file="part_14.obj" />
+    <mesh name="mesh_sim_part_15" file="part_15.obj" />
+    <mesh name="mesh_sim_part_16" file="part_16.obj" />
+    <mesh name="mesh_sim_part_17" file="part_17.obj" />
+    <mesh name="mesh_sim_part_18" file="part_18.obj" />
+    <mesh name="mesh_sim_part_19" file="part_19.obj" />
+    <mesh name="mesh_sim_part_20" file="part_20.obj" />
+    <mesh name="mesh_sim_part_21" file="part_21.obj" />
+    <mesh name="mesh_sim_part_22" file="part_22.obj" />
+    <mesh name="mesh_sim_part_23" file="part_23.obj" />
+    <mesh name="mesh_sim_part_24" file="part_24.obj" />
+    <mesh name="mesh_sim_part_25" file="part_25.obj" />
+    <mesh name="mesh_sim_part_26" file="part_26.obj" />
+    <mesh name="mesh_sim_part_27" file="part_27.obj" />
+    <mesh name="mesh_sim_part_28" file="part_28.obj" />
+    <mesh name="mesh_sim_part_29" file="part_29.obj" />
+    <mesh name="mesh_sim_part_30" file="part_30.obj" />
+    <mesh name="mesh_sim_part_31" file="part_31.obj" />
+    <mesh name="mesh_sim_part_32" file="part_32.obj" />
+    <mesh name="mesh_sim_part_33" file="part_33.obj" />
+    <mesh name="mesh_sim_part_34" file="part_34.obj" />
+    <mesh name="mesh_sim_part_35" file="part_35.obj" />
+    <mesh name="mesh_sim_part_36" file="part_36.obj" />
+    <mesh name="mesh_sim_part_37" file="part_37.obj" />
+    <mesh name="mesh_sim_part_38" file="part_38.obj" />
+    <mesh name="mesh_sim_part_39" file="part_39.obj" />
+    <mesh name="mesh_sim_part_40" file="part_40.obj" />
+    <mesh name="mesh_sim_part_41" file="part_41.obj" />
+    <mesh name="mesh_sim_part_42" file="part_42.obj" />
+    <mesh name="mesh_sim_part_43" file="part_43.obj" />
+    <mesh name="mesh_sim_part_44" file="part_44.obj" />
+    <mesh name="mesh_sim_part_45" file="part_45.obj" />
+    <mesh name="mesh_sim_part_46" file="part_46.obj" />
+    <mesh name="mesh_sim_part_47" file="part_47.obj" />
+    <mesh name="mesh_sim_part_48" file="part_48.obj" />
+    <mesh name="mesh_sim_part_49" file="part_49.obj" />
+    <mesh name="mesh_sim_part_50" file="part_50.obj" />
+    <mesh name="mesh_sim_part_51" file="part_51.obj" />
+    <mesh name="mesh_sim_part_52" file="part_52.obj" />
+    <mesh name="mesh_sim_part_53" file="part_53.obj" />
+    <mesh name="mesh_sim_part_54" file="part_54.obj" />
+    <mesh name="mesh_sim_part_55" file="part_55.obj" />
+    <mesh name="mesh_sim_part_56" file="part_56.obj" />
+    <mesh name="mesh_sim_part_57" file="part_57.obj" />
+    <mesh name="mesh_sim_part_58" file="part_58.obj" />
+    <mesh name="mesh_sim_part_59" file="part_59.obj" />
+    <mesh name="mesh_sim_part_60" file="part_60.obj" />
+    <mesh name="mesh_sim_part_61" file="part_61.obj" />
+    <mesh name="mesh_sim_part_62" file="part_62.obj" />
+    <mesh name="mesh_sim_part_63" file="part_63.obj" />
+    <mesh name="mesh_sim_part_64" file="part_64.obj" />
+    <mesh name="mesh_sim_part_65" file="part_65.obj" />
+    <mesh name="mesh_sim_part_66" file="part_66.obj" />
+    <mesh name="mesh_sim_part_67" file="part_67.obj" />
+    <mesh name="mesh_sim_part_68" file="part_68.obj" />
+    <mesh name="mesh_sim_part_69" file="part_69.obj" />
+    <mesh name="mesh_sim_part_70" file="part_70.obj" />
+    <mesh name="mesh_sim_part_71" file="part_71.obj" />
+    <mesh name="mesh_sim_part_72" file="part_72.obj" />
+    <mesh name="mesh_sim_part_73" file="part_73.obj" />
+    <mesh name="mesh_sim_part_74" file="part_74.obj" />
+    <mesh name="mesh_sim_part_75" file="part_75.obj" />
+    <mesh name="mesh_sim_part_76" file="part_76.obj" />
+    <mesh name="mesh_sim_part_77" file="part_77.obj" />
+    <mesh name="mesh_sim_part_78" file="part_78.obj" />
+    <mesh name="mesh_sim_part_79" file="part_79.obj" />
+    <mesh name="mesh_sim_part_80" file="part_80.obj" />
+    <mesh name="mesh_sim_part_81" file="part_81.obj" />
+    <mesh name="mesh_sim_part_82" file="part_82.obj" />
+    <mesh name="mesh_sim_part_83" file="part_83.obj" />
+    <mesh name="mesh_sim_part_84" file="part_84.obj" />
+    <mesh name="mesh_sim_part_85" file="part_85.obj" />
+    <mesh name="mesh_sim_part_86" file="part_86.obj" />
+    <mesh name="mesh_sim_part_87" file="part_87.obj" />
+    <mesh name="mesh_sim_part_88" file="part_88.obj" />
+    <mesh name="mesh_sim_part_89" file="part_89.obj" />
+    <mesh name="mesh_sim_part_90" file="part_90.obj" />
+    <mesh name="mesh_sim_part_91" file="part_91.obj" />
+    <mesh name="mesh_sim_part_92" file="part_92.obj" />
+    <mesh name="mesh_sim_part_93" file="part_93.obj" />
+    <mesh name="mesh_sim_part_94" file="part_94.obj" />
+    <mesh name="mesh_sim_part_95" file="part_95.obj" />
+    <mesh name="mesh_sim_part_96" file="part_96.obj" />
+    <mesh name="mesh_sim_part_97" file="part_97.obj" />
+    <mesh name="mesh_sim_part_98" file="part_98.obj" />
+    <mesh name="mesh_sim_part_99" file="part_99.obj" />
+    <mesh name="mesh_sim_part_100" file="part_100.obj" />
+    <mesh name="mesh_sim_part_101" file="part_101.obj" />
+    <mesh name="mesh_sim_part_102" file="part_102.obj" />
+    <mesh name="mesh_sim_part_103" file="part_103.obj" />
+    <mesh name="mesh_sim_part_104" file="part_104.obj" />
+    <mesh name="mesh_sim_part_105" file="part_105.obj" />
+    <mesh name="mesh_sim_part_106" file="part_106.obj" />
+    <mesh name="mesh_sim_part_107" file="part_107.obj" />
+    <mesh name="mesh_sim_part_108" file="part_108.obj" />
+    <mesh name="mesh_sim_part_109" file="part_109.obj" />
+    <mesh name="mesh_sim_part_110" file="part_110.obj" />
+    <mesh name="mesh_sim_part_111" file="part_111.obj" />
+    <mesh name="mesh_sim_part_112" file="part_112.obj" />
+    <mesh name="mesh_sim_part_113" file="part_113.obj" />
+    <mesh name="mesh_sim_part_114" file="part_114.obj" />
+    <mesh name="mesh_sim_part_115" file="part_115.obj" />
+    <mesh name="mesh_sim_part_116" file="part_116.obj" />
+    <mesh name="mesh_sim_part_117" file="part_117.obj" />
+    <mesh name="mesh_sim_part_118" file="part_118.obj" />
+    <mesh name="mesh_sim_part_119" file="part_119.obj" />
+    <mesh name="mesh_sim_part_120" file="part_120.obj" />
+    <mesh name="mesh_sim_part_121" file="part_121.obj" />
+    <mesh name="mesh_sim_part_122" file="part_122.obj" />
+    <mesh name="mesh_sim_part_123" file="part_123.obj" />
+    <mesh name="mesh_sim_part_124" file="part_124.obj" />
+    <mesh name="mesh_sim_part_125" file="part_125.obj" />
+    <mesh name="mesh_sim_part_126" file="part_126.obj" />
+    <mesh name="mesh_sim_part_127" file="part_127.obj" />
+    <mesh name="mesh_sim_part_128" file="part_128.obj" />
+    <mesh name="mesh_sim_part_129" file="part_129.obj" />
+    <mesh name="mesh_sim_part_130" file="part_130.obj" />
+    <mesh name="mesh_sim_part_131" file="part_131.obj" />
+    <mesh name="mesh_sim_part_132" file="part_132.obj" />
+    <mesh name="mesh_sim_part_133" file="part_133.obj" />
+    <mesh name="mesh_sim_part_134" file="part_134.obj" />
+    <mesh name="mesh_sim_part_135" file="part_135.obj" />
+    <mesh name="mesh_sim_part_136" file="part_136.obj" />
+    <mesh name="mesh_sim_part_137" file="part_137.obj" />
+    <mesh name="mesh_sim_part_138" file="part_138.obj" />
+    <mesh name="mesh_sim_part_139" file="part_139.obj" />
+    <mesh name="mesh_sim_part_140" file="part_140.obj" />
+    <mesh name="mesh_sim_part_141" file="part_141.obj" />
+    <mesh name="mesh_sim_part_142" file="part_142.obj" />
+    <mesh name="mesh_sim_part_143" file="part_143.obj" />
+    <mesh name="mesh_sim_part_144" file="part_144.obj" />
+    <mesh name="mesh_sim_part_145" file="part_145.obj" />
+    <mesh name="mesh_sim_part_146" file="part_146.obj" />
+    <mesh name="mesh_sim_part_147" file="part_147.obj" />
+    <mesh name="mesh_sim_part_148" file="part_148.obj" />
+    <mesh name="mesh_sim_part_149" file="part_149.obj" />
+    <mesh name="mesh_sim_part_150" file="part_150.obj" />
+    <mesh name="mesh_sim_part_151" file="part_151.obj" />
+    <mesh name="mesh_sim_part_152" file="part_152.obj" />
+    <mesh name="mesh_sim_part_153" file="part_153.obj" />
+    <mesh name="mesh_sim_part_154" file="part_154.obj" />
+    <mesh name="mesh_sim_part_155" file="part_155.obj" />
+    <mesh name="mesh_sim_part_156" file="part_156.obj" />
+    <mesh name="mesh_sim_part_157" file="part_157.obj" />
+    <mesh name="mesh_sim_part_158" file="part_158.obj" />
+    <mesh name="mesh_sim_part_159" file="part_159.obj" />
+    <mesh name="mesh_sim_part_160" file="part_160.obj" />
+    <mesh name="mesh_sim_part_161" file="part_161.obj" />
+    <mesh name="mesh_sim_part_162" file="part_162.obj" />
+    <mesh name="mesh_sim_part_163" file="part_163.obj" />
+    <mesh name="mesh_sim_part_164" file="part_164.obj" />
+    <mesh name="mesh_sim_part_165" file="part_165.obj" />
+    <mesh name="mesh_sim_part_166" file="part_166.obj" />
+    <mesh name="mesh_sim_part_167" file="part_167.obj" />
+    <mesh name="mesh_sim_part_168" file="part_168.obj" />
+    <mesh name="mesh_sim_part_169" file="part_169.obj" />
+    <mesh name="mesh_sim_part_170" file="part_170.obj" />
+    <mesh name="mesh_sim_part_171" file="part_171.obj" />
+    <mesh name="mesh_sim_part_172" file="part_172.obj" />
+    <mesh name="mesh_sim_part_173" file="part_173.obj" />
+    <mesh name="mesh_sim_part_174" file="part_174.obj" />
+    <mesh name="mesh_sim_part_175" file="part_175.obj" />
+    <mesh name="mesh_sim_part_176" file="part_176.obj" />
+    <mesh name="mesh_sim_part_177" file="part_177.obj" />
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" />
+    <body name="mesh_sim" pos="0 0 1.4">
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_0" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_1" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_2" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_3" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_4" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_5" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_6" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_7" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_8" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_9" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_10" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_11" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_12" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_13" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_14" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_15" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_16" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_17" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_18" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_19" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_20" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_21" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_22" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_23" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_24" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_25" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_26" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_27" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_28" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_29" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_30" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_31" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_32" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_33" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_34" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_35" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_36" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_37" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_38" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_39" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_40" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_41" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_42" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_43" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_44" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_45" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_46" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_47" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_48" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_49" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_50" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_51" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_52" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_53" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_54" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_55" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_56" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_57" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_58" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_59" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_60" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_61" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_62" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_63" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_64" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_65" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_66" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_67" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_68" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_69" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_70" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_71" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_72" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_73" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_74" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_75" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_76" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_77" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_78" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_79" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_80" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_81" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_82" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_83" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_84" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_85" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_86" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_87" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_88" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_89" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_90" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_91" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_92" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_93" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_94" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_95" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_96" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_97" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_98" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_99" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_100" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_101" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_102" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_103" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_104" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_105" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_106" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_107" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_108" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_109" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_110" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_111" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_112" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_113" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_114" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_115" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_116" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_117" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_118" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_119" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_120" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_121" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_122" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_123" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_124" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_125" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_126" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_127" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_128" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_129" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_130" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_131" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_132" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_133" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_134" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_135" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_136" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_137" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_138" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_139" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_140" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_141" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_142" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_143" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_144" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_145" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_146" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_147" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_148" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_149" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_150" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_151" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_152" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_153" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_154" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_155" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_156" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_157" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_158" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_159" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_160" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_161" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_162" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_163" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_164" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_165" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_166" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_167" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_168" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_169" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_170" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_171" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_172" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_173" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_174" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_175" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_176" />
+      <geom type="mesh" rgba="0.35 0.45 0.45 0.75" mesh="mesh_sim_part_177" />
+    </body>
+  </worldbody>
+</mujoco>
