@@ -298,7 +298,7 @@ class Legged_Robot_Torch:
         # mass_get = self.body#ball.get_mass_override(data)
         # pass
 
-    def _get_noise_scale_vec(self, cfg):
+    def _get_noise_scale_vec(self):
         """ Sets a vector used to scale the noise added to the observations.
             [NOTE]: Must be adapted when changing the observations structure
 
@@ -308,7 +308,7 @@ class Legged_Robot_Torch:
         Returns:
             [torch.Tensor]: Vector of scales used to multiply a uniform distribution in [-1, 1]
         """
-        noise_vec = torch.zeros_like(self.config.env.num_observations)
+        noise_vec = torch.zeros(self.config.env.num_observations)
         self.add_noise = self.config.noise.add_noise#self.cfg.noise.add_noise
         noise_scales = self.config.noise.noise_scales
         noise_level = self.config.noise.noise_level

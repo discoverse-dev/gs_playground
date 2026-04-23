@@ -72,14 +72,11 @@ class G1TrainCfg(LeggedRobotTorchCfg):
     
     class rewards(LeggedRobotTorchCfg.rewards):
         class scales(LeggedRobotTorchCfg.rewards.scales):
-            hip_pos = -1
-            dof_acc = -2.5e-7
-            tracking_lin_vel = 1
-            contact = 0.18
-            feet_air_time = 1
+            orientation = -1.0
+            contact = 0.4
             swing_feet_z = -20
-            stand_still = -0.15
             dof_vel = -0.001
+            stand_still = -0.15
 
     class sensor(LeggedRobotTorchCfg.sensor):
         contact_sensor = True
