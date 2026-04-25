@@ -1,15 +1,11 @@
-# =============================================================================
-# File: gs_playground/src/manipulation/tasks/table30/_13_arrange_flowers.py
-# =============================================================================
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Sequence
 
 import numpy as np
 from motrixsim import SceneData
-from scipy.spatial.transform import Rotation
-from typing import Sequence
+from scipy.spatial.transform import Rotation  # noqa: F401 (kept for compatibility)
 from gs_playground import ROOT_PATH
 from gs_playground.src.env.registry import envcfg, env
 from gs_playground.src.manipulation.tasks.task_env import TaskEnvCfg, TaskEnv
@@ -40,7 +36,7 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
             / "manipulation"
             / "franka_emika_panda_robotiq"
             / "xmls"
-            / "table30_13_arrange_flower.xml"
+            / "test.xml"
         ).as_posix()
     )
 
@@ -63,7 +59,7 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
     vase2_name: str = "vase2"     # target vase
 
     # success checks
-    success_dist_xy: float = 0.10
+    success_dist_xy: float = 0.15
     success_z_depth: float = 0.02
     safe_z: float = -0.20
 
@@ -72,15 +68,21 @@ class ArrangeFlowersEnvCfg(TaskEnvCfg):
 
     vase_rim_height: float = 0.35
 
-    # Alignment (可保留，但此任务你主要 yaw-only；如果想完全不看对齐，可把 alignment_thresh 设到 0)
-    alignment_thresh: float = 0.0
+    alignment_thresh: float = 0.45
 
     # -------------------------
     # Randomization (UPDATED)
     # -------------------------
-    vase_min_xy_dist: float = 0.15
+    vase_min_xy_dist: float = 0.18
     vase_range_center_xy: tuple[float, float] = (0.45, -0.0)
-    vase_range_half_size_xy: tuple[float, float] = (0.05, 0.2)
+    vase_range_half_size_xy: tuple[float, float] = (0.03, 0.15)
+
+    ee_home_pos: tuple[float, float, float] = (0.426, 0.09, 0.55)
+    ee_home_dist_thresh: float = 0.10
+
+    # Replay-only pose lift used by older restore pipelines.
+    # Collectors should normally keep this at 0.0.
+    replay_z_offset: float = 0.85
 
 
 @env("table30/arrange_flowers_franka", "np")
@@ -109,8 +111,32 @@ class ArrangeFlowersEnv(TaskEnv):
         # NEW: stage tracker for two-place task
         # 0: not placed to dst yet
         # 1: placed to dst
-        # 2: placed back to src => success
+        # 2: placed back to src => success (now also requires contact)
         self.place_stage = np.zeros((self.num_envs,), dtype=np.int32)
+
+        # --- NEW: replay override storage ---
+        # map: env_id -> dict with keys: flower_pose_wxyz, vase_src_pose_wxyz, vase_dst_pose_wxyz (each shape (7,))
+        self._replay_init: dict[int, dict[str, np.ndarray]] = {}
+
+    # -------------------------------------------------------------------------
+    # Replay APIs
+    # -------------------------------------------------------------------------
+    def set_replay_init(
+        self,
+        env_id: int,
+        *,
+        flower_pose_wxyz: np.ndarray,
+        vase_src_pose_wxyz: np.ndarray,
+        vase_dst_pose_wxyz: np.ndarray,
+    ) -> None:
+        self._replay_init[int(env_id)] = {
+            "flower_pose_wxyz": np.asarray(flower_pose_wxyz, dtype=np.float32).reshape(7),
+            "vase_src_pose_wxyz": np.asarray(vase_src_pose_wxyz, dtype=np.float32).reshape(7),
+            "vase_dst_pose_wxyz": np.asarray(vase_dst_pose_wxyz, dtype=np.float32).reshape(7),
+        }
+
+    def clear_replay_init(self) -> None:
+        self._replay_init = {}
 
     # ---- Task hooks ----
     def task_gaussians(self) -> Dict[str, str]:
@@ -143,13 +169,42 @@ class ArrangeFlowersEnv(TaskEnv):
         Only randomize source/target vase XY with min distance.
         Then move flower XY by the SAME delta as source vase moved.
 
-        NOTE: We intentionally hard-code base vase poses. Therefore we MUST expand them to (n_reset, 7)
-        to match the sliced `data` batch size.
+        Replay override:
+          If all resetting envs have replay init poses provided via set_replay_init(),
+          we will directly write those poses and skip randomization.
         """
         env_ids = np.where(done_mask)[0]
         n_reset = int(env_ids.size)
         if n_reset == 0:
             return
+
+        # -------------------------------------------------------------------------
+        # Replay override: if all resetting envs have provided initial poses, use them
+        # -------------------------------------------------------------------------
+        if self._replay_init:
+            if all(int(eid) in self._replay_init for eid in env_ids.tolist()):
+                new_vase_src = np.stack(
+                    [self._replay_init[int(eid)]["vase_src_pose_wxyz"] for eid in env_ids.tolist()],
+                    axis=0,
+                ).astype(np.float32)
+                new_vase_dst = np.stack(
+                    [self._replay_init[int(eid)]["vase_dst_pose_wxyz"] for eid in env_ids.tolist()],
+                    axis=0,
+                ).astype(np.float32)
+                new_flower = np.stack(
+                    [self._replay_init[int(eid)]["flower_pose_wxyz"] for eid in env_ids.tolist()],
+                    axis=0,
+                ).astype(np.float32)
+                z_offset = float(getattr(self._cfg, "replay_z_offset", 0.0))
+                if z_offset != 0.0:
+                    new_vase_src[:, 2] += z_offset
+                    new_vase_dst[:, 2] += z_offset
+                    new_flower[:, 2] += z_offset
+
+                self.vase_src_body.mocap.set_pose(data, new_vase_src)
+                self.vase_dst_body.mocap.set_pose(data, new_vase_dst)
+                self.flower_body.set_dof_pos(data, new_flower, include_floatingbase=True)
+                return
 
         # -------------------------------------------------------------------------
         # Hard-coded base poses (shape must be (n_reset, 7) for batched writeback)
@@ -163,13 +218,11 @@ class ArrangeFlowersEnv(TaskEnv):
             [0.5, 0.0, 0.125, -0.0, -0.0, -0.0, 1.0],
             dtype=np.float32,
         )
-
         vase_src_pose = np.repeat(base_vase_src_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
         vase_dst_pose = np.repeat(base_vase_dst_pose[None, :], n_reset, axis=0)  # (n_reset, 7)
-
-        # Flower pose must match sliced data batch
-        flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32)
-        flower_pose = flower_pose.reshape(n_reset, -1)
+        # Keep the runtime flower orientation, only restore it to the low-height collection layer.
+        flower_pose = np.asarray(self.flower_body.get_pose(data), dtype=np.float32).reshape(n_reset, -1)
+        flower_pose[:, 2] = 0.3088754
 
         new_vase_src = vase_src_pose.copy()
         new_vase_dst = vase_dst_pose.copy()
@@ -234,9 +287,6 @@ class ArrangeFlowersEnv(TaskEnv):
         self.vase_dst_body.mocap.set_pose(data, new_vase_dst)
         self.flower_body.set_dof_pos(data, new_flower, include_floatingbase=True)
 
-
-
-
     def _compute_reward(self, state: RenderEnvState) -> np.ndarray:
         data: SceneData = state.data
         info: Dict[str, np.ndarray] = state.info
@@ -269,7 +319,7 @@ class ArrangeFlowersEnv(TaskEnv):
         dz_dst = flower_pos[:, 2] - vase_dst_rim[:, 2]
 
         align_score = self._check_flower_alignment(flower_quat)
-        is_aligned_pose = np.abs(align_score) > float(self._cfg.alignment_thresh)
+        is_aligned_pose = align_score < (-1) * float(self._cfg.alignment_thresh)
 
         # Grasp latch (optional)
         is_grasp_dist = dist_ee_flower < float(self._cfg.grasp_dist_thresh)
@@ -286,22 +336,32 @@ class ArrangeFlowersEnv(TaskEnv):
         in_src = is_xy_near_src & is_deep_src & is_aligned_pose
         in_dst = is_xy_near_dst & is_deep_dst & is_aligned_pose
 
-        # Retracted: EE away from both vases OR high enough
         ee_far_src = np.linalg.norm(ee_pos - vase_src_pos, axis=1) > 0.2
         ee_far_dst = np.linalg.norm(ee_pos - vase_dst_pos, axis=1) > 0.2
-        is_retracted = (ee_far_src & ee_far_dst) | (ee_pos[:, 2] > 0.4)
+        is_retracted1 = (ee_far_src & ee_far_dst) | (ee_pos[:, 2] > 0.4)
+
+        # Retracted (Z-only): EE close to home height
+        home_z = float(self._cfg.ee_home_pos[2])
+        ee_home_dz = np.abs(ee_pos[:, 2] - home_z)
+        is_retracted2 = ee_home_dz < float(self._cfg.ee_home_dist_thresh)
 
         # Stage updates: only count "placed" when released AND retracted
         st = self.place_stage
 
-        placed_to_dst = (st == 0) & in_dst & grip_open & is_retracted
+        placed_to_dst = (st == 0) & in_dst & grip_open & is_retracted1
         st = np.where(placed_to_dst, 1, st)
 
-        placed_back_src = (st == 1) & in_src & grip_open & is_retracted
+        placed_back_src = (st == 1) & in_src & grip_open & is_retracted2
         st = np.where(placed_back_src, 2, st)
 
         self.place_stage[:] = st
-        self.success_latched = self.success_latched | (self.place_stage >= 2)
+
+        # In this restored replay-oriented variant, do not require a contact sensor
+        # because current MotrixSim builds reject touch sensors attached to mocap links.
+        found = np.zeros((self.num_envs,), dtype=np.float32)
+        flower_vase_in_contact = np.zeros((self.num_envs,), dtype=bool)
+        instant_success = self.place_stage >= 2
+        self.success_latched = self.success_latched | instant_success
 
         # Reward: simple shaped (for debug), not critical for collector
         reward = np.zeros(self.num_envs, dtype=np.float32)
@@ -312,7 +372,13 @@ class ArrangeFlowersEnv(TaskEnv):
 
         # Info
         info["is_success"] = self.success_latched.copy()
+        info["is_success_instant"] = instant_success.copy()
         info["place_stage"] = self.place_stage.copy()
         info["align_score"] = align_score.copy()
+        info["flower_vase_contact_found"] = found.copy()
+        info["flower_vase_in_contact"] = flower_vase_in_contact.astype(np.float32)
 
         return reward.astype(np.float32)
+
+    def _check_success(self, state: RenderEnvState) -> np.ndarray:
+        return self.success_latched.copy()

@@ -4,6 +4,7 @@ import os
 import time
 import argparse
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Sequence
 
 import numpy as np
@@ -210,6 +211,8 @@ class HangToothbrushCupCollector:
         self.attempted = 0
         self._last_log_t = time.perf_counter()
         self._last_action = np.zeros((B, 7), dtype=np.float32)
+        self._episode_actions: list[list[np.ndarray]] = [[] for _ in range(B)]
+        self._init_cup_pose_xyzw = np.zeros((B, 7), dtype=np.float32)
 
         self.grasp_site = self.env.grasp_site
         self.hook_site = self.env.hook_site
@@ -262,9 +265,11 @@ class HangToothbrushCupCollector:
         # grasp/hook sites
         grasp_pose7 = np.asarray(self.grasp_site.get_pose(data), dtype=np.float32).reshape(self.B, -1)
         hook_pose7 = np.asarray(self.hook_site.get_pose(data), dtype=np.float32).reshape(self.B, -1)
+        cup_pose7 = np.asarray(self.env.cup_body.get_pose(data), dtype=np.float32).reshape(self.B, -1)
 
         self.latched_grasp_pos[env_ids] = grasp_pose7[env_ids, :3]
         self.latched_hook_pos[env_ids] = hook_pose7[env_ids, :3]
+        self._init_cup_pose_xyzw[env_ids] = cup_pose7[env_ids]
 
         grasp_q = grasp_pose7[env_ids, 3:7]
         grasp_q = to_xyzw_from_possible_wxyz(grasp_q, assume=str(self.cfg.site_quat_convention))
@@ -277,8 +282,20 @@ class HangToothbrushCupCollector:
 
         for env_id in env_ids.tolist():
             self.io.reset_env(int(env_id))
+            self._episode_actions[int(env_id)] = []
             self._attempt_id[env_id] += 1
             self.attempted += 1
+
+    def _save_replay_episode(self, env_id: int, ep_idx: int) -> None:
+        replay_dir = Path(self.cfg.save_dir) / "replay"
+        replay_dir.mkdir(parents=True, exist_ok=True)
+        actions = np.stack(self._episode_actions[int(env_id)], axis=0).astype(np.float32)
+        np.savez_compressed(
+            (replay_dir / f"ep_{int(ep_idx):05d}.npz").as_posix(),
+            cup_pose_xyzw=self._init_cup_pose_xyzw[int(env_id)].astype(np.float32),
+            actions=actions,
+            ep_idx=np.int32(ep_idx),
+        )
 
     # -----------------------------
     # FSM helper
@@ -438,6 +455,8 @@ class HangToothbrushCupCollector:
 
         self._last_action[:] = action
         self.env.step(action)
+        for env_id in np.where(running)[0].tolist():
+            self._episode_actions[int(env_id)].append(action[env_id].copy())
 
         # ---------------- transitions (post-step obs) ----------------
         obs = self.env._state.obs
@@ -575,12 +594,14 @@ class HangToothbrushCupCollector:
                     prompt = str(self.ep_prompt[i])
                     extra_ep: Dict[str, Any] = {"subtask": str(self.ep_subtask[i])}
                     self.io.finalize_episode(env_id=i, ep_idx=ep_idx, success=True, prompt=prompt, extra_episode=extra_ep)
+                    self._save_replay_episode(env_id=i, ep_idx=ep_idx)
                     self.saved_success += 1
                     print(f"[Saved] episode {ep_idx}. Total saved: {self.saved_success}")
                 else:
                     self.io.finalize_episode(env_id=i, ep_idx=int(self.saved_success), prompt=str(self.ep_prompt[i]), success=False)
 
                 self.active[i] = False
+                self._episode_actions[i] = []
 
                 if self.saved_success < target:
                     new_seed = int(cfg.seed + self.attempted)

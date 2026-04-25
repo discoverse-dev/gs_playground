@@ -4,6 +4,7 @@ import argparse
 import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
 import numpy as np
@@ -155,6 +156,13 @@ class ArrangeFlowersCollector:
         os.makedirs(cfg.save_dir, exist_ok=True)
 
         self.env_cfg = env_cfg if env_cfg is not None else ArrangeFlowersEnvCfg()
+        if env_cfg is None:
+            # Keep collection on the original low camera / low workspace model.
+            model_dir = Path(str(self.env_cfg.model_file)).resolve().parent
+            low_model = model_dir / "table30_13_arrange_flower.xml"
+            self.env_cfg.model_file = low_model.as_posix()
+        if hasattr(self.env_cfg, "replay_z_offset"):
+            setattr(self.env_cfg, "replay_z_offset", 0.0)
 
         # Best-effort: pass MotrixSim recorder config into env cfg (debug only)
         setattr(self.env_cfg, "enable_motrix_video", bool(cfg.enable_motrix_video))

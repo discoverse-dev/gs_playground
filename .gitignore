@@ -26,6 +26,7 @@ MANIFEST
 # IDEs
 .vscode/
 .idea/
+.codex
 *.swp
 *.swo
 

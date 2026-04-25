@@ -26,10 +26,10 @@ dependencies = [
     "mink",
     "etils[epath]",
     "plyfile",
-    "motrixsim == 0.6.0",
-    "gaussian_renderer>=0.1.9",
+    "motrixsim_core==0.7.1.dev97274",
+    "gaussian_renderer==0.2.0",
     "gymnasium",
-    "scipy",
+    "scipy==1.15.3",
     "datetime>=6.0",
     "opencv-python>=4.13.0.90",
     "mediapy",
@@ -47,6 +47,13 @@ torch-interop = ["tensordict>=0.5.0"]
 
 [project.urls]
 Homepage = "https://github.com/TATP-233/gs_playground"
+
+[[tool.uv.index]]
+name = "motphys"
+url = "https://pypi.motphys.com/simple"
+
+[tool.uv.sources]
+motrixsim_core = { index = "motphys" }
 
 [tool.setuptools]
 include-package-data = true
